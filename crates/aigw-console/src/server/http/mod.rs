@@ -139,7 +139,7 @@ pub async fn run(
             get(HttpApiAnalytics::analytics_traffic_ext).layer(auth_layer.clone()),
         )
         .with_state(api_context)
-        .fallback_service(ServeDir::new(&config.server.ui.unwrap()))
+        .fallback_service(ServeDir::new(config.server.ui.as_ref().unwrap()))
         .layer(TraceLayer::new_for_http())
         .into_make_service_with_connect_info::<SocketAddr>();
 
