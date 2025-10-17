@@ -45,7 +45,7 @@ assets = [
   ["target/aigwc.ui.zip", "/etc/aigw/aigwc.ui.zip", "644"],
   ["target/aigwc.1.gz", "/usr/share/man/man1/aigwc.1.gz", "644"],
   ["assets/aigwc.toml.example", "/etc/aigw/aigwc.toml.example", "600"],
-  ["assets/aigwc.service", "/lib/systemd/system/dinoaigwcsaur.service", "644"],
+  ["assets/aigwc.service", "/lib/systemd/system/aigwc.service", "644"],
   ["assets/aigwc.target", "/lib/systemd/system/aigwc.target", "644"],
 ]
 changelog = "assets/changelog.txt"
