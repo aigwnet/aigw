@@ -1,0 +1,34 @@
+{
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "codeLogin": "验证码登录",
+    "qrcodeLogin": "二维码登录",
+    "forgetPassword": "忘记密码"
+  },
+  "dashboard": {
+    "title": "概览",
+    "traffic": "流量分析",
+    "monitor": "监控大盘"
+  },
+  "cluster": {
+    "title": "集群",
+    "list": "集群列表",
+    "new": "添加集群",
+    "edit": "修改集群"
+  },
+  "site": {
+    "title": "站点管理",
+    "list": "站点列表",
+    "new": "添加站点",
+    "edit": "修改站点"
+  },
+  "user": {
+    "profile": "用户资料",
+    "basic": "个人信息",
+    "security": "安全设置",
+    "password": "新密码",
+    "passwordUpdateInvalid": "新旧密码相同，无需更新！",
+    "updateTip": "更新用户信息成功！"
+  }
+}

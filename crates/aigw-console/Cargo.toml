@@ -1,0 +1,57 @@
+[package]
+authors = ["aigwnet@gmail.com"]
+description = "Lite AI Gateway Console"
+edition = "2024"
+name = "aigw-console"
+version = "0.1.0"
+
+[dependencies]
+aigw-core = {path = "../aigw-core"}
+anyhow = {workspace = true}
+arc-swap = {workspace = true}
+async-trait = {version = "0.1"}
+axum = {version = "0.8"}
+base64 = {workspace = true}
+bytes = {version = "1"}
+chrono = {version = "0.4"}
+clap = {workspace = true}
+daemonize = {workspace = true}
+hex = {version = "0.4"}
+http = {version = "0.2"}
+lazy_static = {workspace = true}
+local-ip-address = {version = "0.6"}
+log = {workspace = true}
+md5 = {version = "0.8"}
+openssl = {version = "0.10"}
+pingora-load-balancing = {workspace = true}
+rbatis = {version = "4.5"}
+rbdc-mysql = {version = "4.5"}
+rbs = {version = "4.5"}
+redis = {version = "0.32"}
+regex = {version = "1"}
+reqwest = {version = "0.12", default-features = false, features = ["rustls-tls", "json"]}
+serde = {workspace = true}
+serde_json = {workspace = true}
+sha = {version = "1"}
+simplelog = {version = "0.12"}
+thiserror = {version = "2"}
+tokio = {version = "1", features = ["full"]}
+toml = {version = "0.9"}
+tower-http = {version = "0.6", features = ["fs", "trace"]}
+
+[package.metadata.deb]
+assets = [
+  ["../../target/release/aigw-console", "/usr/bin/aigwc", "755"],
+  ["../../target/aigwc.ui.zip", "/etc/aigw/aigwc.ui.zip", "644"],
+  ["../../target/aigwc.1.gz", "/usr/share/man/man1/aigwc.1.gz", "644"],
+  ["assets/aigwc.toml.example", "/etc/aigw/aigwc.toml.example", "600"],
+  ["assets/aigwc.service", "/lib/systemd/system/dinoaigwcsaur.service", "644"],
+  ["assets/aigwc.target", "/lib/systemd/system/aigwc.target", "644"],
+]
+changelog = "assets/changelog.txt"
+depends = "libc6 (>= 2.23), libgcc1 (>= 1:6.0.1)"
+extended-description = """\
+ Lite AI Gateway console."""
+license-file = ["LICENSE.md", "1"]
+maintainer-scripts = "assets/deb-scripts"
+section = "net"

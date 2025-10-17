@@ -1,0 +1,3 @@
+systemctl daemon-reload
+chmod 700 /etc/dinosaur
+unzip -o /etc/dinosaur/dinosaur.ui.zip -d /etc/dinosaur/ui/

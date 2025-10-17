@@ -1,0 +1,11 @@
+[basic]
+auto_index=true
+http=8080
+https=8443
+root_dir="tmp/www"
+data_dir="/opt/aigw/data"
+
+[console]
+address="127.0.0.1:9527"
+key="abc123"
+cluster="test"

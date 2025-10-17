@@ -1,0 +1,66 @@
+[package]
+authors = ["aigwnet@gmail.com"]
+description = "Lite AI Gateway"
+edition = "2024"
+name = "aigw"
+version = "0.1.0"
+
+[dependencies]
+ahash = {version = "0.8"}
+aigw-core = {path = "../aigw-core"}
+anyhow = {workspace = true}
+arc-swap = {workspace = true}
+async-trait = {version = "0.1"}
+bytes = {version = "1"}
+chrono = {version = "0.4"}
+clap = {workspace = true}
+daemonize = {workspace = true}
+dashmap = {version = "6"}
+dyn-fmt = {version = "0.4.3"}
+hostname = {version = "0.4"}
+http = {version = "1"}
+httpdate = {version = "1"}
+itoa = {version = "1"}
+lazy_static = {workspace = true}
+log = {workspace = true}
+maxminddb = {version = "0.26", features = ["mmap"]}
+mime_guess = {version = "2"}
+once_cell = {version = "1"}
+os_info = {version = "3", default-features = false}
+percent-encoding = {version = "2"}
+pingora-cache = {workspace = true}
+pingora-core = {workspace = true}
+pingora-http = {workspace = true}
+pingora-limits = {workspace = true}
+pingora-load-balancing = {workspace = true}
+pingora-proxy = {workspace = true}
+regex = {version = "1"}
+rusqlite = {version = "0.35"}
+serde = {workspace = true}
+serde_json = {workspace = true}
+simple-useragent = {version = "0.1.2"}
+simplelog = {version = "0.12"}
+substring = {version = "1"}
+sysinfo = {version = "0.37"}
+tokio = {workspace = true}
+tokio-util = {version = "0.7", features = ["codec"]}
+toml = {version = "0.8"}
+url = {version = "2"}
+urlencoding = {version = "2"}
+
+[package.metadata.deb]
+assets = [
+  ["../../target/release/aigw", "/usr/bin/aigw", "755"],
+  ["../../target/aigw.1.gz", "/usr/share/man/man1/aigw.1.gz", "644"],
+  ["assets/aigw.toml.example", "/etc/aigw/aigw.toml.example", "600"],
+  ["assets/aigw.service", "/lib/systemd/system/aigw.service", "644"],
+  ["assets/aigw.target", "/lib/systemd/system/aigw.target", "644"],
+  ["assets/GeoLite2-Country.mmdb", "/etc/aigw/GeoLite2-Country.mmdb", "600"],
+]
+changelog = "assets/changelog.txt"
+depends = "libc6 (>= 2.23), libgcc1 (>= 1:6.0.1)"
+extended-description = """\
+ Lite AI Gateway."""
+license-file = ["LICENSE.md", "1"]
+maintainer-scripts = "assets/deb-scripts"
+section = "net"

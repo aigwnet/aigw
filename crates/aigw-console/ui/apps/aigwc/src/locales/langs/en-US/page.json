@@ -1,0 +1,34 @@
+{
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "codeLogin": "Code Login",
+    "qrcodeLogin": "Qr Code Login",
+    "forgetPassword": "Forget Password"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "traffic": "Traffic Analytics",
+    "monitor": "System Monitoring"
+  },
+  "cluster": {
+    "title": "Cluster",
+    "list": "Clusters List",
+    "new": "Add Cluster",
+    "edit": "Edit Cluster"
+  },
+  "site": {
+    "title": "Manage Sites",
+    "list": "Sites List",
+    "new": "Add New Site",
+    "edit": "Edit Site"
+  },
+  "user": {
+    "profile": "Profile",
+    "basic": "Personal Information",
+    "security": "Security Settings",
+    "password": "New Password",
+    "passwordUpdateInvalid": "The new password is the same as the old one, no update needed!",
+    "updateTip": "Update user profile successfully!"
+  }
+}

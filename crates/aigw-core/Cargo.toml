@@ -1,0 +1,32 @@
+[package]
+edition = "2024"
+name = "aigw-core"
+version = "0.1.0"
+
+[dependencies]
+ahash = {version = "0.8"}
+anyhow = {workspace = true}
+base64 = {workspace = true}
+byteorder = {version = "1"}
+bytes = {version = "1"}
+http = {version = "1"}
+lazy_static = {workspace = true}
+local-ip-address = {version = "0.6"}
+log = {workspace = true}
+pem = {version = "3"}
+pingora-core = {version = "0.6", features = ["openssl"]}
+pingora-http = {version = "0.6"}
+pingora-load-balancing = {workspace = true}
+prost = {version = "0.13"}
+protobuf = {version = "3"}
+regex = {version = "1"}
+ring = {version = "0.17"}
+serde = {version = "1", features = ["derive"]}
+serde_json = {version = "1"}
+substring = {version = "1"}
+sysinfo = {version = "0.37"}
+thiserror = {version = "2"}
+tokio = {workspace = true}
+
+[build-dependencies]
+prost-build = {version = "0.13"}

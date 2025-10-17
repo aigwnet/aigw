@@ -1,0 +1,22 @@
+aigwc(1)
+===========
+
+== Name
+aigwc - AI Gateway Console
+
+
+== SYNOPSIS
+
+*aigwc [options] [--config <file>] [--install]*
+
+
+== OPTIONS
+
+*--config <file>*::
+  Read configuration options from the specified file. Please see the section
+  *CONFIG FILES* for documentation on the file format.
+  If the same option is defined in the config file and as a parameter, the
+  parameter overrides the config file.
+
+*--install*::
+  If this option is set, the database will be initialized.

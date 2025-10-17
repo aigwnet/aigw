@@ -1,0 +1,22 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.dependencies]
+anyhow = {version = "1"}
+arc-swap = {version = "1.7"}
+base64 = {version = "0.22"}
+clap = {version = "4", features = ["derive"]}
+daemonize = {version = "0.5"}
+lazy_static = {version = "1"}
+log = {version = "0.4"}
+pingora-cache = {version = "0.6"}
+pingora-core = {version = "0.6", features = ["openssl"]}
+pingora-error = {version = "0.6"}
+pingora-http = {version = "0.6"}
+pingora-limits = {version = "0.6"}
+pingora-load-balancing = {version = "0.6"}
+pingora-proxy = {version = "0.6"}
+serde = {version = "1", features = ["derive"]}
+serde_json = {version = "1"}
+tokio = {version = "1", features = ["full"]}

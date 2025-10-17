@@ -1,0 +1,21 @@
+use rbatis::{
+    impl_delete, impl_insert, impl_select, impl_select_page, impl_update, rbdc::DateTime,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TbCluster {
+    pub id: Option<u64>,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub gmt_create: Option<DateTime>,
+    pub gmt_modified: Option<DateTime>,
+}
+impl_insert!(TbCluster {});
+impl_select!(TbCluster { select_all() => "`ORDER BY ID DESC`"});
+impl_select!(TbCluster { select_by_name(name: &str)  -> Option => "`WHERE name = #{name}`"});
+impl_select!(TbCluster { select_by_id(id: u64)  -> Option => "`WHERE id = #{id}`"});
+impl_delete!(TbCluster { delete_by_id(id: u64) => "`WHERE id = #{id}`"});
+impl_delete!(TbCluster { delete_by_name(name: &str) => "`WHERE name = #{name}`"});
+impl_select_page!(TbCluster{select_page() => "`ORDER BY ID DESC`"});
+impl_update!(TbCluster {update_by_id(id: u64) => "`where id = #{id}`"});

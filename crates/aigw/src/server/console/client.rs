@@ -1,0 +1,408 @@
+use std::{collections::HashMap, sync::Arc, time::Duration};
+
+use aigw_core::{
+    Buffer, Close, CryptoCore, DataAck, Frame, HandshakeInfo, LOCAL_IP, Signature, build_ack,
+    build_close, build_handshake_request, build_ping, parse_data, parse_handshake_response,
+    parse_pong, statistics,
+};
+use bytes::BytesMut;
+use log::{error, info};
+use sysinfo::System;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{
+        TcpStream,
+        tcp::{OwnedReadHalf, OwnedWriteHalf},
+    },
+    sync::{Mutex, RwLock, broadcast::Sender, mpsc},
+    time::Instant,
+};
+
+use crate::{server::storage::Storage, version::VERSION};
+
+use super::DataFramHandler;
+
+const RECONNECT_DELAY: Duration = Duration::from_secs(5);
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
+
+pub struct ConsoleClient {
+    data_handler: Arc<DataFramHandler>,
+    shutdown_tx: Arc<Sender<()>>,
+    address: String,
+    cluster: String,
+    sender: Arc<mpsc::Sender<Vec<u8>>>,
+    crypto: Arc<RwLock<Option<CryptoCore>>>,
+    signature: Arc<Signature>,
+}
+
+impl ConsoleClient {
+    pub fn new(
+        storage: Arc<Storage>,
+        shutdown_tx: Arc<Sender<()>>,
+        address: String,
+        password: &str,
+        cluster: String,
+        sender: Arc<mpsc::Sender<Vec<u8>>>,
+    ) -> Self {
+        let signature = Arc::new(Signature::new(password));
+        let crypto = Arc::new(RwLock::new(None));
+
+        Self {
+            data_handler: Arc::new(DataFramHandler::new(storage)),
+            shutdown_tx,
+            address,
+            cluster,
+            sender,
+            signature,
+            crypto,
+        }
+    }
+
+    pub async fn start(&self, rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>) {
+        let addr = &self.address;
+        let signature = &self.signature;
+        let sender = &self.sender;
+        loop {
+            match TcpStream::connect(addr).await {
+                Ok(stream) => {
+                    let r = ConsoleClient::run(
+                        self.data_handler.clone(),
+                        self.shutdown_tx.clone(),
+                        sender,
+                        rx.clone(),
+                        stream,
+                        addr,
+                        signature,
+                        self.crypto.clone(),
+                        self.cluster.clone(),
+                    )
+                    .await;
+                    match r {
+                        Ok(exit) => {
+                            if exit {
+                                let _ = self.close().await;
+                                break;
+                            }
+                        }
+                        Err(e) => {
+                            error!(
+                                "Run error: {}. Retrying in {}s...",
+                                e,
+                                RECONNECT_DELAY.as_secs()
+                            );
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        "Connection failed: {}. Retrying in {}s...",
+                        e,
+                        RECONNECT_DELAY.as_secs()
+                    );
+                    tokio::time::sleep(RECONNECT_DELAY).await;
+                }
+            }
+        }
+        info!("Dinosaur client exited.")
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn run(
+        data_handler: Arc<DataFramHandler>,
+        shutdown_tx: Arc<Sender<()>>,
+        sender: &Arc<mpsc::Sender<Vec<u8>>>,
+        rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>,
+        stream: TcpStream,
+        addr: &str,
+        signature: &Signature,
+        crypto: Arc<RwLock<Option<CryptoCore>>>,
+        cluster: String,
+    ) -> anyhow::Result<bool> {
+        info!("Connected to {}", addr);
+        let (mut reader, mut writer) = stream.into_split();
+
+        let log_points = data_handler.storage.load_log_points().await?;
+        info!("Send handshake, log_points: {:?}", log_points);
+        // start handshake
+        let (private_key, ecdh_public_key) = CryptoCore::create_ecdh_keypair();
+
+        let mut sys = System::new_all();
+
+        // First we update all information of our `System` struct.
+        sys.refresh_all();
+
+        let info = os_info::get();
+        let mut os = info.to_string();
+        if let Some(r) = info.architecture() {
+            os += "/";
+            os += r;
+        }
+        if let Some(e) = info.edition() {
+            os += " (";
+            os += e;
+            os += ")";
+        }
+
+        let info = HandshakeInfo {
+            ip: LOCAL_IP.clone(),
+            cluster,
+            version: VERSION.to_string(),
+            os_name: info.os_type().to_string(),
+            os_version: info.version().to_string(),
+            os_arch: info.architecture().map_or("".to_string(), |s| s.to_owned()),
+            cpu_name: sys.cpus()[0].brand().to_string(),
+            cpu_vendor: sys.cpus()[0].vendor_id().to_string(),
+            cpu_frequency: sys.cpus()[0].frequency(),
+            cpu_nums: sys.cpus().len() as u32,
+        };
+
+        let buffer = build_handshake_request(signature, ecdh_public_key.bytes(), log_points, info)?;
+        writer.write_all(&buffer).await?;
+        writer.flush().await?;
+
+        let data_type = reader.read_u8().await?;
+        if data_type != Frame::HANDLESHAKE_RSP {
+            return Err(anyhow::anyhow!("handshake error."));
+        }
+
+        let length = reader.read_u32().await?;
+        let mut buf = BytesMut::with_capacity(65535);
+        unsafe {
+            buf.set_len(length as usize);
+        }
+        reader.read_exact(&mut buf).await?;
+
+        let response = parse_handshake_response(&buf, signature)?;
+        let new_crypto =
+            CryptoCore::new(private_key, &response.algorithm, &response.public_key_data);
+        {
+            *crypto.write().await = Some(new_crypto);
+        }
+        info!("Handshake successfully to {}", addr);
+
+        let crypto_for_hb = crypto.clone();
+        let sender_for_hb = sender.clone();
+        let storage = data_handler.storage.clone();
+        let mut heartbeat_handle = tokio::spawn(ConsoleClient::spawn_heartbeat(
+            storage,
+            sender_for_hb,
+            crypto_for_hb,
+        ));
+
+        let mut send_handle = tokio::spawn(ConsoleClient::spawn_send_task(writer, rx));
+
+        let crypto_for_r = crypto.clone();
+        let data_handler_for_r = data_handler.clone();
+        let sender_for_r = sender.clone();
+        let mut recv_handle = tokio::spawn(ConsoleClient::spawn_receive_task(
+            sender_for_r,
+            data_handler_for_r,
+            reader,
+            crypto_for_r,
+        ));
+
+        let mut shutdown = shutdown_tx.subscribe();
+        let r = tokio::select! {
+            _ = &mut send_handle => {
+                info!("Send task exited");
+                false
+            },
+            _ = &mut recv_handle => {
+                info!("Receive task exited");
+                false
+            },
+            _ = &mut heartbeat_handle => {
+                info!("Heartbeat task exited");
+                false
+            },
+            _ = shutdown.recv() => {
+                 info!("Shutting down dinosaur client.");
+                 true
+            }
+        };
+
+        send_handle.abort();
+        recv_handle.abort();
+        heartbeat_handle.abort();
+
+        Ok(r)
+    }
+
+    async fn spawn_heartbeat(
+        storage: Arc<Storage>,
+        tx: Arc<mpsc::Sender<Vec<u8>>>,
+        crypto: Arc<RwLock<Option<CryptoCore>>>,
+    ) {
+        // 如果本地没有任何同步点数据，建立连接的时候会去拉取全量，心跳包可以延迟发送，带全量数据拉取完整。
+        if let Ok(log_points) = storage.load_log_points().await {
+            if log_points.is_empty() {
+                tokio::time::sleep(Duration::from_secs(30)).await;
+            }
+        }
+
+        let mut interval =
+            tokio::time::interval_at(Instant::now() + Duration::from_secs(5), HEARTBEAT_INTERVAL);
+        let mut buffer = Buffer::new(32);
+        loop {
+            interval.tick().await;
+
+            let crypto = &*crypto.read().await;
+            if let Some(crypto) = crypto {
+                let log_points = storage.load_log_points().await.map_or(vec![], |v| v);
+                let now = chrono::Local::now();
+                let ts = now.naive_utc().and_utc().timestamp_millis();
+                info!(
+                    "Ping ==> : {}.{:03}, log_points: {:?}",
+                    now.format("%Y-%m-%d %H:%M:%S"),
+                    now.timestamp_subsec_millis(),
+                    log_points
+                );
+                let pv = storage.pv_swap();
+                let rt = if pv == 0 { 0 } else { storage.rt_swap() / pv };
+
+                let mut map = HashMap::new();
+                let mut http_code = HashMap::new();
+                http_code.insert("1xx".to_string(), storage.http_code_1xx_swap());
+                http_code.insert("2xx".to_string(), storage.http_code_2xx_swap());
+                http_code.insert("3xx".to_string(), storage.http_code_3xx_swap());
+                http_code.insert("4xx".to_string(), storage.http_code_4xx_swap());
+                http_code.insert("5xx".to_string(), storage.http_code_5xx_swap());
+
+                let mut http_source = HashMap::new();
+                http_source.insert("Pc".to_string(), storage.http_source_pc_swap());
+                http_source.insert("Pad".to_string(), storage.http_source_pad_swap());
+                http_source.insert("Mobile".to_string(), storage.http_source_mobile_swap());
+                http_source.insert("Bot".to_string(), storage.http_source_bot_swap());
+                http_source.insert("Unknown".to_string(), storage.http_source_unknown_swap());
+
+                let http_country = storage.countries();
+
+                map.insert("http_code", http_code);
+                map.insert("http_source", http_source);
+                map.insert("http_country", http_country.into());
+                let ext_info = serde_json::to_string(&map).map_or("{}".to_string(), |s| s);
+
+                let statistics =
+                    statistics(storage.tls_swap(), pv, rt, storage.error_swap(), ext_info).await;
+                match statistics {
+                    Ok(statistics) => {
+                        if let Ok(()) = build_ping(&mut buffer, crypto, ts, log_points, statistics)
+                        {
+                            let _ = tx.send(buffer[..].to_vec()).await;
+                        }
+                    }
+                    Err(err) => {
+                        error!("Statistics Error: {:?}", err);
+                    }
+                }
+            }
+        }
+    }
+
+    async fn spawn_send_task(mut writer: OwnedWriteHalf, rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>) {
+        let mut rx = rx.lock().await;
+        while let Some(msg) = rx.recv().await {
+            if let Err(e) = writer.write_all(&msg).await {
+                error!("Failed to send message: {}", e);
+                break;
+            }
+        }
+    }
+
+    async fn spawn_receive_task(
+        sender: Arc<mpsc::Sender<Vec<u8>>>,
+        data_handler: Arc<DataFramHandler>,
+        mut reader: OwnedReadHalf,
+        crypto: Arc<RwLock<Option<CryptoCore>>>,
+    ) -> anyhow::Result<()> {
+        let mut buffer = Buffer::new(32);
+        loop {
+            let data_type = reader.read_u8().await?;
+            let data_length = reader.read_u32().await?;
+            buffer.set_len(data_length as usize);
+            match reader.read_exact(buffer.message_mut()).await {
+                Ok(0) => {
+                    error!("Server disconnected");
+                    break;
+                }
+                Ok(_n) => {
+                    let crypto = &*crypto.read().await;
+                    if let Some(crypto) = crypto {
+                        if let Err(e) = ConsoleClient::handle(
+                            &sender,
+                            &data_handler,
+                            data_type,
+                            &mut buffer,
+                            crypto,
+                        )
+                        .await
+                        {
+                            error!("Handle data error, {:?}", e);
+                        }
+                    }
+
+                    buffer.clear();
+                }
+                Err(e) => {
+                    error!("Read error: {}", e);
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn handle(
+        sender: &mpsc::Sender<Vec<u8>>,
+        data_handler: &DataFramHandler,
+        data_type: u8,
+        buffer: &mut Buffer,
+        crypto: &CryptoCore,
+    ) -> anyhow::Result<()> {
+        match data_type {
+            Frame::HEARTBEAT_PONG => {
+                let pong = parse_pong(buffer, crypto)?;
+                let date = chrono::DateTime::from_timestamp_millis(pong.ts).unwrap();
+                info!(
+                    "Pong <== : {}.{:03}",
+                    date.format("%Y-%m-%d %H:%M:%S"),
+                    date.timestamp_subsec_millis()
+                );
+            }
+            Frame::DATA => {
+                let data = parse_data(buffer, crypto)?;
+                info!("Received Data");
+                data_handler.handle(&data).await?;
+
+                if let Some(log_point) = data.log_point {
+                    build_ack(
+                        buffer,
+                        DataAck {
+                            log_point: Some(log_point),
+                        },
+                        crypto,
+                    )?;
+                    if let Ok(()) = sender.send(buffer.as_ref().to_vec()).await {
+                        info!("Send ack: {}, {:?}", log_point.log_id, log_point.log_type);
+                    }
+                }
+            }
+            _ => {
+                error!("{:?} not supported.", data_type);
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn close(&self) -> anyhow::Result<()> {
+        let crypto = &*self.crypto.read().await;
+        if let Some(crypto) = crypto {
+            let mut buffer = Buffer::new(32);
+            build_close(&mut buffer, &Close {}, crypto)?;
+            self.sender.send(buffer.as_ref().to_vec()).await?;
+        }
+        info!("Send close to dinosaur server.");
+        Ok(())
+    }
+}
