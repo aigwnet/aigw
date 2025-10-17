@@ -1,2 +1,2 @@
 systemctl daemon-reload
-chmod 700 /etc/loong
+chmod 700 /etc/aigw

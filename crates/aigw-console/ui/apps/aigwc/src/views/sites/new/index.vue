@@ -50,7 +50,7 @@ const [Form, formApi] = useVbenForm({
     {
       component: 'Input',
       componentProps: {
-        placeholder: '/opt/loong/data/www/',
+        placeholder: '/opt/aigw/data/www/',
       },
       fieldName: 'root_dir',
       label: 'Root Directory',

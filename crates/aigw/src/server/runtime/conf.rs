@@ -3,12 +3,12 @@ use std::net::SocketAddr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LoongConfig {
+pub struct AigwConfig {
     basic: BasicConfig,
     console: ConsoleConfig,
 }
 
-impl LoongConfig {
+impl AigwConfig {
     pub fn basic(&self) -> &BasicConfig {
         &self.basic
     }

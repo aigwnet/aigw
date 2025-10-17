@@ -10,9 +10,9 @@ mod util;
 mod geo_lite;
 
 pub(crate) use cert::DynamicTlsAccept;
-pub(crate) use conf::LoongConfig;
+pub(crate) use conf::AigwConfig;
 pub(crate) use opt::ServerOpt;
-pub(crate) use proxy::LoongProxy;
+pub(crate) use proxy::AigwProxy;
 pub(crate) use util::*;
 pub(crate) use geo_lite::GeoLite;
 

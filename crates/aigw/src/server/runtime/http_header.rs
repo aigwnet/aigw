@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use super::{context::LoongCtx, get_hostname};
+use super::{context::AigwCtx, get_hostname};
 use bytes::BytesMut;
 use http::{HeaderName, HeaderValue};
 use once_cell::sync::Lazy;
@@ -58,7 +58,7 @@ pub static HTTP_HEADER_NAME_X_REQUEST_ID: Lazy<HeaderName> =
 pub fn convert_header_value(
     value: &HeaderValue,
     session: &Session,
-    ctx: &LoongCtx,
+    ctx: &AigwCtx,
 ) -> Option<HeaderValue> {
     let buf = value.as_bytes();
 
@@ -112,7 +112,7 @@ const HTTP_HEADER_PREFIX: &[u8] = b"$http_";
 const HTTP_HEADER_PREFIX_LEN: usize = HTTP_HEADER_PREFIX.len();
 
 #[inline]
-fn handle_special_headers(buf: &[u8], session: &Session, ctx: &LoongCtx) -> Option<HeaderValue> {
+fn handle_special_headers(buf: &[u8], session: &Session, ctx: &AigwCtx) -> Option<HeaderValue> {
     // Handle headers that reference other HTTP headers (e.g., $http_origin)
     if buf.starts_with(HTTP_HEADER_PREFIX) {
         return handle_http_header(buf, session);
@@ -147,7 +147,7 @@ fn handle_env_var(buf: &[u8]) -> Option<HeaderValue> {
 }
 
 #[inline]
-fn handle_context_value(buf: &[u8], ctx: &LoongCtx) -> Option<HeaderValue> {
+fn handle_context_value(buf: &[u8], ctx: &AigwCtx) -> Option<HeaderValue> {
     // Skip the ":" prefix and convert to context key
     let key = std::str::from_utf8(&buf[1..]).ok()?;
     // Pre-allocate buffer for value

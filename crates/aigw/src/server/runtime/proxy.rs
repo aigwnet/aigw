@@ -31,7 +31,7 @@ use simple_useragent::UserAgentParser;
 use substring::Substring;
 
 use crate::{
-    LoongConfig,
+    AigwConfig,
     server::{
         acme::Http01Handler,
         runtime::{
@@ -49,7 +49,7 @@ use crate::{
     },
 };
 
-use super::{context::LoongCtx, now_ms};
+use super::{context::AigwCtx, now_ms};
 
 static DEFAULT_PROXY_SET_HEADERS: Lazy<Vec<HttpHeader>> = Lazy::new(|| {
     convert_headers(&[
@@ -126,8 +126,8 @@ fn get_digest_detail(digest: &Digest) -> DigestDetail {
     }
 }
 
-pub struct LoongProxy {
-    config: Arc<LoongConfig>,
+pub struct AigwProxy {
+    config: Arc<AigwConfig>,
     /// Counter tracking total number of accepted connections since server start
     accepted: AtomicU64,
     /// Counter tracking number of currently active request processing operations
@@ -139,9 +139,9 @@ pub struct LoongProxy {
     geo_lite: Arc<GeoLite>,
 }
 
-impl LoongProxy {
+impl AigwProxy {
     pub fn new(
-        config: Arc<LoongConfig>,
+        config: Arc<AigwConfig>,
         storage: Arc<Storage>,
         geo_lite: Arc<GeoLite>,
         default_site: Arc<Site>,
@@ -160,11 +160,11 @@ impl LoongProxy {
 }
 
 #[async_trait]
-impl ProxyHttp for LoongProxy {
-    type CTX = LoongCtx;
+impl ProxyHttp for AigwProxy {
+    type CTX = AigwCtx;
 
     fn new_ctx(&self) -> Self::CTX {
-        LoongCtx::new()
+        AigwCtx::new()
     }
 
     fn init_downstream_modules(&self, modules: &mut HttpModules) {

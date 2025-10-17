@@ -54,7 +54,7 @@ impl Storage {
         if !db_path.exists() {
             fs::create_dir_all(&db_path)?;
         }
-        db_path.push("loong.db");
+        db_path.push("aigw.db");
 
         Ok(Self {
             data_dir: path,

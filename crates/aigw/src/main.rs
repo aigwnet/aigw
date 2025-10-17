@@ -9,7 +9,7 @@ mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
 
-use server::{LoongConfig, ServerOpt, Storage};
+use server::{AigwConfig, ServerOpt, Storage};
 use simplelog::{
     Color, ColorChoice, CombinedLogger, ConfigBuilder, Level, LevelFilter, SharedLogger,
     TermLogger, TerminalMode, WriteLogger,
@@ -17,7 +17,7 @@ use simplelog::{
 
 use crate::server::GeoLite;
 
-pub(crate) static SERVER: &str = "Loong";
+pub(crate) static SERVER: &str = "Aigw";
 
 lazy_static::lazy_static! {}
 
@@ -58,7 +58,7 @@ fn main() -> anyhow::Result<()> {
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
     } else {
-        "conf/loong.toml"
+        "conf/aigw.toml"
     };
 
     let geo_lite_file = if let Some(geo_lite_file) = args.geo_lite.as_ref() {
@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
     let get_lite = Arc::new(GeoLite::new(geo_lite_file)?);
 
     let config = fs::read_to_string(config_file)?;
-    let config: LoongConfig = toml::from_str(config.as_str())?;
+    let config: AigwConfig = toml::from_str(config.as_str())?;
 
     let storage = Arc::new(Storage::new(config.basic().data_dir().as_ref())?);
     storage.load_sites()?;

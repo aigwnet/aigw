@@ -15,8 +15,8 @@ use pingora_core::{
     tls::ssl::SslVersion,
 };
 use pingora_proxy::http_proxy_service_with_name;
-use runtime::{DynamicTlsAccept, LoongProxy};
-pub(crate) use runtime::{GeoLite, LoongConfig, ServerOpt};
+use runtime::{DynamicTlsAccept, AigwProxy};
+pub(crate) use runtime::{GeoLite, AigwConfig, ServerOpt};
 use shutdown::run_args;
 pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
@@ -25,7 +25,7 @@ use crate::server::console::DinosaurService;
 
 pub fn run(
     args: ServerOpt,
-    config: Arc<LoongConfig>,
+    config: Arc<AigwConfig>,
     storage: Arc<Storage>,
     geo_lite: Arc<GeoLite>,
 ) -> anyhow::Result<()> {
@@ -51,8 +51,8 @@ pub fn run(
         pid_file: args
             .pid_file
             .as_ref()
-            .map_or("/tmp/loong.pid".to_string(), |p| p.clone()),
-        upgrade_sock: "/tmp/loong_upgrade.sock".to_string(),
+            .map_or("/tmp/aigw.pid".to_string(), |p| p.clone()),
+        upgrade_sock: "/tmp/aigw_upgrade.sock".to_string(),
         user: args.user.clone(),
         group: args.group.clone(),
         daemon: args.daemon,
@@ -80,14 +80,14 @@ pub fn run(
     };
     let default_server = Arc::new(default_site);
 
-    let proxy = LoongProxy::new(
+    let proxy = AigwProxy::new(
         config.clone(),
         storage.clone(),
         geo_lite.clone(),
         default_server.clone(),
     );
 
-    let mut proxy_service_http = http_proxy_service_with_name(&main_conf, proxy, "Loong-http");
+    let mut proxy_service_http = http_proxy_service_with_name(&main_conf, proxy, "Aigw-http");
     if let Some(proxy) = proxy_service_http.app_logic_mut() {
         if let Some(opt) = &mut proxy.server_options {
             opt.h2c = true;
@@ -100,12 +100,12 @@ pub fn run(
     let addr = format!(":::{}", config.basic().http());
     proxy_service_http.add_tcp(addr.as_str());
 
-    let proxy = LoongProxy::new(config.clone(), storage.clone(), geo_lite, default_server);
+    let proxy = AigwProxy::new(config.clone(), storage.clone(), geo_lite, default_server);
     let dynamic_cert = DynamicTlsAccept::new(storage);
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
     tls_settings.enable_h2();
-    let mut proxy_service_https = http_proxy_service_with_name(&main_conf, proxy, "Loong-https");
+    let mut proxy_service_https = http_proxy_service_with_name(&main_conf, proxy, "Aigw-https");
     let addr = format!(":::{}", config.basic().https());
     proxy_service_https.add_tls_with_settings(addr.as_str(), None, tls_settings);
 

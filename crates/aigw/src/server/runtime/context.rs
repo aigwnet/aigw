@@ -62,7 +62,7 @@ fn format_duration(mut buf: BytesMut, ms: u64) -> BytesMut {
 }
 
 #[derive(Default)]
-pub struct LoongCtx {
+pub struct AigwCtx {
     /// Unique identifier for the connection, it should be unique among all existing connections of the same type
     pub connection_id: usize,
     /// Number of requests currently processing
@@ -127,7 +127,7 @@ pub struct LoongCtx {
     pub variables: Option<AHashMap<String, String>>,
 }
 
-impl LoongCtx {
+impl AigwCtx {
     pub fn new() -> Self {
         Self {
             created_at: now_ms(),

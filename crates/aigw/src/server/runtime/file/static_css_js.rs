@@ -1,5 +1,5 @@
-pub const BS_CSS_PATH: &str = "/.__loong__reserved/assets/dist/css/bootstrap.min.css";
-pub const BS_JS_PATH: &str = "/.__loong__reserved/assets/dist/js/bootstrap.bundle.min.js";
+pub const BS_CSS_PATH: &str = "/.__aigw__reserved/assets/dist/css/bootstrap.min.css";
+pub const BS_JS_PATH: &str = "/.__aigw__reserved/assets/dist/js/bootstrap.bundle.min.js";
 
 pub const BS_CSS: &str = r#"
 @charset "UTF-8";/*!
