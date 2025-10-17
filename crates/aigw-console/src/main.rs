@@ -74,7 +74,7 @@ fn main() -> anyhow::Result<()> {
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
     } else {
-        "conf/aigwc.toml"
+        "crates/aigw-console/conf/aigwc.toml"
     };
 
     let config = fs::read_to_string(config_file)?;

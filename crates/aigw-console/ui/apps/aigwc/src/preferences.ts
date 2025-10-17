@@ -13,17 +13,17 @@ export const overridesPreferences = defineOverridesPreferences({
 
   },
   copyright: {
-    companyName: "Hidev",
+    companyName: "Aigw",
     /** 版权公司名链接 */
-    companySiteLink: "https://hidev.net",
+    companySiteLink: "https://aigw.net",
     /** 版权日期 */
     date: new Date().getFullYear().toString(),
     /** 版权是否可见 */
     enable: true,
     /** 备案号 */
-    icp: "浙ICP备17009944号-2",
+    icp: "",
     /** 备案号链接 */
-    icpLink: "https://beian.miit.gov.cn/",
+    icpLink: "",
     /** 设置面板是否显示*/
     settingShow: true,
   },

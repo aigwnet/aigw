@@ -9,7 +9,14 @@
   "dashboard": {
     "title": "概览",
     "traffic": "流量分析",
-    "monitor": "监控大盘"
+    "monitor": "监控大盘",
+    "trafficTip": "分析集群流量的多维度指标：PV量级（分钟/小时/天）、来源与分布。",
+    "trafficPvM": "分钟访问量",
+    "trafficPvH": "小时访问量",
+    "trafficPvD": "日访问量",
+    "trafficSC": "状态码",
+    "trafficSrc": "访问来源",
+    "trafficGeo": "流量分布"
   },
   "cluster": {
     "title": "集群",

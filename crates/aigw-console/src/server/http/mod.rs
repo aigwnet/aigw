@@ -60,7 +60,7 @@ pub async fn run(
     let ui = if let Some(ui) = &config.server.ui {
         ui.clone()
     } else {
-        "ui/dist/".to_string()
+        "ui/apps/aigcw/dist/".to_string()
     };
 
     let auth_layer = axum::middleware::from_fn_with_state(auth_handler.clone(), Auth::auth_filter);

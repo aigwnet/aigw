@@ -9,7 +9,14 @@
   "dashboard": {
     "title": "Dashboard",
     "traffic": "Traffic Analytics",
-    "monitor": "System Monitoring"
+    "monitor": "System Monitoring",
+    "trafficTip": "Monitor cluster traffic by multiple dimensions: PV volume (minute/hour/day) with source and distribution breakdown.",
+    "trafficPvM": "Minute PV",
+    "trafficPvH": "Hourly PV",
+    "trafficPvD": "Daily PV",
+    "trafficSC": "Status Code",
+    "trafficSrc": "Traffic Source",
+    "trafficGeo": "Geographic"
   },
   "cluster": {
     "title": "Cluster",

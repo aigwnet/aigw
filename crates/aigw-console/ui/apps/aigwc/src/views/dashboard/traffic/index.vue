@@ -3,11 +3,11 @@ import { ref } from 'vue';
 import {
     Page, AnalysisChartCard, AnalysisChartsTabs
 } from '@vben/common-ui';
-
+import { $t } from '#/locales';
 import { getAllClustersApi, getAnalyticsTraffic, getAnalyticsTrafficExt, type AnalyticsApi } from '#/api';
 import { useVbenForm } from '#/adapter/form';
 import type { TabOption } from '@vben/types';
-import TrafficWorldMap from './world-map.vue';
+import TrafficWorldMap from './trraffic-world-map.vue';
 import TrafficLine from './traffic-line.vue';
 import TrafficBar from './traffic-bar.vue';
 import TrafficCode from './traffic-code.vue';
@@ -65,15 +65,15 @@ const [ClusterForm, _formApi] = useVbenForm({
 
 const chartTabs: TabOption[] = [
     {
-        label: '分钟访问量',
+        label: $t('page.dashboard.trafficPvM'),
         value: 'trends_m',
     },
     {
-        label: '小时访问量',
+        label: $t('page.dashboard.trafficPvH'),
         value: 'trends_h',
     },
     {
-        label: '日访问量',
+        label: $t('page.dashboard.trafficPvD'),
         value: 'visits',
     },
 ];
@@ -86,7 +86,7 @@ const chartTabs: TabOption[] = [
         <template #description>
             <div class="text-muted-foreground">
                 <p>
-                    查看集群访问情况、集群状态以及服务器详情等信息。
+                    {{ $t('page.dashboard.trafficTip') }}
                 </p>
             </div>
         </template>
@@ -109,15 +109,15 @@ const chartTabs: TabOption[] = [
         </div>
         <div v-if="isTrafficExtLoaded">
             <div class="w-full md:flex">
-                <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" title="访问分布">
+                <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" :title="$t('page.dashboard.trafficSC')">
                     <TrafficCode :data="analyticsTrafficExt" />
                 </AnalysisChartCard>
-                <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" title="访问来源">
-                    <TrafficSource :data="analyticsTrafficExt"/>
+                <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" :title="$t('page.dashboard.trafficSrc')">
+                    <TrafficSource :data="analyticsTrafficExt" />
                 </AnalysisChartCard>
             </div>
-             <div class="w-full md:flex">
-                <AnalysisChartCard class="w-full mt-5" title="流量分布">
+            <div class="w-full md:flex">
+                <AnalysisChartCard class="w-full mt-5" :title="$t('page.dashboard.trafficGeo')">
                     <TrafficWorldMap :data="analyticsTrafficExt" />
                 </AnalysisChartCard>
             </div>

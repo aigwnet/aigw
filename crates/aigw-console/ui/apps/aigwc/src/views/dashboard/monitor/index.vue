@@ -9,6 +9,7 @@ import { useVbenForm } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { useRouter } from 'vue-router';
+import { $t } from '#/locales';
 
 import MonitorCpu from './monitor-cpu.vue';
 import MonitorCpuLoad from './monitor-cpu-load.vue';
