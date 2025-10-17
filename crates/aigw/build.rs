@@ -13,8 +13,11 @@ fn main() {
     let s = VERSION_TEMPLATE.replace("{version}", &version);
     fs::write(dest_path, s).unwrap();
 
-    // Process manpage using asciidoctor command
+    if !fs::exists("target").unwrap() {
+        fs::create_dir("target").unwrap();
+    }
 
+    // Process manpage using asciidoctor command
     fs::create_dir_all(&out_dir).unwrap();
     fs::copy("aigw.adoc", Path::new(&out_dir).join("aigw.adoc")).unwrap();
     match Command::new("asciidoctor")
@@ -28,11 +31,7 @@ fn main() {
                 .current_dir(&Path::new(&out_dir))
                 .status()
                 .unwrap();
-            fs::copy(
-                Path::new(&out_dir).join("aigw.1.gz"),
-                "../../target/aigw.1.gz",
-            )
-            .unwrap();
+            fs::copy(Path::new(&out_dir).join("aigw.1.gz"), "target/aigw.1.gz").unwrap();
         }
         Err(err) => {
             println!("cargo:warning=Error building manpage: {}", err);

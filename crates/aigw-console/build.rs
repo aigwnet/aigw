@@ -1,7 +1,10 @@
 use std::{env, fs, path::Path, process::Command};
 
 fn main() {
-  
+    if !fs::exists("target").unwrap() {
+        fs::create_dir("target").unwrap();
+    }
+
     // install packages
     match Command::new("pnpm")
         .args(&["install"])
@@ -21,7 +24,11 @@ fn main() {
         .status()
     {
         Ok(_) => {
-            fs::copy(Path::new("./ui/apps/aigwc/dist.zip"), "../../target/aigwc.ui.zip").unwrap();
+            fs::copy(
+                Path::new("./ui/apps/aigwc/dist.zip"),
+                "./target/aigwc.ui.zip",
+            )
+            .unwrap();
         }
         Err(err) => {
             panic!("npm run build error. {:?}", err);
@@ -45,7 +52,11 @@ fn main() {
                 .current_dir(&Path::new(&out_dir))
                 .status()
                 .unwrap();
-            fs::copy(Path::new(&out_dir).join("aigwc.1.gz"), "../../target/aigwc.1.gz").unwrap();
+            fs::copy(
+                Path::new(&out_dir).join("aigwc.1.gz"),
+                "./target/aigwc.1.gz",
+            )
+            .unwrap();
         }
         Err(err) => {
             println!("cargo:warning=Error building manpage: {}", err);
