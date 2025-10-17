@@ -145,7 +145,7 @@ fn start(
         server::http::run(sender_for_http, database_client_for_http, config_for_http).await
     });
 
-    // start to broadcast changelog to other dinosaur servers.
+    // start to broadcast changelog to other aigw console servers.
     let database_client_for_broadcast = database_client.clone();
     rt.spawn(
         async move { server::broadcast::broadcast(database_client_for_broadcast, receiver).await },

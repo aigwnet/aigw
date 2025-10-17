@@ -10,7 +10,7 @@ pub(crate) mod tb_backend;
 #[allow(clippy::too_many_arguments)]
 pub(crate) mod tb_change_log;
 pub(crate) mod tb_cluster;
-pub(crate) mod tb_dinosaur;
+pub(crate) mod tb_console;
 pub(crate) mod tb_location;
 pub(crate) mod tb_lock;
 pub(crate) mod tb_server;

@@ -3,7 +3,49 @@
 image::images/database.svg[]  
 
 
-== tb_server
+== tb_cluster
+
+[cols="1,1,1,1,2"]
+|===
+
+|Name 
+|Type
+|Length
+|Not Null
+|Comment
+
+|id
+|bigint
+|
+|Yes
+|Primary Key
+
+|name
+|VARCHAR
+|255
+|Yes
+|
+
+|description
+|VARCHAR
+|4096
+|Yes
+|
+
+|gmt_create
+|TIMESTAMP
+|3
+|Yes
+|
+
+|gmt_modified
+|TIMESTAMP
+|3
+|Yes
+|
+|=== 
+
+== tb_site
 
 [cols="1,1,1,1,2"]
 |===
@@ -18,6 +60,12 @@ image::images/database.svg[]
 |
 |Yes
 |Primary Key
+
+|cluster_name
+|VARCHAR
+|255
+|Yes
+|
 
 |name
 |VARCHAR
@@ -110,9 +158,15 @@ image::images/database.svg[]
 |Yes
 |Primary Key
 
-|server_id
+|site_id
 |bigint
 |
+|Yes
+|
+
+|location
+|VARCHAR
+|255
 |Yes
 |
 
@@ -256,7 +310,7 @@ image::images/database.svg[]
 |
 |=== 
 
-== tb_dinosaur
+== tb_console
 
 [cols="1,1,1,1,2"]
 |===
@@ -288,6 +342,55 @@ image::images/database.svg[]
 |last_active_time
 |TIMESTAMP
 |3
+|Yes
+|
+
+|gmt_create
+|TIMESTAMP
+|3
+|Yes
+|
+
+|gmt_modified
+|TIMESTAMP
+|3
+|Yes
+|
+|=== 
+
+
+== tb_lock
+
+[cols="1,1,1,1,2"]
+|===
+
+|Name 
+|Type
+|Length
+|Not Null
+|Comment
+
+|id
+|bigint
+|
+|Yes
+|Primary Key
+
+|lock_key
+|VARCHAR
+|255
+|Yes
+|
+
+|host
+|VARCHAR
+|255
+|Yes
+|
+
+|expires_at
+|TIMESTAMP
+|
 |Yes
 |
 

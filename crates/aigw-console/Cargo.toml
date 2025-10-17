@@ -41,9 +41,9 @@ tower-http = {version = "0.6", features = ["fs", "trace"]}
 
 [package.metadata.deb]
 assets = [
-  ["../../target/release/aigw-console", "/usr/bin/aigwc", "755"],
-  ["../../target/aigwc.ui.zip", "/etc/aigw/aigwc.ui.zip", "644"],
-  ["../../target/aigwc.1.gz", "/usr/share/man/man1/aigwc.1.gz", "644"],
+  ["target/release/aigw-console", "/usr/bin/aigwc", "755"],
+  ["target/aigwc.ui.zip", "/etc/aigw/aigwc.ui.zip", "644"],
+  ["target/aigwc.1.gz", "/usr/share/man/man1/aigwc.1.gz", "644"],
   ["assets/aigwc.toml.example", "/etc/aigw/aigwc.toml.example", "600"],
   ["assets/aigwc.service", "/lib/systemd/system/dinoaigwcsaur.service", "644"],
   ["assets/aigwc.target", "/lib/systemd/system/aigwc.target", "644"],

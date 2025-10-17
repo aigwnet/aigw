@@ -32,7 +32,7 @@ pub fn run(
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let shutdown_tx = Arc::new(shutdown_tx);
 
-    let dinosaur_service = AigwConsoleService::new(
+    let aigwc_service = AigwConsoleService::new(
         storage.clone(),
         shutdown_tx.clone(),
         config.console().address().to_string(),
@@ -112,7 +112,7 @@ pub fn run(
     server.bootstrap();
     server.add_service(proxy_service_http);
     server.add_service(proxy_service_https);
-    server.add_service(dinosaur_service);
+    server.add_service(aigwc_service);
 
     server.run(run_args(shutdown_tx));
     //

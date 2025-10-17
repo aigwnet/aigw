@@ -15,6 +15,157 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
+-- Table structure for tb_analytics_monitor
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_analytics_monitor`;
+CREATE TABLE `tb_analytics_monitor` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `uptime` bigint NOT NULL,
+  `cpu` double NOT NULL,
+  `cpu_current_process` double NOT NULL,
+  `cpu_load_one` double NOT NULL,
+  `cpu_load_five` double NOT NULL,
+  `cpu_load_fifteen` double NOT NULL,
+  `mem_used` bigint NOT NULL,
+  `mem_free` bigint NOT NULL,
+  `swap_used` bigint NOT NULL,
+  `swap_free` bigint NOT NULL,
+  `disk_used` bigint NOT NULL,
+  `disk_free` bigint NOT NULL,
+  `io_read` bigint NOT NULL,
+  `io_written` bigint NOT NULL,
+  `net_send` bigint NOT NULL,
+  `net_received` bigint NOT NULL,
+  `rt` bigint NOT NULL,
+  `error` bigint NOT NULL,
+  `gmt_create` timestamp(3) NOT NULL,
+  `gmt_modified` timestamp(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_cluster_name_ip` (`cluster_name`,`ip`) USING BTREE,
+  KEY `idx_cluster_gmt_create` (`cluster_name`,`gmt_create`),
+  KEY `idx_gmt_create` (`gmt_create`),
+  CONSTRAINT `tb_analytics_monitor_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_analytics_monitor_cluster
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_analytics_monitor_cluster`;
+CREATE TABLE `tb_analytics_monitor_cluster` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cpu` double NOT NULL,
+  `cpu_current_process` double NOT NULL,
+  `cpu_load_one` double NOT NULL,
+  `cpu_load_five` double NOT NULL,
+  `cpu_load_fifteen` double NOT NULL,
+  `mem` double NOT NULL,
+  `swap` double NOT NULL,
+  `disk` double NOT NULL,
+  `io_read` bigint NOT NULL,
+  `io_written` bigint NOT NULL,
+  `net_send` bigint NOT NULL,
+  `net_received` bigint NOT NULL,
+  `rt` bigint NOT NULL,
+  `error` bigint NOT NULL,
+  `gmt_create` timestamp NOT NULL,
+  `gmt_modified` timestamp NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_cluster_name_gmt_create` (`cluster_name`,`gmt_create`) USING BTREE,
+  CONSTRAINT `tb_analytics_monitor_cluster_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_analytics_monitor_cluster_hour
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_analytics_monitor_cluster_hour`;
+CREATE TABLE `tb_analytics_monitor_cluster_hour` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cpu` double NOT NULL,
+  `cpu_current_process` double NOT NULL,
+  `cpu_load_one` double NOT NULL,
+  `cpu_load_five` double NOT NULL,
+  `cpu_load_fifteen` double NOT NULL,
+  `mem` double NOT NULL,
+  `swap` double NOT NULL,
+  `disk` double NOT NULL,
+  `io_read` bigint NOT NULL,
+  `io_written` bigint NOT NULL,
+  `net_send` bigint NOT NULL,
+  `net_received` bigint NOT NULL,
+  `rt` bigint NOT NULL,
+  `error` bigint NOT NULL,
+  `gmt_create` timestamp NOT NULL,
+  `gmt_modified` timestamp NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_cluster_name_gmt_create` (`cluster_name`,`gmt_create`) USING BTREE,
+  CONSTRAINT `tb_analytics_monitor_cluster_hour_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_analytics_traffic
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_analytics_traffic`;
+CREATE TABLE `tb_analytics_traffic` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pv` bigint NOT NULL,
+  `tls` bigint NOT NULL,
+  `http_country` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `http_code` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `http_source` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `gmt_create` timestamp(3) NOT NULL,
+  `gmt_modified` timestamp(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_cluster_name_gmt_create` (`cluster_name`,`gmt_create`),
+  KEY `idx_gmt_create` (`gmt_create`),
+  CONSTRAINT `tb_analytics_traffic_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_analytics_traffic_cluster
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_analytics_traffic_cluster`;
+CREATE TABLE `tb_analytics_traffic_cluster` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pv` bigint NOT NULL,
+  `tls` bigint NOT NULL,
+  `http_country` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `http_code` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `http_source` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `gmt_create` timestamp NOT NULL,
+  `gmt_modified` timestamp NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_cluster_name_gmt_create` (`cluster_name`,`gmt_create`),
+  CONSTRAINT `tb_analytics_traffic_cluster_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_analytics_traffic_cluster_hour
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_analytics_traffic_cluster_hour`;
+CREATE TABLE `tb_analytics_traffic_cluster_hour` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pv` bigint NOT NULL,
+  `tls` bigint NOT NULL,
+  `http_country` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `http_code` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `http_source` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `gmt_create` timestamp(3) NOT NULL,
+  `gmt_modified` timestamp(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_cluster_name_gmt_create` (`cluster_name`,`gmt_create`),
+  KEY `idx_gmt_create` (`gmt_create`),
+  CONSTRAINT `tb_analytics_traffic_cluster_hour_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
 -- Table structure for tb_backend
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_backend`;
@@ -65,10 +216,10 @@ CREATE TABLE `tb_cluster` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
--- Table structure for tb_dinosaur
+-- Table structure for tb_console
 -- ----------------------------
-DROP TABLE IF EXISTS `tb_dinosaur`;
-CREATE TABLE `tb_dinosaur` (
+DROP TABLE IF EXISTS `tb_console`;
+CREATE TABLE `tb_console` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `host` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `port` int NOT NULL,
@@ -105,6 +256,44 @@ CREATE TABLE `tb_location` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_idx_site_loc` (`site_id`,`location`),
   CONSTRAINT `tb_location_ibfk_1` FOREIGN KEY (`site_id`) REFERENCES `tb_site` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_lock
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_lock`;
+CREATE TABLE `tb_lock` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `lock_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `host` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `gmt_create` timestamp(3) NOT NULL,
+  `gmt_modified` timestamp(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_key` (`lock_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for tb_server
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_server`;
+CREATE TABLE `tb_server` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `version` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `os_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `os_version` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `os_arch` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cpu_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cpu_vendor` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cpu_frequency` bigint NOT NULL,
+  `cpu_nums` int NOT NULL,
+  `gmt_create` timestamp(3) NOT NULL,
+  `gmt_modified` timestamp(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_cluster_name_ip` (`cluster_name`,`ip`) USING BTREE,
+  CONSTRAINT `tb_server_ibfk_1` FOREIGN KEY (`cluster_name`) REFERENCES `tb_cluster` (`name`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
@@ -150,6 +339,21 @@ CREATE TABLE `tb_site` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
+-- Table structure for tb_task
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_task`;
+CREATE TABLE `tb_task` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` int NOT NULL,
+  `last_time` timestamp(3) NOT NULL,
+  `gmt_create` timestamp(3) NOT NULL,
+  `gmt_modified` timestamp(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_name_type` (`name`,`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
 -- Table structure for tb_user
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_user`;
@@ -168,6 +372,7 @@ CREATE TABLE `tb_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
 
 "#;
 
