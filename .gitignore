@@ -1,11 +1,12 @@
 target/
-conf
-data
+conf/
+data/
 Cargo.lock
 .turbo/
 node_modules
 .DS_Store
 __MACOSX/
+tmp/
 
 # Editor directories and files
 .vscode/*

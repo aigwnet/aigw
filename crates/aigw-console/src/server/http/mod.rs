@@ -13,7 +13,7 @@ use tokio::sync::mpsc::Sender;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
-    DatabaseClient, AigwConsoleConfig,
+    AigwConsoleConfig, DatabaseClient,
     server::http::{
         analytics::HttpApiAnalytics,
         auth::{Auth, AuthHandler},
@@ -56,12 +56,6 @@ pub async fn run(
     };
 
     let auth_handler = Arc::new(AuthHandler::new(database_client));
-
-    let ui = if let Some(ui) = &config.server.ui {
-        ui.clone()
-    } else {
-        "ui/apps/aigcw/dist/".to_string()
-    };
 
     let auth_layer = axum::middleware::from_fn_with_state(auth_handler.clone(), Auth::auth_filter);
 
@@ -145,12 +139,15 @@ pub async fn run(
             get(HttpApiAnalytics::analytics_traffic_ext).layer(auth_layer.clone()),
         )
         .with_state(api_context)
-        .fallback_service(ServeDir::new(&ui))
+        .fallback_service(ServeDir::new(&config.server.ui))
         .layer(TraceLayer::new_for_http())
         .into_make_service_with_connect_info::<SocketAddr>();
 
     let addr = "127.0.0.1:".to_string() + config.server.http.port.to_string().as_str();
-    info!("Http server listening on: {}. ui directory: {}", addr, ui);
+    info!(
+        "Http server listening on: {}. ui directory: {}",
+        addr, &config.server.ui
+    );
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 

@@ -74,13 +74,15 @@ fn main() -> anyhow::Result<()> {
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
     } else {
-        "crates/aigw-console/conf/aigwc.toml"
+        "conf/aigwc.toml"
     };
 
     let config = fs::read_to_string(config_file)?;
     let mut config: AigwConsoleConfig = toml::from_str(config.as_str())?;
     if let Some(ui) = &args.ui {
-        config.server.ui = Some(ui.clone());
+        config.server.ui = ui.clone();
+    } else {
+        config.server.ui = "crates/aigw-console/ui/apps/aigwc/dist/".to_string();
     }
 
     let json = serde_json::to_string_pretty(&config)?;

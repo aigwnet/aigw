@@ -58,7 +58,7 @@ fn main() -> anyhow::Result<()> {
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
     } else {
-        "crates/aigw/conf/aigw.toml"
+        "conf/aigw.toml"
     };
 
     let geo_lite_file = if let Some(geo_lite_file) = args.geo_lite.as_ref() {

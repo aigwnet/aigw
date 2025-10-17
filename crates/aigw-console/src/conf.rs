@@ -19,7 +19,7 @@ pub(crate) struct ServerConfig {
     pub(crate) http: HttpConfig,
     pub(crate) boradcast: BoradcastConfig,
     pub(crate) key: String,
-    pub(crate) ui: Option<String>,
+    pub(crate) ui: String,
 }
 
 #[derive(Deserialize, Serialize)]
