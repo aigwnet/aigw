@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="-432 -5 1224 870" width="1224" height="870">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="-432 -5 1224 870" width="1224" height="870">
   <defs>
     <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="StickArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-5 -3 6 6" markerWidth="6" markerHeight="6" color="black">
       <g>
@@ -48,9 +48,10 @@
     </linearGradient>
     <linearGradient id="Obj_Gradient_6" xl:href="#Gradient_6" gradientTransform="translate(-444.3525 211.05582) rotate(25) scale(170.10236)"/>
   </defs>
-  <g id="Canvas_1" fill="none" fill-opacity="1" stroke="none" stroke-opacity="1" stroke-dasharray="none">
-    <title>Canvas 1</title>
-    <g id="Canvas_1_Layer_1">
+  <g id="aigw" stroke-opacity="1" stroke-dasharray="none" fill-opacity="1" fill="none" stroke="none">
+    <title>aigw</title>
+    <rect fill="white" x="-432" y="-5" width="1224" height="870"/>
+    <g id="aigw_Layer_1">
       <title>Layer 1</title>
       <g id="Group_2">
         <title>server</title>
@@ -86,15 +87,13 @@
         <line x1="129.975" y1="732.2336" x2="129.975" y2="796.1818" marker-start="url(#StickArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
       </g>
       <g id="Graphic_13">
-        <text transform="translate(69.391 147.36635)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="731859e-18" y="15" xml:space="preserve">Loong (Gateway)</tspan>
+        <text transform="translate(73.687 147.36635)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="4689582e-19" y="15" xml:space="preserve">Lite AI Gateway</tspan>
         </text>
       </g>
       <g id="Graphic_14">
-        <text transform="translate(213.76885 640.1096)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="42632564e-20" y="17" xml:space="preserve">Dinosa</tspan>
-          <tspan font-family="PingFang SC" font-size="16" fill="black" y="17" xml:space="preserve">u</tspan>
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" y="17" xml:space="preserve">r (Config Server)</tspan>
+        <text transform="translate(213.21685 640.1096)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="8526513e-20" y="15" xml:space="preserve">AIGWC (Console Server)</tspan>
         </text>
       </g>
       <g id="Line_15">
@@ -190,28 +189,23 @@
         </g>
       </g>
       <g id="Graphic_51">
-        <text transform="translate(147.73545 372.18148)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="47606363e-20" y="15" xml:space="preserve">1.Add Server</tspan>
+        <text transform="translate(157.06346 372.18148)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15" xml:space="preserve">1.Add Site</tspan>
         </text>
       </g>
       <g id="Graphic_53">
-        <text transform="translate(147.73546 406.5679)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="7105427e-19" y="15" xml:space="preserve">2.Delete Server</tspan>
+        <text transform="translate(157.06345 406.5679)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15" xml:space="preserve">2.Delete Site</tspan>
         </text>
       </g>
       <g id="Graphic_54">
-        <text transform="translate(147.73545 440.9543)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15" xml:space="preserve">3.Update Server Certificate</tspan>
+        <text transform="translate(157.06345 440.9543)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="68922645e-20" y="15" xml:space="preserve">3.Update Site</tspan>
         </text>
       </g>
       <g id="Graphic_55">
-        <text transform="translate(147.73546 475.3407)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="17053026e-20" y="15" xml:space="preserve">4.Add Server Backend</tspan>
-        </text>
-      </g>
-      <g id="Graphic_56">
-        <text transform="translate(147.73545 509.72714)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="39790393e-20" y="15" xml:space="preserve">5.Delete Server Backend</tspan>
+        <text transform="translate(157.06345 475.3407)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15" xml:space="preserve">4.Add Acme</tspan>
         </text>
       </g>
       <g id="Graphic_58">

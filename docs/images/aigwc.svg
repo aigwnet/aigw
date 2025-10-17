@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="-853 163 1352 1156" width="1352" height="1156">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="-853 163 1350 1156" width="1350" height="1156">
   <defs>
     <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
       <g>
@@ -13,10 +13,10 @@
       </g>
     </marker>
   </defs>
-  <g id="dinosaur" fill="none" stroke-opacity="1" stroke-dasharray="none" fill-opacity="1" stroke="none">
-    <title>dinosaur</title>
-    <rect fill="white" x="-853" y="163" width="1352" height="1156"/>
-    <g id="dinosaur_Layer_1">
+  <g id="aigwc" stroke-opacity="1" stroke-dasharray="none" fill-opacity="1" fill="none" stroke="none">
+    <title>aigwc</title>
+    <rect fill="white" x="-853" y="163" width="1350" height="1156"/>
+    <g id="aigwc_Layer_1">
       <title>Layer 1</title>
       <g id="Group_3">
         <title>server</title>
@@ -25,8 +25,8 @@
         </g>
       </g>
       <g id="Graphic_2">
-        <text transform="translate(-255.08 232.11975)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Dinosaur </tspan>
+        <text transform="translate(-249.736 232.11975)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGWC </tspan>
         </text>
       </g>
       <g id="Group_9">
@@ -36,8 +36,8 @@
         </g>
       </g>
       <g id="Graphic_8">
-        <text transform="translate(-255.08 648.1693)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Dinosaur </tspan>
+        <text transform="translate(-249.736 648.1693)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGWC </tspan>
         </text>
       </g>
       <g id="Graphic_11">
@@ -230,33 +230,33 @@
         </text>
       </g>
       <g id="Graphic_62">
-        <text transform="translate(443.6705 218.10673)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Loong </tspan>
+        <text transform="translate(445.60647 218.10673)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGW </tspan>
         </text>
       </g>
       <g id="Graphic_63">
-        <text transform="translate(443.6705 413.44527)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Loong </tspan>
+        <text transform="translate(445.60647 413.44527)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGW </tspan>
         </text>
       </g>
       <g id="Graphic_64">
-        <text transform="translate(443.6705 634.1563)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Loong </tspan>
+        <text transform="translate(445.60647 634.1563)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGW </tspan>
         </text>
       </g>
       <g id="Graphic_65">
-        <text transform="translate(443.6705 829.4948)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Loong </tspan>
+        <text transform="translate(445.60647 829.4948)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGW </tspan>
         </text>
       </g>
       <g id="Graphic_66">
-        <text transform="translate(443.6705 1050.2059)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Loong </tspan>
+        <text transform="translate(445.60647 1050.2059)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGW </tspan>
         </text>
       </g>
       <g id="Graphic_67">
-        <text transform="translate(443.6705 1245.5444)" fill="black">
-          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">Loong </tspan>
+        <text transform="translate(445.60647 1245.5444)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="2.224" y="15" xml:space="preserve">AIGW </tspan>
         </text>
       </g>
     </g>

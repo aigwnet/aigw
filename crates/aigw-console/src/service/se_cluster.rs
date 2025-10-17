@@ -61,8 +61,8 @@ pub async fn find_cluster_by_page(
     let r: rbatis::Page<TbCluster> = TbCluster::select_page(rb, page_request).await?;
     let mut page = Page::new(r.page_no, r.page_size, r.total, vec![]);
     for cluster in r.records {
-        let loong_server = convert_tb_cluster(&cluster);
-        page.items.push(loong_server);
+        let cluster = convert_tb_cluster(&cluster);
+        page.items.push(cluster);
     }
     Ok(page)
 }

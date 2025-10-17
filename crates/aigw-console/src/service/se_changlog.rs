@@ -55,7 +55,7 @@ pub async fn do_build_change_log(
     })
 }
 
-pub async fn send_all_servers_to_loong(
+pub async fn send_all_sites_to_aigw(
     connection: &Arc<Mutex<Connection>>,
     rb: &RBatis,
 ) -> anyhow::Result<()> {
@@ -108,7 +108,7 @@ pub async fn send_all_servers_to_loong(
     Ok(())
 }
 
-pub async fn send_change_logs_to_loong(
+pub async fn send_change_logs_to_aigw(
     connection: &Arc<Mutex<Connection>>,
     rb: &RBatis,
     log_points: &Vec<LogPoint>,

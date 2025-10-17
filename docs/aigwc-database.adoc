@@ -285,12 +285,6 @@ image::images/database.svg[]
 |Yes
 |
 
-|type
-|int
-|
-|Yes
-|1 loong host, 2 dinosaur host
-
 |last_active_time
 |TIMESTAMP
 |3

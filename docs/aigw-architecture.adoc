@@ -1,3 +1,3 @@
 = 整体架构
 
-image::images/loong.svg[整体架构]
+image::images/aigw.svg[整体架构]

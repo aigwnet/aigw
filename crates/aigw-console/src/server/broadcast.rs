@@ -87,15 +87,15 @@ impl BroadcastServer {
 
             let changelog: ChangeLog = ChangeLog::try_from(&buffer[..])?;
             debug!("Receive changelog form {:?}.", addr);
-            self.broadcast_to_loong(changelog).await?;
+            self.broadcast_to_aigw(changelog).await?;
         }
 
         Ok(())
     }
 
-    async fn broadcast_to_loong(&self, changelog: ChangeLog) -> anyhow::Result<()> {
-        // push the change to all loong servers connected to this server.
-        let loong_servers = {
+    async fn broadcast_to_aigw(&self, changelog: ChangeLog) -> anyhow::Result<()> {
+        // push the change to all aigw servers connected to this server.
+        let aigw_servers = {
             let conn = self.connections.lock().await;
             conn.clone()
         };
@@ -112,14 +112,14 @@ impl BroadcastServer {
 
         let mut buf = Buffer::new(128);
 
-        for (_, conn) in loong_servers {
+        for (_, conn) in aigw_servers {
             let mut conn = conn.lock().await;
             if let Some(crypto) = &conn.crypto {
                 build_data(&mut buf, data.clone(), crypto)?;
 
                 //
                 if let Err(e) = conn.write(buf.as_ref()).await {
-                    error!("Wrtie to loong error, {:?}", e);
+                    error!("Wrtie to aigw error, {:?}", e);
                 }
             }
         }

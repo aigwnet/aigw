@@ -15,7 +15,7 @@ use tokio::{
 use crate::{
     DatabaseClient,
     service::{
-        save_ping, send_all_servers_to_loong, send_change_logs_to_loong, update_or_insert_server,
+        save_ping, send_all_sites_to_aigw, send_change_logs_to_aigw, update_or_insert_server,
     },
 };
 
@@ -126,9 +126,9 @@ impl Handler {
 
                 //
                 if handshake_request.log_points.is_empty() {
-                    send_all_servers_to_loong(&self.connection, &self.database_client.rb).await?;
+                    send_all_sites_to_aigw(&self.connection, &self.database_client.rb).await?;
                 } else {
-                    send_change_logs_to_loong(
+                    send_change_logs_to_aigw(
                         &self.connection,
                         &self.database_client.rb,
                         &handshake_request.log_points,
@@ -170,7 +170,7 @@ impl Handler {
                     }
                 }
                 //
-                send_change_logs_to_loong(&self.connection, &self.database_client.rb, &log_points)
+                send_change_logs_to_aigw(&self.connection, &self.database_client.rb, &log_points)
                     .await?;
             }
 

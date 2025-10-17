@@ -1,2 +1,3 @@
 systemctl daemon-reload
-chmod 700 /etc/aigw
+chmod 755 /etc/aigw
+install -d -m 0755 /opt/aigw

@@ -283,8 +283,8 @@ pub async fn find_site_by_page(
     let r = TbSite::select_page(rb, page_request, cluster_name).await?;
     let mut page = Page::new(r.page_no, r.page_size, r.total, vec![]);
     for tb_site in r.records {
-        let loong_server = convert_tb_site(rb, tb_site).await?;
-        page.items.push(loong_server);
+        let site = convert_tb_site(rb, tb_site).await?;
+        page.items.push(site);
     }
     Ok(page)
 }

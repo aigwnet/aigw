@@ -20,8 +20,8 @@
 |The actual data payload
 |===
 
-== Loong
-The protocol for interacting with the Loong server follows the TLV specification.
+== Aigw
+The protocol for interacting with the Aigw server follows the TLV specification.
 
 [cols="1,1,2,3"]
 |===
