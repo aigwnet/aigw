@@ -103,7 +103,7 @@ impl ConsoleClient {
                 }
             }
         }
-        info!("Dinosaur client exited.")
+        info!("Aigw Console client exited.")
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -216,7 +216,7 @@ impl ConsoleClient {
                 false
             },
             _ = shutdown.recv() => {
-                 info!("Shutting down dinosaur client.");
+                 info!("Shutting down aigw console client.");
                  true
             }
         };
@@ -402,7 +402,7 @@ impl ConsoleClient {
             build_close(&mut buffer, &Close {}, crypto)?;
             self.sender.send(buffer.as_ref().to_vec()).await?;
         }
-        info!("Send close to dinosaur server.");
+        info!("Send close to aigw console server.");
         Ok(())
     }
 }

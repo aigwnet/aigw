@@ -39,7 +39,7 @@ rusqlite = {version = "0.35"}
 serde = {workspace = true}
 serde_json = {workspace = true}
 simple-useragent = {version = "0.1.2"}
-simplelog = {version = "0.12"}
+simplelog = {workspace = true}
 substring = {version = "1"}
 sysinfo = {version = "0.37"}
 tokio = {workspace = true}

@@ -21,7 +21,7 @@ use shutdown::run_args;
 pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
 
-use crate::server::console::DinosaurService;
+use crate::server::console::AigwConsoleService;
 
 pub fn run(
     args: ServerOpt,
@@ -32,7 +32,7 @@ pub fn run(
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let shutdown_tx = Arc::new(shutdown_tx);
 
-    let dinosaur_service = DinosaurService::new(
+    let dinosaur_service = AigwConsoleService::new(
         storage.clone(),
         shutdown_tx.clone(),
         config.console().address().to_string(),

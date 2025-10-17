@@ -17,12 +17,12 @@ use tokio::sync::{
 
 use crate::server::Storage;
 
-pub struct DinosaurService {
-    dinosaur_client: Arc<ConsoleClient>,
+pub struct AigwConsoleService {
+    console_client: Arc<ConsoleClient>,
     rx: Arc<Mutex<Receiver<Vec<u8>>>>,
 }
 
-impl DinosaurService {
+impl AigwConsoleService {
     pub fn new(
         storage: Arc<Storage>,
         shutdown_tx: Arc<tokio::sync::broadcast::Sender<()>>,
@@ -34,7 +34,7 @@ impl DinosaurService {
         let tx = Arc::new(tx);
         let rx = Arc::new(Mutex::new(rx));
 
-        let dinosaur_client = Arc::new(ConsoleClient::new(
+        let console_client = Arc::new(ConsoleClient::new(
             storage.clone(),
             shutdown_tx.clone(),
             address,
@@ -43,29 +43,26 @@ impl DinosaurService {
             tx,
         ));
 
-        Self {
-            dinosaur_client,
-            rx,
-        }
+        Self { console_client, rx }
     }
 }
 
 #[async_trait]
-impl Service for DinosaurService {
+impl Service for AigwConsoleService {
     async fn start_service(
         &mut self,
         #[cfg(unix)] _fds: Option<ListenFds>,
         mut _shutdown: ShutdownWatch,
         _listeners_per_fd: usize,
     ) {
-        self.dinosaur_client.start(self.rx.clone()).await;
+        self.console_client.start(self.rx.clone()).await;
     }
 
     /// The name of the service, just for logging and naming the threads assigned to this service
     ///
     /// Note that due to the limit of the underlying system, only the first 16 chars will be used
     fn name(&self) -> &str {
-        "dinosaur"
+        "aigwc"
     }
 
     /// The preferred number of threads to run this service

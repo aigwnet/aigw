@@ -5,7 +5,7 @@ use std::{
 };
 
 use aigw_core::ChangeLog;
-use conf::DinosaurConfig;
+use conf::AigwConsoleConfig;
 use log::{Level, LevelFilter, debug, info};
 use regex::Regex;
 use simplelog::{
@@ -15,7 +15,7 @@ use simplelog::{
 use storage::db::DatabaseClient;
 use tokio::{runtime::Runtime, sync::Mutex};
 
-use crate::args::DinosaurArgs;
+use crate::args::AigwConsoleArgs;
 
 mod args;
 mod conf;
@@ -24,7 +24,7 @@ mod service;
 mod storage;
 
 fn main() -> anyhow::Result<()> {
-    let args = DinosaurArgs::do_parse();
+    let args = AigwConsoleArgs::do_parse();
 
     if args.daemon {
         let mut daemonize = daemonize::Daemonize::new();
@@ -78,7 +78,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     let config = fs::read_to_string(config_file)?;
-    let mut config: DinosaurConfig = toml::from_str(config.as_str())?;
+    let mut config: AigwConsoleConfig = toml::from_str(config.as_str())?;
     if let Some(ui) = &args.ui {
         config.server.ui = Some(ui.clone());
     }
@@ -131,7 +131,7 @@ fn install(rt: Arc<Runtime>, database_client: Arc<DatabaseClient>) -> anyhow::Re
 fn start(
     rt: Arc<Runtime>,
     database_client: Arc<DatabaseClient>,
-    config: Arc<DinosaurConfig>,
+    config: Arc<AigwConsoleConfig>,
 ) -> anyhow::Result<()> {
     let connections = Arc::new(Mutex::new(HashMap::new()));
 

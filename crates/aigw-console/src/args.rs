@@ -3,7 +3,7 @@ use clap::Parser;
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-pub struct DinosaurArgs {
+pub struct AigwConsoleArgs {
     /// Name of the person to greet
     #[arg(short, long)]
     pub config: Option<String>,
@@ -33,8 +33,8 @@ pub struct DinosaurArgs {
     pub ui: Option<String>,
 }
 
-impl DinosaurArgs {
+impl AigwConsoleArgs {
     pub fn do_parse() -> Self {
-        DinosaurArgs::parse()
+        AigwConsoleArgs::parse()
     }
 }

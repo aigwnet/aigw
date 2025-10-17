@@ -13,7 +13,7 @@ use tokio::sync::mpsc::Sender;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use crate::{
-    DatabaseClient, DinosaurConfig,
+    DatabaseClient, AigwConsoleConfig,
     server::http::{
         analytics::HttpApiAnalytics,
         auth::{Auth, AuthHandler},
@@ -35,7 +35,7 @@ mod user;
 struct ApiContext {
     sender: Sender<ChangeLog>,
     database_client: Arc<DatabaseClient>,
-    config: Arc<DinosaurConfig>,
+    config: Arc<AigwConsoleConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,7 +47,7 @@ pub struct Pagination {
 pub async fn run(
     sender: Sender<ChangeLog>,
     database_client: Arc<DatabaseClient>,
-    config: Arc<DinosaurConfig>,
+    config: Arc<AigwConsoleConfig>,
 ) -> anyhow::Result<()> {
     let api_context = ApiContext {
         sender,

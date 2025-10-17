@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub(crate) struct DinosaurConfig {
+pub(crate) struct AigwConsoleConfig {
     pub(crate) database: DatabaseConfig,
     pub(crate) server: ServerConfig,
 }
