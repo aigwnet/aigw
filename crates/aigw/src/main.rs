@@ -58,13 +58,13 @@ fn main() -> anyhow::Result<()> {
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
     } else {
-        "conf/aigw.toml"
+        "crates/aigw/conf/aigw.toml"
     };
 
     let geo_lite_file = if let Some(geo_lite_file) = args.geo_lite.as_ref() {
         geo_lite_file
     } else {
-        "assets/GeoLite2-Country.mmdb"
+        "crates/aigw/assets/GeoLite2-Country.mmdb"
     };
     let get_lite = Arc::new(GeoLite::new(geo_lite_file)?);
 

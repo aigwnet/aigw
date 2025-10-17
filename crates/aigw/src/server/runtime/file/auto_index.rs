@@ -24,7 +24,7 @@ const HTML: &str = r#"
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Index of /</title>
-    <link href="/.__loong__reserved/assets/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/.__aigw__reserved/assets/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         main > .container {{
             padding: 60px 15px 0;
