@@ -139,13 +139,13 @@ pub async fn run(
             get(HttpApiAnalytics::analytics_traffic_ext).layer(auth_layer.clone()),
         )
         .with_state(api_context)
-        .fallback_service(ServeDir::new(&config.server.ui))
+        .fallback_service(ServeDir::new(&config.server.ui.unwrap()))
         .layer(TraceLayer::new_for_http())
         .into_make_service_with_connect_info::<SocketAddr>();
 
     let addr = "127.0.0.1:".to_string() + config.server.http.port.to_string().as_str();
     info!(
-        "Http server listening on: {}. ui directory: {}",
+        "Http server listening on: {}. ui directory: {:?}",
         addr, &config.server.ui
     );
 

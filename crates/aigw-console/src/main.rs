@@ -80,9 +80,10 @@ fn main() -> anyhow::Result<()> {
     let config = fs::read_to_string(config_file)?;
     let mut config: AigwConsoleConfig = toml::from_str(config.as_str())?;
     if let Some(ui) = &args.ui {
-        config.server.ui = ui.clone();
-    } else {
-        config.server.ui = "crates/aigw-console/ui/apps/aigwc/dist/".to_string();
+        config.server.ui = Some(ui.clone());
+    }
+    if config.server.ui.is_none() {
+        config.server.ui = Some("crates/aigw-console/ui/apps/aigwc/dist/".to_string());
     }
 
     let json = serde_json::to_string_pretty(&config)?;
