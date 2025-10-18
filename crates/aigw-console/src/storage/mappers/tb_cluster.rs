@@ -12,7 +12,7 @@ pub struct TbCluster {
     pub gmt_modified: Option<DateTime>,
 }
 impl_insert!(TbCluster {});
-impl_select!(TbCluster { select_all() => "`ORDER BY ID DESC`"});
+impl_select!(TbCluster { select_all() => "`ORDER BY ID ASC`"});
 impl_select!(TbCluster { select_by_name(name: &str)  -> Option => "`WHERE name = #{name}`"});
 impl_select!(TbCluster { select_by_id(id: u64)  -> Option => "`WHERE id = #{id}`"});
 impl_delete!(TbCluster { delete_by_id(id: u64) => "`WHERE id = #{id}`"});

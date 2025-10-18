@@ -29,20 +29,17 @@ impl DataFramHandler {
                         }
                         path.push(site.name.clone() + ".json");
                         fs::write(path, serde_json::to_string_pretty(&site)?)?;
-                        let server = Arc::new(site);
-                        info!("Add new site: {:?}", server.name);
-                        self.storage.add_site(server);
+                        info!("Add new site: {:?}", site.name);
+                        self.storage.add_site(Arc::new(site));
                     }
                     LogAction::Delete => {
                         let site: Site = serde_json::from_slice(&change_log.data)?;
                         let mut path = self.storage.data_dir.clone();
                         path.push("site");
-                        if !path.exists() {
-                            fs::create_dir_all(&path)?;
-                        }
                         path.push(site.name.clone() + ".json");
                         info!("Remove site: {:?}", site.name);
                         let _ = fs::remove_file(path);
+                        self.storage.remove_site(&site);
                     }
                 },
                 LogType::Acme => {

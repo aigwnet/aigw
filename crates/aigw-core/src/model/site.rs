@@ -116,7 +116,7 @@ where
     Ok(items)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TlsPrivateKey(PKey<Private>);
 
 impl TlsPrivateKey {
@@ -141,7 +141,7 @@ impl AsRef<PKey<Private>> for TlsPrivateKey {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DynamicCert {
     pub cert: X509,
     pub cert_chain: Vec<X509>,

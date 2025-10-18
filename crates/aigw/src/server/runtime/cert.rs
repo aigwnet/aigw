@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use aigw_core::Site;
+use aigw_core::{DynamicCert, Site, TlsPrivateKey};
 use async_trait::async_trait;
 use log::error;
 use pingora_core::{listeners::TlsAccept, protocols::tls::TlsRef, tls::ssl};
@@ -16,7 +16,7 @@ impl DynamicTlsAccept {
         Self { storage }
     }
 
-    fn add_dynamic_cert(&self, site: &Site, ssl: &mut TlsRef) -> anyhow::Result<()> {
+    fn set_dynamic_cert(&self, site: &Site, ssl: &mut TlsRef) -> anyhow::Result<()> {
         let cert = site
             .tls_cert
             .as_ref()
@@ -25,6 +25,15 @@ impl DynamicTlsAccept {
             .tls_private_key
             .as_ref()
             .ok_or(anyhow::anyhow!("Cert private key not found"))?;
+        self.use_dynamic_cert(key, cert, ssl)
+    }
+
+    fn use_dynamic_cert(
+        &self,
+        key: &TlsPrivateKey,
+        cert: &DynamicCert,
+        ssl: &mut TlsRef,
+    ) -> anyhow::Result<()> {
         for cert in &cert.cert_chain {
             pingora_core::tls::ext::ssl_add_chain_cert(ssl, cert)?;
         }
@@ -40,7 +49,7 @@ impl TlsAccept for DynamicTlsAccept {
         self.storage.tls();
         if let Some(sni) = ssl.servername(ssl::NameType::HOST_NAME) {
             if let Some(site) = self.storage.find_site(sni) {
-                if let Err(e) = self.add_dynamic_cert(&site, ssl) {
+                if let Err(e) = self.set_dynamic_cert(&site, ssl) {
                     error!("Add cert error, {:?}", e);
                     ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
                 }
@@ -50,6 +59,15 @@ impl TlsAccept for DynamicTlsAccept {
                 self.storage.error();
             }
         } else {
+            if let Some((_, key, cert)) = &*self.storage.default_cert() {
+                if let Err(_) = self.use_dynamic_cert(key, cert, ssl) {
+                    ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+                    self.storage.error();
+                    return;
+                } else {
+                    return;
+                }
+            }
             error!("Unknowns HTTPS request without SNI.");
             ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
             self.storage.error();

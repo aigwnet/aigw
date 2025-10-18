@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, net::ToSocketAddrs, sync::Arc, time::Duration};
 
 use aigw_core::{
     Buffer, Close, CryptoCore, DataAck, Frame, HandshakeInfo, LOCAL_IP, Signature, build_ack,
@@ -63,7 +63,22 @@ impl ConsoleClient {
         let signature = &self.signature;
         let sender = &self.sender;
         loop {
-            match TcpStream::connect(addr).await {
+            let socket_addrs = match addr.to_socket_addrs() {
+                Ok(addrs) => addrs.collect::<Vec<_>>(),
+                Err(e) => {
+                    eprintln!("Failed to resolve address {}: {}", addr, e);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    continue;
+                }
+            };
+
+            if socket_addrs.len() == 0 {
+                eprintln!("Failed to resolve address {}", addr);
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                continue;
+            }
+
+            match TcpStream::connect(socket_addrs[0]).await {
                 Ok(stream) => {
                     let r = ConsoleClient::run(
                         self.data_handler.clone(),
