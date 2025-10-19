@@ -22,6 +22,7 @@ const SERVER_ADDR_TAG: &[u8] = b"$server_addr";
 const SERVER_PORT_TAG: &[u8] = b"$server_port";
 const PROXY_ADD_FORWARDED_TAG: &[u8] = b"$proxy_add_x_forwarded_for";
 const UPSTREAM_ADDR_TAG: &[u8] = b"$upstream_addr";
+const HTTP_UPGRADE: &[u8] = b"$http_upgrade";
 
 static SCHEME_HTTPS: HeaderValue = HeaderValue::from_static("https");
 static SCHEME_HTTP: HeaderValue = HeaderValue::from_static("http");
@@ -104,6 +105,13 @@ pub fn convert_header_value(
             };
             to_header_value(&value)
         }),
+        HTTP_UPGRADE => {
+            if let Some(http_upgrade) = ctx.http_upgrade.as_ref() {
+                to_header_value(http_upgrade)
+            } else {
+                None
+            }
+        }
         _ => handle_special_headers(buf, session, ctx),
     }
 }

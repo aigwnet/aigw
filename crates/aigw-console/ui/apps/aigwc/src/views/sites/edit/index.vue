@@ -170,7 +170,15 @@ const fetchData = async () => {
   site.tls_private_key = site.tls_private_key ? atob(site.tls_private_key) : ""
   site.locations = site.locations.map((location: any) => ({
     ...location,
-    upstream: location.upstream.toString().replaceAll(',', '\n')
+    upstream: location.upstream.toString().replaceAll(',', '\n'),
+    proxy_add_headers: location.proxy_add_headers.length == 0 ? [{
+      name: "",
+      value: "",
+    }] : location.proxy_add_headers,
+    proxy_set_headers: location.proxy_set_headers.length == 0 ? [{
+      name: "",
+      value: "",
+    }] : location.proxy_set_headers,
   }))
 
   defaultValue.value = site.locations;

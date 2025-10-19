@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     sync::{
         Arc,
         atomic::{AtomicI32, AtomicU64, Ordering},
@@ -11,7 +12,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use http::{
     HeaderName, HeaderValue, StatusCode,
-    header::{self, USER_AGENT},
+    header::{self, UPGRADE, USER_AGENT},
 };
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -52,14 +53,33 @@ use crate::{
 use super::{context::AigwCtx, now_ms};
 
 static DEFAULT_PROXY_SET_HEADERS: Lazy<Vec<HttpHeader>> = Lazy::new(|| {
-    convert_headers(&[
-        "X-Real-IP:$remote_addr".to_string(),
-        "X-Forwarded-For:$proxy_add_x_forwarded_for".to_string(),
-        "X-Forwarded-Proto:$scheme".to_string(),
-        "X-Forwarded-Host:$host".to_string(),
-        "X-Forwarded-Port:$server_port".to_string(),
-    ])
-    .unwrap()
+    let mut headers = vec![];
+    let mut map = HashMap::new();
+    map.insert("name".to_owned(), "X-Real-IP".to_owned());
+    map.insert("value".to_owned(), "$remote_addr".to_owned());
+    headers.push(map);
+
+    let mut map = HashMap::new();
+    map.insert("name".to_owned(), "X-Forwarded-For".to_owned());
+    map.insert("value".to_owned(), "$proxy_add_x_forwarded_for".to_owned());
+    headers.push(map);
+
+    let mut map = HashMap::new();
+    map.insert("name".to_owned(), "X-Forwarded-Proto".to_owned());
+    map.insert("value".to_owned(), "$scheme".to_owned());
+    headers.push(map);
+
+    let mut map = HashMap::new();
+    map.insert("name".to_owned(), "X-Forwarded-Host".to_owned());
+    map.insert("value".to_owned(), "$host".to_owned());
+    headers.push(map);
+
+    let mut map = HashMap::new();
+    map.insert("name".to_owned(), "X-Forwarded-Port".to_owned());
+    map.insert("value".to_owned(), "$server_port".to_owned());
+    headers.push(map);
+
+    convert_headers(&headers).unwrap()
 });
 
 static ACME_PATH: &str = "/.well-known/acme-challenge/";
@@ -231,7 +251,10 @@ impl ProxyHttp for AigwProxy {
         }
 
         let header = session.req_header();
-
+        ctx.http_upgrade = header
+            .headers
+            .get(UPGRADE)
+            .map_or(None, |v| v.to_str().map_or(None, |s| Some(s.to_owned())));
         // 统计user-agent
         let user_agent = header
             .headers

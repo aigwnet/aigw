@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { ref, watch, h } from 'vue'
-import { Card, Row, Col, FormItem, Input, Switch, Space, RadioGroup, Radio, Textarea, Button } from 'ant-design-vue'
+import { Card, Row, Col, FormItem, Input, Switch, RadioGroup, Radio, Textarea, Button, Divider } from 'ant-design-vue'
 import { Plus, X } from '@vben/icons'
+import DynamicHeader from './DynamicHeader.vue'
 
 const props = withDefaults(defineProps<{
     modelValue?: any[]
     min?: number
     max?: number
-    namePath: string | number | (string | number)[]
+    namePath: string
 }>(), {
     modelValue: () => [],
     min: 1,
     max: 10,
-    namePath: () => []
 })
 
 const localFields = ref<any[]>([...props.modelValue])
@@ -56,6 +56,8 @@ const addItem = () => {
         upstream: "",
         root_dir: "",
         auto_index: false,
+        proxy_add_headers: [],
+        proxy_set_headers: [],
     })
 }
 
@@ -82,6 +84,8 @@ const ensureMinFields = () => {
             upstream: "",
             root_dir: "",
             auto_index: false,
+            proxy_add_headers: [],
+            proxy_set_headers: [],
         })
     }
 }
@@ -90,10 +94,8 @@ const ensureMinFields = () => {
 ensureMinFields()
 
 const getFieldPath = (index: number, fieldName: string) => {
-    const base = Array.isArray(props.namePath) ? props.namePath : [props.namePath];
-    return [...base, index, fieldName]
+    return props.namePath + "_" + index + "_" + fieldName
 }
-
 </script>
 
 <template>
@@ -208,6 +210,25 @@ const getFieldPath = (index: number, fieldName: string) => {
                 </FormItem>
                 </Col>
             </Row>
+
+            <Divider v-show="localFields[index].proxy" />
+            <Row v-show="localFields[index].proxy">
+                <Col :span="24">
+                <DynamicHeader label="Add headers" :min="1" :max="10"
+                    :namePath="getFieldPath(index, 'proxy_add_headers')"
+                    v-model:modelValue="localFields[index].proxy_add_headers" />
+                </Col>
+            </Row>
+
+            <Divider v-show="localFields[index].proxy" />
+            <Row v-show="localFields[index].proxy">
+                <Col :span="24">
+                <DynamicHeader label="Set headers" :min="1" :max="10"
+                    :namePath="getFieldPath(index, 'proxy_set_headers')"
+                    v-model:modelValue="localFields[index].proxy_set_headers" />
+                </Col>
+            </Row>
+
         </Card>
 
     </div>

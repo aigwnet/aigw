@@ -4,7 +4,7 @@ use pingora_http::RequestHeader;
 use pingora_load_balancing::{LoadBalancer, selection::Consistent};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, fmt::Display, path::PathBuf, sync::Arc};
 use substring::Substring;
 use thiserror::Error;
 
@@ -212,7 +212,6 @@ pub struct ProxyLocation {
     pub auto_index: bool,
     // root dir
     pub root_dir: Option<PathBuf>,
-
 }
 
 impl ProxyLocation {
@@ -414,12 +413,15 @@ where
     let mut headers = vec![];
     if let Some(h) = value {
         for (k, v) in h {
-            let s = "".to_owned()
-                + k.as_str()
-                + ":"
-                + v.to_str()
-                    .map_err(|_| serde::ser::Error::custom("HeaderValue error"))?;
-            headers.push(s);
+            let mut map = HashMap::new();
+            map.insert("name", k.as_str());
+            map.insert(
+                "value",
+                v.to_str()
+                    .map_err(|_| serde::ser::Error::custom("HeaderValue error"))?,
+            );
+
+            headers.push(map);
         }
     }
 
@@ -430,7 +432,7 @@ fn deserialize_http_headers<'de, D>(deserializer: D) -> Result<Option<Vec<HttpHe
 where
     D: serde::Deserializer<'de>,
 {
-    let headers: Vec<String> = Vec::deserialize(deserializer)?;
+    let headers: Vec<HashMap<String, String>> = Vec::deserialize(deserializer)?;
     if headers.is_empty() {
         Ok(None)
     } else {

@@ -98,6 +98,8 @@ pub struct AigwCtx {
     pub server_port: Option<u16>,
     /// Server's address
     pub server_addr: Option<String>,
+    /// Upgrade Header
+    pub http_upgrade: Option<String>,
     /// Unique identifier for the request
     pub request_id: Option<String>,
     /// Time spent looking up cache entries (in milliseconds)

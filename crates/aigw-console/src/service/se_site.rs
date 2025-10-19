@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::{HashMap, HashSet}, sync::Arc};
 
 use aigw_core::{
     ChangeLog, DynamicCert, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
@@ -249,14 +249,14 @@ async fn convert_tb_site(
             client_max_body_size: location.client_max_body_size.map_or(0, |t| t),
             rewrite: new_rewrite(location.rewrite.as_deref())?,
             proxy_add_headers: location.add_headers.and_then(|s| {
-                if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
+                if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
                 } else {
                     None
                 }
             }),
             proxy_set_headers: location.set_headers.and_then(|s| {
-                if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
+                if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
                 } else {
                     None
