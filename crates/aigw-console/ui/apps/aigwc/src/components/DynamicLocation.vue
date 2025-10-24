@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, h } from 'vue'
-import { Card, Row, Col, FormItem, Input, Switch, RadioGroup, Radio, Textarea, Button, Divider } from 'ant-design-vue'
+import { Card, Row, Col, FormItem, Input, InputNumber, Switch, RadioGroup, Radio, Textarea, Button, Divider } from 'ant-design-vue'
 import { Plus, X } from '@vben/icons'
 import DynamicHeader from './DynamicHeader.vue'
 
@@ -141,28 +141,28 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem label="Connection Timeout" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'connection_timeout')">
-                    <Input v-model:value="localFields[index].connection_timeout" placeholder="5" type="number" />
+                    <InputNumber v-model:value="localFields[index].connection_timeout" placeholder="5" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
                 <FormItem label="Read Timeout" :label-col="{ span: 3 }" :name="getFieldPath(index, 'read_timeout')">
-                    <Input v-model:value="localFields[index].read_timeout" placeholder="5" type="number" />
+                    <InputNumber v-model:value="localFields[index].read_timeout" placeholder="5" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
                 <FormItem label="Write Timeout" :label-col="{ span: 3 }" :name="getFieldPath(index, 'write_timeout')">
-                    <Input v-model:value="localFields[index].write_timeout" placeholder="5" type="number" />
+                    <InputNumber v-model:value="localFields[index].write_timeout" placeholder="5" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
                 <FormItem label="Idle Timeout" :label-col="{ span: 3 }" :name="getFieldPath(index, 'idle_timeout')">
-                    <Input v-model:value="localFields[index].idle_timeout" placeholder="30" type="number" />
+                    <InputNumber v-model:value="localFields[index].idle_timeout" placeholder="30" />
                 </FormItem>
                 </Col>
             </Row>
@@ -177,7 +177,7 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem label="Client Max Body Size" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'client_max_body_size')">
-                    <Input v-model:value="localFields[index].client_max_body_size" placeholder="0" type="number" />
+                    <InputNumber v-model:value="localFields[index].client_max_body_size" placeholder="0" />
                 </FormItem>
                 </Col>
             </Row>

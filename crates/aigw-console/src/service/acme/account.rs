@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use base64::{Engine, prelude::BASE64_STANDARD};
+use boring::pkey::{PKey, Private};
 use log::debug;
-use openssl::pkey::{PKey, Private};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -162,7 +162,10 @@ impl AccountBuilder {
 
         let acc = res?;
 
-        debug!("Account: {}, {:?}, {:?}", acc.created_at, acc.key, acc.status);
+        debug!(
+            "Account: {}, {:?}, {:?}",
+            acc.created_at, acc.key, acc.status
+        );
 
         if acc.status != AccountStatus::Valid {
             return Err(anyhow::anyhow!("Account status error."));

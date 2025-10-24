@@ -1,10 +1,10 @@
 use base64::Engine;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
-use openssl::pkey::PKey;
-use openssl::pkey::Private;
-use openssl::rsa::Rsa;
-use serde::Deserialize;
-use serde::Serialize;
+use boring::{
+    pkey::{PKey, Private},
+    rsa::Rsa,
+};
+use serde::{Deserialize, Serialize};
 
 use crate::service::acme::error::Error;
 

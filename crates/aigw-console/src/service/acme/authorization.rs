@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
+use boring::hash::{MessageDigest, hash};
 use log::debug;
-use openssl::hash::{MessageDigest, hash};
 use serde::Deserialize;
 use serde_json::json;
 

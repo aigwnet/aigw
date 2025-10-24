@@ -1,12 +1,12 @@
 use std::{sync::Arc, time::Duration};
 
-use log::debug;
-use openssl::{
+use boring::{
     hash::MessageDigest,
     pkey::{PKey, Private},
     stack::Stack,
     x509::{X509Name, X509Req, extension::SubjectAlternativeName},
 };
+use log::debug;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -143,7 +143,7 @@ pub enum Csr {
     Automatic(PKey<Private>),
 }
 
-fn gen_csr(pkey: &PKey<openssl::pkey::Private>, domains: Vec<String>) -> Result<X509Req, Error> {
+fn gen_csr(pkey: &PKey<Private>, domains: Vec<String>) -> Result<X509Req, Error> {
     if domains.is_empty() {
         return Err(Error::Validation(
             "at least one domain name needs to be supplied",

@@ -1,9 +1,9 @@
-use openssl::hash::MessageDigest;
-use openssl::pkey::PKey;
-use openssl::pkey::Private;
-use openssl::sign::Signer;
-use serde::Deserialize;
-use serde::Serialize;
+use boring::{
+    hash::MessageDigest,
+    pkey::{PKey, Private},
+    sign::Signer,
+};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::service::acme::error::Error;

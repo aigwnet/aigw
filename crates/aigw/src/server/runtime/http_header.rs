@@ -175,7 +175,7 @@ pub fn get_remote_addr(session: &Session) -> Option<(String, u16)> {
     session
         .client_addr()
         .and_then(|addr| addr.as_inet())
-        .map(|addr| (addr.ip().to_string(), addr.port()))
+        .map(|addr| (addr.ip().to_canonical().to_string(), addr.port()))
 }
 
 /// Gets client ip from X-Forwarded-For,

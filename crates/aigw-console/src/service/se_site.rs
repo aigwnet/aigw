@@ -5,8 +5,8 @@ use aigw_core::{
     convert_headers, convert_headers_to_string, new_path_selector, new_rewrite,
 };
 use anyhow::anyhow;
+use boring::asn1::Asn1TimeRef;
 use log::error;
-use openssl::asn1::Asn1TimeRef;
 use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 

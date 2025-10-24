@@ -11,7 +11,7 @@ daemonize = {version = "0.5"}
 lazy_static = {version = "1"}
 log = {version = "0.4"}
 pingora-cache = {version = "0.6"}
-pingora-core = {version = "0.6", features = ["openssl"]}
+pingora-core = {version = "0.6", features = ["boringssl"]}
 pingora-error = {version = "0.6"}
 pingora-http = {version = "0.6"}
 pingora-limits = {version = "0.6"}

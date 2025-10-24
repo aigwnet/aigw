@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
             .create(true)
             .append(true)
             .open(file)?;
-        let logger = WriteLogger::new(LevelFilter::Info, log_config, log_file);
+        let logger = WriteLogger::new(LevelFilter::Trace, log_config, log_file);
         loggers.push(logger);
     }
 
@@ -61,18 +61,19 @@ fn main() -> anyhow::Result<()> {
         "conf/aigw.toml"
     };
 
-    let geo_lite_file = if let Some(geo_lite_file) = args.geo_lite.as_ref() {
-        geo_lite_file
-    } else {
-        "crates/aigw/assets/GeoLite2-Country.mmdb"
-    };
-    let get_lite = Arc::new(GeoLite::new(geo_lite_file)?);
-
     let config = fs::read_to_string(config_file)?;
     let config: AigwConfig = toml::from_str(config.as_str())?;
 
     let storage = Arc::new(Storage::new(config.basic().data_dir().as_ref())?);
     storage.load_sites()?;
+
+    let geo_lite_file = if let Some(geo_lite_file) = args.geo_lite.as_ref() {
+        geo_lite_file
+    } else {
+        "crates/aigw/assets/GeoLite2-Country.mmdb"
+    };
+
+    let get_lite = Arc::new(GeoLite::new(geo_lite_file)?);
     if let Err(e) = server::run(args, Arc::new(config), storage, get_lite) {
         panic!("Start server failed. {}", e)
     }

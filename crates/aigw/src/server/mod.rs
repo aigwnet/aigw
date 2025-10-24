@@ -15,8 +15,8 @@ use pingora_core::{
     tls::ssl::SslVersion,
 };
 use pingora_proxy::http_proxy_service_with_name;
-use runtime::{DynamicTlsAccept, AigwProxy};
-pub(crate) use runtime::{GeoLite, AigwConfig, ServerOpt};
+pub(crate) use runtime::{AigwConfig, GeoLite, ServerOpt};
+use runtime::{AigwProxy, DynamicTlsAccept};
 use shutdown::run_args;
 pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
@@ -35,7 +35,7 @@ pub fn run(
     let aigwc_service = AigwConsoleService::new(
         storage.clone(),
         shutdown_tx.clone(),
-        config.console().address().to_string(),
+        config.console().address(),
         config.console().key(),
         config.console().cluster().to_string(),
     );

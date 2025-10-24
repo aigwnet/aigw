@@ -30,8 +30,8 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-impl From<openssl::error::ErrorStack> for Error {
-    fn from(err: openssl::error::ErrorStack) -> Self {
+impl From<boring::error::ErrorStack> for Error {
+    fn from(err: boring::error::ErrorStack) -> Self {
         Self::Other(Box::new(err))
     }
 }

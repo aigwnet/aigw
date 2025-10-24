@@ -39,7 +39,7 @@ impl ConsoleClient {
     pub fn new(
         storage: Arc<Storage>,
         shutdown_tx: Arc<Sender<()>>,
-        address: String,
+        address: &str,
         password: &str,
         cluster: String,
         sender: Arc<mpsc::Sender<Vec<u8>>>,
@@ -50,7 +50,7 @@ impl ConsoleClient {
         Self {
             data_handler: Arc::new(DataFramHandler::new(storage)),
             shutdown_tx,
-            address,
+            address: address.to_owned(),
             cluster,
             sender,
             signature,

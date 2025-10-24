@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,13 +54,13 @@ impl BasicConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConsoleConfig {
-    address: SocketAddr,
+    address: String,
     key: String,
     cluster: String,
 }
 
 impl ConsoleConfig {
-    pub fn address(&self) -> &SocketAddr {
+    pub fn address(&self) -> &str {
         &self.address
     }
 

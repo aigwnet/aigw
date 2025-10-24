@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 
+use boring::pkey::{PKey, Private};
 use bytes::Bytes;
 use log::debug;
-use openssl::pkey::{PKey, Private};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::service::acme::{

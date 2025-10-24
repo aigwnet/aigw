@@ -14,8 +14,8 @@ lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
 log = {workspace = true}
 pem = {version = "3"}
-pingora-core = {version = "0.6", features = ["openssl"]}
-pingora-http = {version = "0.6"}
+pingora-core = {workspace = true}
+pingora-http = {workspace = true}
 pingora-load-balancing = {workspace = true}
 prost = {version = "0.13"}
 protobuf = {version = "3"}

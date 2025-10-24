@@ -26,7 +26,7 @@ impl AigwConsoleService {
     pub fn new(
         storage: Arc<Storage>,
         shutdown_tx: Arc<tokio::sync::broadcast::Sender<()>>,
-        address: String,
+        address: &str,
         password: &str,
         cluster: String,
     ) -> Self {
