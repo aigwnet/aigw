@@ -36,7 +36,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut loggers: Vec<Box<dyn SharedLogger>> = vec![];
     loggers.push(TermLogger::new(
-        LevelFilter::Info,
+        LevelFilter::Trace,
         log_config.clone(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
             .create(true)
             .append(true)
             .open(file)?;
-        let logger = WriteLogger::new(LevelFilter::Trace, log_config, log_file);
+        let logger = WriteLogger::new(LevelFilter::Info, log_config, log_file);
         loggers.push(logger);
     }
 

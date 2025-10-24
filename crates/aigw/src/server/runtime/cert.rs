@@ -50,16 +50,6 @@ impl TlsAccept for DynamicTlsAccept {
         if let Some(sni) = ssl.servername(ssl::NameType::HOST_NAME) {
             if let Some(site) = self.storage.find_site(sni) {
                 if let Err(e) = self.set_dynamic_cert(&site, ssl) {
-                    // If the site has TLS enabled but no certificate is configured, attempt to use the default certificate.
-                    if let Some((_, key, cert)) = &*self.storage.default_cert() {
-                        if let Err(_) = self.use_dynamic_cert(key, cert, ssl) {
-                            ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
-                            self.storage.error();
-                            return;
-                        } else {
-                            return;
-                        }
-                    }
                     error!("Add cert error, {:?}", e);
                     ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
                 }
@@ -69,6 +59,7 @@ impl TlsAccept for DynamicTlsAccept {
                 self.storage.error();
             }
         } else {
+            // If the site has TLS enabled but no certificate is configured, attempt to use the default certificate.
             if let Some((_, key, cert)) = &*self.storage.default_cert() {
                 if let Err(_) = self.use_dynamic_cert(key, cert, ssl) {
                     ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
