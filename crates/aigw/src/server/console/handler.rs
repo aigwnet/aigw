@@ -29,7 +29,7 @@ impl DataFramHandler {
                         }
                         path.push(site.name.clone() + ".json");
                         fs::write(path, serde_json::to_string_pretty(&site)?)?;
-                        info!("Add new site: {:?}", site.name);
+                        info!("{:?} site: {:?}", change_log.log_action, site.name);
                         self.storage.add_site(Arc::new(site));
                     }
                     LogAction::Delete => {
@@ -61,6 +61,7 @@ impl DataFramHandler {
                                 .remove_token(&acme_token.host, &acme_token.token);
                         }
                     }
+                    return Ok(true);
                 }
             }
         }
