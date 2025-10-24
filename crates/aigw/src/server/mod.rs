@@ -104,6 +104,7 @@ pub fn run(
     let dynamic_cert = DynamicTlsAccept::new(storage);
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
+    tls_settings.set_min_proto_version(Some(SslVersion::TLS1_2))?;
     tls_settings.enable_h2();
     let mut proxy_service_https = http_proxy_service_with_name(&main_conf, proxy, "Aigw-https");
     let addr = format!(":::{}", config.basic().https());

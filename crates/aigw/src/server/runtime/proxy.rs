@@ -17,7 +17,9 @@ use http::{
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use pingora_core::{
-    Error, ErrorType, Result,
+    Error, ErrorSource,
+    ErrorType::{self, ConnectionClosed, HTTPStatus, ReadError, WriteError},
+    Result,
     modules::http::{
         HttpModules,
         compression::ResponseCompressionBuilder,
@@ -27,16 +29,16 @@ use pingora_core::{
     protocols::{ALPN, Digest, TcpKeepalive, TimingDigest},
 };
 use pingora_http::{RequestHeader, ResponseHeader};
-use pingora_proxy::{ProxyHttp, Session};
+use pingora_proxy::{FailToProxy, ProxyHttp, Session};
 use simple_useragent::UserAgentParser;
 use substring::Substring;
 
 use crate::{
-    AigwConfig,
+    AigwConfig, SERVER,
     server::{
         acme::Http01Handler,
         runtime::{
-            GeoLite,
+            GeoLite, err,
             file::StaticFilesHandler,
             get_hostname,
             http_header::{
@@ -577,12 +579,13 @@ impl ProxyHttp for AigwProxy {
         Self::CTX: Send + Sync,
     {
         debug!("response filter");
+        let _ = upstream_response.insert_header(header::SERVER, SERVER);
+
         if session.cache.enabled() {
             // ignore insert header error
             let cache_status = session.cache.phase().as_str();
             let _ = upstream_response.insert_header("X-Cache-Status", cache_status);
         }
-
         let code = upstream_response.status.as_u16();
         if code >= 100 && code < 200 {
             self.storage.http_code_1xx();
@@ -614,6 +617,50 @@ impl ProxyHttp for AigwProxy {
             let _ = upstream_response.insert_header(HTTP_HEADER_NAME_X_REQUEST_ID.clone(), id);
         }
         Ok(())
+    }
+
+    async fn fail_to_proxy(
+        &self,
+        session: &mut Session,
+        e: &Error,
+        _ctx: &mut Self::CTX,
+    ) -> FailToProxy
+    where
+        Self::CTX: Send + Sync,
+    {
+        let code = match e.etype() {
+            HTTPStatus(code) => *code,
+            _ => {
+                match e.esource() {
+                    ErrorSource::Upstream => 502,
+                    ErrorSource::Downstream => {
+                        match e.etype() {
+                            WriteError | ReadError | ConnectionClosed => {
+                                /* conn already dead */
+                                0
+                            }
+                            _ => 400,
+                        }
+                    }
+                    ErrorSource::Internal | ErrorSource::Unset => 500,
+                }
+            }
+        };
+        if code > 0 {
+            let (header, body) = err::generate_error(code);
+            session
+                .write_error_response(header, body)
+                .await
+                .unwrap_or_else(|e| {
+                    error!("failed to send error response to downstream: {e}");
+                });
+        }
+
+        FailToProxy {
+            error_code: code,
+            // default to no reuse, which is safest
+            can_reuse_downstream: false,
+        }
     }
 
     async fn logging(&self, _session: &mut Session, e: Option<&Error>, ctx: &mut Self::CTX)
