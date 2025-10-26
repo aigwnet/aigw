@@ -284,12 +284,17 @@ impl ProxyHttp for AigwProxy {
 
         let host = get_host(header).unwrap_or_default();
 
-        let Some(server) = self.storage.find_site(host) else {
+        let site = self
+            .storage
+            .find_site(host)
+            .map_or(self.storage.find_default_tls_site(), |s| Some(s));
+
+        let Some(site) = site else {
             return Ok(());
         };
         let path = header.uri.path();
 
-        if ctx.tls_version.is_none() && server.tls_on && !path.starts_with(ACME_PATH) {
+        if ctx.tls_version.is_none() && site.tls_on && !path.starts_with(ACME_PATH) {
             let mut uri = format!("https://{host}");
             let port = self.config.basic().https();
             if port != 443 {
@@ -310,7 +315,7 @@ impl ProxyHttp for AigwProxy {
         }
 
         let mut current_location = None;
-        for location in server.locations.iter() {
+        for location in site.locations.iter() {
             current_location = Some(location.clone());
             let (matched, variables) = location.match_host_path(path);
             if matched {

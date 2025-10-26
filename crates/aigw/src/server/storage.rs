@@ -8,7 +8,7 @@ use std::{
     },
 };
 
-use aigw_core::{AcmeToken, DynamicCert, LogPoint, LogType, Site, TlsPrivateKey};
+use aigw_core::{AcmeToken, LogPoint, LogType, Site};
 use dashmap::DashMap;
 use rusqlite::{Connection, params};
 use tokio::sync::Mutex;
@@ -17,7 +17,7 @@ pub struct Storage {
     pub(crate) data_dir: PathBuf,
     sqlite_conn: Arc<Mutex<Connection>>,
     sites: arc_swap::ArcSwap<HashMap<String, Arc<Site>>>,
-    default_cert: arc_swap::ArcSwap<Option<(String, TlsPrivateKey, DynamicCert)>>,
+    default_tls_site: arc_swap::ArcSwap<Option<Arc<Site>>>,
     acme_tokens: arc_swap::ArcSwap<HashMap<String, AcmeToken>>,
     counter: Counter,
 }
@@ -61,7 +61,7 @@ impl Storage {
             data_dir: path,
             sqlite_conn: Arc::new(Mutex::new(init_sqlit(&db_path)?)),
             sites: arc_swap::ArcSwap::new(Default::default()),
-            default_cert: arc_swap::ArcSwap::new(Default::default()),
+            default_tls_site: arc_swap::ArcSwap::new(Default::default()),
             acme_tokens: arc_swap::ArcSwap::new(Default::default()),
             counter: Counter::default(),
         })
@@ -69,14 +69,13 @@ impl Storage {
 }
 
 impl Storage {
-    pub fn default_cert(&self) -> Arc<Option<(String, TlsPrivateKey, DynamicCert)>> {
-        let default_cert = &*self.default_cert.load();
-        default_cert.clone()
+    pub fn find_site(&self, host: &str) -> Option<Arc<Site>> {
+        let sites = self.sites.load();
+        sites.get(host).cloned()
     }
 
-    pub fn find_site(&self, host: &str) -> Option<Arc<Site>> {
-        let servers = self.sites.load();
-        servers.get(host).cloned()
+    pub fn find_default_tls_site(&self) -> Option<Arc<Site>> {
+        (&**self.default_tls_site.load()).clone()
     }
 
     pub fn load_sites(&self) -> anyhow::Result<()> {
@@ -103,16 +102,10 @@ impl Storage {
                 sites.insert(host.to_owned(), s.clone());
             }
 
-            // set default cert
-            if self.default_cert.load().is_none() {
-                if let Some(key) = s.tls_private_key.as_ref() {
-                    if let Some(cert) = s.tls_cert.as_ref() {
-                        self.default_cert.store(Arc::new(Some((
-                            s.name.clone(),
-                            key.to_owned(),
-                            cert.to_owned(),
-                        ))));
-                    }
+            // set default site
+            if self.default_tls_site.load().is_none() {
+                if s.tls_on {
+                    self.default_tls_site.store(Arc::new(Some(s.clone())));
                 }
             }
             sites.insert(s.name.clone(), s);
@@ -127,15 +120,9 @@ impl Storage {
             sites.insert(host.to_owned(), site.clone());
         }
 
-        if self.default_cert.load().is_none() {
-            if let Some(key) = site.tls_private_key.as_ref() {
-                if let Some(cert) = site.tls_cert.as_ref() {
-                    self.default_cert.store(Arc::new(Some((
-                        site.name.clone(),
-                        key.to_owned(),
-                        cert.to_owned(),
-                    ))));
-                }
+        if self.default_tls_site.load().is_none() {
+            if site.tls_on {
+                self.default_tls_site.store(Arc::new(Some(site.clone())));
             }
         }
         sites.insert(site.name.clone(), site);
@@ -150,20 +137,14 @@ impl Storage {
         }
         sites.remove(&site.name);
 
-        if let Some((host, _, _)) = &**self.default_cert.load() {
-            if host.eq(&site.name) {
-                let mut default_cert = None;
+        if let Some(default_site) = &**self.default_tls_site.load() {
+            if default_site.name.eq(&site.name) {
                 for (_, site) in &sites {
-                    if let Some(key) = site.tls_private_key.as_ref() {
-                        if let Some(cert) = site.tls_cert.as_ref() {
-                            default_cert =
-                                Some((site.name.clone(), key.to_owned(), cert.to_owned()));
-                            break;
-                        }
+                    if site.tls_on {
+                        self.default_tls_site.store(Arc::new(Some(site.clone())));
+                        break;
                     }
                 }
-
-                self.default_cert.store(Arc::new(default_cert));
             }
         }
         self.sites.store(Arc::new(sites));

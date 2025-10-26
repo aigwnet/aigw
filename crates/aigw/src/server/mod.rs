@@ -105,6 +105,8 @@ pub fn run(
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
     tls_settings.set_min_proto_version(Some(SslVersion::TLS1_2))?;
+    // TLS 1.2 requires setting cipher suites
+    let _= tls_settings.set_cipher_list("TLS-CHACHA20-POLY1305-SHA256:TLS-AES-256-GCM-SHA384:TLS-AES-128-GCM-SHA256:HIGH:!aNULL:!MD5");
     tls_settings.enable_h2();
     let mut proxy_service_https = http_proxy_service_with_name(&main_conf, proxy, "Aigw-https");
     let addr = format!(":::{}", config.basic().https());
