@@ -43,8 +43,8 @@ watch(
         //if (!newData || newData.length === 0) return;
 
         const times = newData.map(item => item.time);
-        const net_send = newData.map(item => item.net_send / 1024);
-        const net_received = newData.map(item => item.net_received / 1024);
+        const net_send = newData.map(item => (item.net_send / 1024).toFixed(2));
+        const net_received = newData.map(item => (item.net_received / 1024).toFixed(2));
 
         chartOption.value = {
             ...chartOption.value,

@@ -22,8 +22,17 @@ pub async fn statistics(
         io_read_0 += disk.usage().read_bytes;
         io_written_0 += disk.usage().written_bytes;
     }
-
+    
+    let mut networks = Networks::new_with_refreshed_list();
     tokio::time::sleep(Duration::from_millis(1000)).await;
+    networks.refresh(true);
+
+    let mut net_send = 0;
+    let mut net_received = 0;
+    for (_interface_name, data) in &networks {
+        net_send += data.transmitted();
+        net_received += data.received()
+    }
 
     sys.refresh_all();
     let mut cpu_current_process = 0.0;
@@ -54,14 +63,6 @@ pub async fn statistics(
 
     let io_read = io_read_1 - io_read_0;
     let io_written = io_written_1 - io_written_0;
-
-    let mut net_send = 0;
-    let mut net_received = 0;
-    let networks = Networks::new_with_refreshed_list();
-    for (_interface_name, data) in &networks {
-        net_send += data.transmitted();
-        net_received += data.received()
-    }
 
     let load_avg = System::load_average();
 
