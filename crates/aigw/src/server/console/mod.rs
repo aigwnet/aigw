@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use client::ConsoleClient;
-use handler::DataFramHandler;
+use handler::DataFrameHandler;
 use pingora_core::{
     server::{ListenFds, ShutdownWatch},
     services::Service,

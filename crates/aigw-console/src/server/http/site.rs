@@ -106,11 +106,11 @@ impl HttpApiSite {
                     .map_or(true, |d| {
                         debug!(
                             "{} {} {}",
-                            chrono::Local::now().timestamp(),
+                            chrono::Utc::now().timestamp(),
                             d.timestamp(),
-                            chrono::Local::now().timestamp() - d.timestamp()
+                            chrono::Utc::now().timestamp() - d.timestamp()
                         );
-                        chrono::Local::now().timestamp() - d.timestamp() > 30 * 24 * 3600
+                        chrono::Utc::now().timestamp() - d.timestamp() > 30 * 24 * 3600
                     })
             });
 

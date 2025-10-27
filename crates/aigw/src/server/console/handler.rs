@@ -5,11 +5,11 @@ use log::info;
 
 use crate::server::storage::Storage;
 
-pub struct DataFramHandler {
+pub struct DataFrameHandler {
     pub(crate) storage: Arc<Storage>,
 }
 
-impl DataFramHandler {
+impl DataFrameHandler {
     pub fn new(storage: Arc<Storage>) -> Self {
         Self { storage }
     }

@@ -147,14 +147,7 @@ impl Handler {
 
                         log_points.extend(ping.log_points.clone());
 
-                        build_pong(
-                            buffer,
-                            crypto,
-                            chrono::Local::now()
-                                .naive_utc()
-                                .and_utc()
-                                .timestamp_millis(),
-                        )?;
+                        build_pong(buffer, crypto, chrono::Utc::now().timestamp_millis())?;
                         connection.write(buffer.as_ref()).await?;
 
                         // save ping

@@ -130,7 +130,7 @@ pub async fn apply_cert(
             cluster.clone(),
             LogType::Acme,
             LogAction::Add,
-            chrono::Local::now().timestamp() as u64,
+            chrono::Utc::now().timestamp() as u64,
             300,
             Some(data),
         )

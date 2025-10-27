@@ -20,13 +20,13 @@ use tokio::{
 
 use crate::{server::storage::Storage, version::VERSION};
 
-use super::DataFramHandler;
+use super::DataFrameHandler;
 
 const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
 
 pub struct ConsoleClient {
-    data_handler: Arc<DataFramHandler>,
+    data_handler: Arc<DataFrameHandler>,
     shutdown_tx: Arc<Sender<()>>,
     address: String,
     cluster: String,
@@ -48,7 +48,7 @@ impl ConsoleClient {
         let crypto = Arc::new(RwLock::new(None));
 
         Self {
-            data_handler: Arc::new(DataFramHandler::new(storage)),
+            data_handler: Arc::new(DataFrameHandler::new(storage)),
             shutdown_tx,
             address: address.to_owned(),
             cluster,
@@ -123,7 +123,7 @@ impl ConsoleClient {
 
     #[allow(clippy::too_many_arguments)]
     async fn run(
-        data_handler: Arc<DataFramHandler>,
+        data_handler: Arc<DataFrameHandler>,
         shutdown_tx: Arc<Sender<()>>,
         sender: &Arc<mpsc::Sender<Vec<u8>>>,
         rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>,
@@ -264,11 +264,12 @@ impl ConsoleClient {
             let crypto = &*crypto.read().await;
             if let Some(crypto) = crypto {
                 let log_points = storage.load_log_points().await.map_or(vec![], |v| v);
-                let now = chrono::Local::now();
+                let now = chrono::Utc::now();
                 let ts = now.naive_utc().and_utc().timestamp_millis();
                 info!(
                     "Ping ==> : {}.{:03}, log_points: {:?}",
-                    now.format("%Y-%m-%d %H:%M:%S"),
+                    now.with_timezone(&chrono::Local)
+                        .format("%Y-%m-%d %H:%M:%S"),
                     now.timestamp_subsec_millis(),
                     log_points
                 );
@@ -326,7 +327,7 @@ impl ConsoleClient {
 
     async fn spawn_receive_task(
         sender: Arc<mpsc::Sender<Vec<u8>>>,
-        data_handler: Arc<DataFramHandler>,
+        data_handler: Arc<DataFrameHandler>,
         mut reader: OwnedReadHalf,
         crypto: Arc<RwLock<Option<CryptoCore>>>,
     ) -> anyhow::Result<()> {
@@ -370,7 +371,7 @@ impl ConsoleClient {
 
     async fn handle(
         sender: &mpsc::Sender<Vec<u8>>,
-        data_handler: &DataFramHandler,
+        data_handler: &DataFrameHandler,
         data_type: u8,
         buffer: &mut Buffer,
         crypto: &CryptoCore,
@@ -381,7 +382,8 @@ impl ConsoleClient {
                 let date = chrono::DateTime::from_timestamp_millis(pong.ts).unwrap();
                 info!(
                     "Pong <== : {}.{:03}",
-                    date.format("%Y-%m-%d %H:%M:%S"),
+                    date.with_timezone(&chrono::Local)
+                        .format("%Y-%m-%d %H:%M:%S"),
                     date.timestamp_subsec_millis()
                 );
             }

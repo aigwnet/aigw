@@ -1,4 +1,7 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use aigw_core::{
     ChangeLog, DynamicCert, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
@@ -602,7 +605,7 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
 
 pub fn asn1time_to_datetime(
     asn1_time: &Asn1TimeRef,
-) -> anyhow::Result<chrono::DateTime<chrono::Local>> {
+) -> anyhow::Result<chrono::DateTime<chrono::Utc>> {
     let time_str = asn1_time.to_string().replace("GMT", "+00:00"); //"Jun 10 04:53:12 2025 GMT"
 
     let r = chrono::DateTime::parse_from_str(&time_str, "%b %d %H:%M:%S %Y %z");
@@ -610,7 +613,7 @@ pub fn asn1time_to_datetime(
         error!("pasrse time error: {}, {:?}", time_str, e);
         return Err(anyhow!(e));
     }
-    let datetime = r?.with_timezone(&chrono::Local);
+    let datetime = r?.with_timezone(&chrono::Utc);
 
     Ok(datetime)
 }
