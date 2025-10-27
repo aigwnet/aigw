@@ -4,7 +4,7 @@ Documentation=man:aigw(1)
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/aigw --config /etc/aigw/aigw.toml --daemon --log-file /var/log/aigw.log --geo-lite=/etc/aigw/GeoLite2-Country.mmdb --pid-file /run/aigw.pid
+ExecStart=/usr/bin/aigw --config /etc/aigw/aigw.toml --daemon --log-dir /var/log/aigw/ --geo-lite=/etc/aigw/GeoLite2-Country.mmdb --pid-file /run/aigw.pid
 PIDFile=/run/aigw.pid
 WorkingDirectory=/etc/aigw
 RestartSec=5s

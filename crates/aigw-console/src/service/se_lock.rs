@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use log::error;
 use rbatis::{RBatis, rbdc::DateTime};
+use tracing::error;
 
 use crate::storage::tb_lock::TbLock;
 

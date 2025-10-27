@@ -6,9 +6,9 @@ use boring::{
     stack::Stack,
     x509::{X509Name, X509Req, extension::SubjectAlternativeName},
 };
-use log::debug;
 use serde::Deserialize;
 use serde_json::json;
+use tracing::debug;
 
 use crate::service::acme::{
     account::Account,
@@ -291,7 +291,7 @@ impl Order {
             if i >= attempts {
                 return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
             }
-            debug!("{:?}, Order still pending. Waiting to poll.", poll_interval);
+            debug!(target:"certificate", "{:?}, Order still pending. Waiting to poll.", poll_interval);
             tokio::time::sleep(poll_interval).await;
             order = order.poll().await?;
             i += 1;
@@ -329,7 +329,7 @@ impl Order {
                 return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
             }
             debug!(
-                "delay = {:?}, status = {:?} Order not done. Waiting to poll.",
+                target:"certificate", "delay = {:?}, status = {:?} Order not done. Waiting to poll.",
                 poll_interval, order.status
             );
             tokio::time::sleep(poll_interval).await;

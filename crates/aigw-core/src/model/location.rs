@@ -1,5 +1,4 @@
 use ahash::AHashMap;
-use log::error;
 use pingora_http::RequestHeader;
 use pingora_load_balancing::{LoadBalancer, selection::Consistent};
 use regex::Regex;
@@ -7,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, path::PathBuf, sync::Arc};
 use substring::Substring;
 use thiserror::Error;
+use tracing::error;
 
 use crate::{HttpHeader, http::convert_headers, util::regex::RegexCapture};
 

@@ -4,7 +4,7 @@ Documentation=man:aigwc(1)
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/aigwc --config /etc/aigw/aigwc.toml --ui /etc/aigw/ui/ --daemon --log-file /var/log/aigwc.log --pid-file /run/aigwc.pid
+ExecStart=/usr/bin/aigwc --config /etc/aigw/aigwc.toml --ui /etc/aigw/ui/ --daemon --log-dir /var/log/aigwc/ --pid-file /run/aigwc.pid
 PIDFile=/run/aigwc.pid
 WorkingDirectory=/etc/aigw
 RestartSec=5s

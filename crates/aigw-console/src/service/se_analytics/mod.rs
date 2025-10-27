@@ -31,10 +31,10 @@ use crate::{
     },
 };
 use aigw_core::{LOCAL_IP, Ping};
-use log::{debug, error};
 use rbatis::{RBatis, executor::RBatisTxExecutor, rbdc::DateTime};
 use std::{sync::Arc, time::Duration};
 use tokio::time::interval;
+use tracing::{debug, error};
 
 pub async fn save_ping(
     rb: &RBatis,

@@ -4,13 +4,13 @@ use aigw_core::{
     Algorithm, Buffer, CryptoCore, Frame, Shutdown, Signature, build_handshake_response,
     build_pong, parse_ack, parse_handshake_request, parse_ping,
 };
-use log::{debug, error, info};
 use tokio::{
     io::AsyncReadExt,
     net::{TcpListener, TcpStream, tcp::OwnedReadHalf},
     sync::{Mutex, Semaphore, broadcast, mpsc},
     time,
 };
+use tracing::{debug, error, info};
 
 use crate::{
     DatabaseClient,

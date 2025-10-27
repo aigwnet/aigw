@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use aigw_core::{DynamicCert, Site, TlsPrivateKey};
 use async_trait::async_trait;
-use log::error;
 use pingora_core::{listeners::TlsAccept, protocols::tls::TlsRef, tls::ssl};
+use tracing::error;
 
 use crate::server::storage::Storage;
 

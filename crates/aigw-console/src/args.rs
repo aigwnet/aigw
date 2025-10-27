@@ -9,7 +9,7 @@ pub struct AigwConsoleArgs {
     pub config: Option<String>,
 
     #[arg(short, long)]
-    pub log_file: Option<String>,
+    pub log_dir: Option<String>,
 
     #[arg(short, long)]
     pub install: bool,

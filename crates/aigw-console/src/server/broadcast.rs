@@ -8,13 +8,13 @@ use crate::{
 use super::Connections;
 use aigw_core::{Buffer, ChangeLog, DataFrame, LOCAL_IP, LogPoint, build_data};
 use bytes::BytesMut;
-use log::{debug, error, info};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     sync::mpsc::Receiver,
     time,
 };
+use tracing::{debug, error, info};
 
 pub async fn broadcast(database_client: Arc<DatabaseClient>, mut receiver: Receiver<ChangeLog>) {
     while let Some(message) = receiver.recv().await {

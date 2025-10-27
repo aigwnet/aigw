@@ -11,12 +11,12 @@ use std::{
 
 use bytes::{Bytes, BytesMut};
 use http::{Method, StatusCode, header};
-use log::{debug, error, info, warn};
 use mime_guess::{Mime, mime::FromStrError};
 use pingora_core::{Error, ErrorType, modules::http::compression::ResponseCompression};
 use pingora_http::ResponseHeader;
 use pingora_proxy::Session;
 use serde::Deserialize;
+use tracing::{debug, error, warn};
 
 use crate::{
     SERVER,
@@ -773,7 +773,7 @@ async fn handle_file(
                     // redirect.
                     canonical.insert_str(0, prefix);
                 }
-                info!("redirecting to canonical URI: {canonical}");
+                debug!("redirecting to canonical URI: {canonical}");
                 redirect_response(session, StatusCode::PERMANENT_REDIRECT, &canonical).await?;
                 return Ok(());
             }
@@ -790,7 +790,7 @@ async fn handle_file(
         }
     }
 
-    info!("successfully resolved request path: {path:?}");
+    debug!("successfully resolved request path: {path:?}");
 
     let mut compression = Compression::new(session, precompressed);
 

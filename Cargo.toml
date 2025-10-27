@@ -9,7 +9,7 @@ base64 = {version = "0.22"}
 clap = {version = "4", features = ["derive"]}
 daemonize = {version = "0.5"}
 lazy_static = {version = "1"}
-log = {version = "0.4"}
+once_cell = {version = "1"}
 pingora-cache = {version = "0.6"}
 pingora-core = {version = "0.6", features = ["boringssl"]}
 pingora-error = {version = "0.6"}
@@ -19,5 +19,8 @@ pingora-load-balancing = {version = "0.6"}
 pingora-proxy = {version = "0.6"}
 serde = {version = "1", features = ["derive"]}
 serde_json = {version = "1"}
-simplelog = {version = "0.12"}
+time = {version = "0.3", features = ["formatting", "macros", "local-offset"]}
 tokio = {version = "1", features = ["full"]}
+tracing = {version = "0.1"}
+tracing-appender = {version = "0.2"}
+tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "time"]}

@@ -29,7 +29,7 @@ pub struct ServerOpt {
     pub geo_lite: Option<String>,
 
     #[arg(short, long)]
-    pub log_file: Option<String>,
+    pub log_dir: Option<String>,
 
     /// Run as other user
     #[structopt(long)]

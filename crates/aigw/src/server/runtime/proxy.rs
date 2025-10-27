@@ -14,7 +14,6 @@ use http::{
     HeaderName, HeaderValue, StatusCode,
     header::{self, UPGRADE, USER_AGENT},
 };
-use log::{debug, error};
 use once_cell::sync::Lazy;
 use pingora_core::{
     Error, ErrorSource,
@@ -32,6 +31,7 @@ use pingora_http::{RequestHeader, ResponseHeader};
 use pingora_proxy::{FailToProxy, ProxyHttp, Session};
 use simple_useragent::UserAgentParser;
 use substring::Substring;
+use tracing::{debug, error};
 
 use crate::{
     AigwConfig, SERVER,

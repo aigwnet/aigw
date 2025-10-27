@@ -1,19 +1,13 @@
 use core::panic;
-use std::{
-    fs::{self, OpenOptions},
-    sync::Arc,
-};
+use std::{fs, sync::Arc};
 
 mod server;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
+mod logger;
 
 use server::{AigwConfig, ServerOpt, Storage};
-use simplelog::{
-    Color, ColorChoice, CombinedLogger, ConfigBuilder, Level, LevelFilter, SharedLogger,
-    TermLogger, TerminalMode, WriteLogger,
-};
 
 use crate::server::GeoLite;
 
@@ -24,36 +18,7 @@ lazy_static::lazy_static! {}
 fn main() -> anyhow::Result<()> {
     let args = ServerOpt::parse_args();
 
-    let mut builder = ConfigBuilder::new();
-    let r = builder
-        .set_level_color(Level::Error, Some(Color::Magenta))
-        .set_level_color(Level::Trace, Some(Color::Green))
-        .set_time_offset_to_local();
-    let log_config = match r {
-        Ok(builder) => builder.build(),
-        Err(builder) => builder.build(),
-    };
-
-    let mut loggers: Vec<Box<dyn SharedLogger>> = vec![];
-    loggers.push(TermLogger::new(
-        LevelFilter::Trace,
-        log_config.clone(),
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    ));
-
-    if let Some(file) = &args.log_file {
-        let log_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .append(true)
-            .open(file)?;
-        let logger = WriteLogger::new(LevelFilter::Info, log_config, log_file);
-        loggers.push(logger);
-    }
-
-    CombinedLogger::init(loggers)?;
+    logger::init_logger(args.log_dir.as_ref().map_or("logs", |s| s));
 
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file

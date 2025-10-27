@@ -14,9 +14,9 @@ use crate::{
 use aigw_core::{AcmeToken, ChangeLog, LOCAL_IP, LogAction, LogType};
 use anyhow::anyhow;
 use base64::{Engine, prelude::BASE64_STANDARD};
-use log::{debug, error, info};
 use rbatis::{PageRequest, RBatis};
 use tokio::{sync::mpsc::Sender, time::interval};
+use tracing::{debug, error, info};
 
 const LETS_ENCRYPT_URL: &str = "https://acme-v02.api.letsencrypt.org/directory";
 // const LETS_ENCRYPT_URL: &str = "https://acme-staging-v02.api.letsencrypt.org/directory";
@@ -66,7 +66,7 @@ pub async fn apply_cert(
         .await?;
 
     debug!(
-        "Directory: {:?}, {:?}",
+        target:"certificate", "Directory: {:?}, {:?}",
         dir.revoke_cert_url, dir.key_change_url
     );
 
@@ -97,7 +97,7 @@ pub async fn apply_cert(
     }
     let order = builder.build().await?;
     debug!(
-        "Build Order: {:?}, {:?}, {:?},error: {:?}",
+        target:"certificate", "Build Order: {:?}, {:?}, {:?},error: {:?}",
         order.not_after, order.not_before, order.expires, order.error
     );
 
@@ -110,7 +110,7 @@ pub async fn apply_cert(
         let challenge = auth.get_challenge("http-01").unwrap();
 
         debug!(
-            "Auth: {:?}, {:?}, {:?}, Challenge: {:?}, {:?} {:?}",
+            target:"certificate", "Auth: {:?}, {:?}, {:?}, Challenge: {:?}, {:?} {:?}",
             auth.identifier,
             auth.expires,
             auth.wildcard,
@@ -184,7 +184,7 @@ pub async fn apply_cert(
     // has been provisioned, and is now ready for download.
     let order = order.wait_done(Duration::from_secs(5), 3).await?;
     debug!(
-        "Order Done: {:?}, {:?}, {:?},error: {:?}",
+        target:"certificate", "Order Done: {:?}, {:?}, {:?},error: {:?}",
         order.not_after, order.not_before, order.expires, order.error
     );
     assert_eq!(order.status, OrderStatus::Valid);
@@ -192,7 +192,7 @@ pub async fn apply_cert(
     // Download the certificate, and panic if it doesn't exist.
     let cert = order.certificate().await?;
 
-    info!("Apply cert: {}, {:?} successfully!", email, domains);
+    info!(target:"certificate", "Apply cert: {}, {:?} successfully!", email, domains);
 
     let pkey = String::from_utf8_lossy(&pkey.private_key_to_pem_pkcs8()?).to_string();
 
@@ -212,7 +212,7 @@ pub async fn renew_certs(database_client: Arc<DatabaseClient>, sender: Sender<Ch
         let r = se_lock::try_acquire_lock(&database_client.rb, &lock_key, host, 3600).await;
         if r {
             info!(
-                "Check domains with certificates about to expire and initiate the renewal process."
+                target:"certificate", "Check domains with certificates about to expire and initiate the renewal process."
             );
             let default_user = find_default_user(&database_client.rb).await;
             if let Ok(Some((_, email))) = &default_user {
@@ -244,7 +244,7 @@ async fn do_renew_certs(
                 .cluster_name
                 .ok_or(anyhow::anyhow!("Cluster is empty"))?;
             let name = item.name.ok_or(anyhow::anyhow!("Domain is empty"))?;
-            info!("Start renewal domain {} certificate.", name);
+            info!(target:"certificate", "Start renewal domain {} certificate.", name);
             let alt_names = item
                 .alt_names
                 .as_ref()
@@ -273,7 +273,7 @@ async fn do_renew_certs(
                 }
             }
 
-            info!("Renewal domain {} certificate successfully.", name);
+            info!(target:"certificate", "Renewal domain {} certificate successfully.", name);
         }
 
         page_no += 1;

@@ -1,7 +1,7 @@
 use std::{fs, sync::Arc};
 
 use aigw_core::{AcmeToken, DataFrame, LogAction, LogType, Site};
-use log::info;
+use tracing::info;
 
 use crate::server::storage::Storage;
 

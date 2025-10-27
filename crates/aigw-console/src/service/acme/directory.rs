@@ -2,8 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use boring::pkey::{PKey, Private};
 use bytes::Bytes;
-use log::debug;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use tracing::debug;
 
 use crate::service::acme::{
     error::{Error, ServerError, ServerResult},
@@ -152,7 +152,7 @@ impl Directory {
 
             if let Some(typ) = err.r#type.clone() {
                 if &typ == "urn:ietf:params:acme:error:badNonce" && attempt <= 3 {
-                    debug!("{} bad nonce, retrying", attempt);
+                    debug!(target:"certificate", "{} bad nonce, retrying", attempt);
                     continue;
                 }
             }

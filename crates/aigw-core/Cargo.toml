@@ -12,7 +12,6 @@ bytes = {version = "1"}
 http = {version = "1"}
 lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
-log = {workspace = true}
 pem = {version = "3"}
 pingora-core = {workspace = true}
 pingora-http = {workspace = true}
@@ -27,6 +26,7 @@ substring = {version = "1"}
 sysinfo = {version = "0.37"}
 thiserror = {version = "2"}
 tokio = {workspace = true}
+tracing = {workspace = true}
 
 [build-dependencies]
 prost-build = {version = "0.13"}

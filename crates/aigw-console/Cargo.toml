@@ -21,10 +21,10 @@ hex = {version = "0.4"}
 http = {version = "0.2"}
 lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
-log = {workspace = true}
 md5 = {version = "0.8"}
+once_cell = {workspace = true}
 pingora-load-balancing = {workspace = true}
-rbatis = {version = "4.5"}
+rbatis = {version = "4.6"}
 rbdc-mysql = {version = "4.5"}
 rbs = {version = "4.5"}
 redis = {version = "0.32"}
@@ -33,11 +33,14 @@ reqwest = {version = "0.12", default-features = false, features = ["rustls-tls",
 serde = {workspace = true}
 serde_json = {workspace = true}
 sha = {version = "1"}
-simplelog = {workspace = true}
 thiserror = {version = "2"}
+time = {workspace = true}
 tokio = {version = "1", features = ["full"]}
 toml = {version = "0.9"}
 tower-http = {version = "0.6", features = ["fs", "trace"]}
+tracing = {workspace = true}
+tracing-appender = {workspace = true}
+tracing-subscriber = {workspace = true}
 
 [package.metadata.deb]
 assets = [

@@ -2,9 +2,9 @@ use std::{collections::HashMap, sync::Arc};
 
 use base64::{Engine, prelude::BASE64_STANDARD};
 use boring::pkey::{PKey, Private};
-use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::debug;
 
 use crate::service::acme::{directory::Directory, error::Error, helpers::gen_rsa_private_key};
 
@@ -162,7 +162,7 @@ impl AccountBuilder {
 
         let acc = res?;
 
-        debug!(
+        debug!(target: "certificate",
             "Account: {}, {:?}, {:?}",
             acc.created_at, acc.key, acc.status
         );

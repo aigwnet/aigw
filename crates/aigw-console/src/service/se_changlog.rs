@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use aigw_core::{Buffer, ChangeLog, DataFrame, LogAction, LogPoint, LogType, build_data};
-use log::error;
 use rbatis::rbdc::DateTime;
 use rbatis::{PageRequest, RBatis};
 use tokio::sync::Mutex;
+use tracing::error;
 
 use crate::server::connection::Connection;
 use crate::service::find_site_by_page;

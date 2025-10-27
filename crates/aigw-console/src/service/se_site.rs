@@ -9,9 +9,9 @@ use aigw_core::{
 };
 use anyhow::anyhow;
 use boring::asn1::Asn1TimeRef;
-use log::error;
 use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
+use tracing::error;
 
 use crate::{
     service::{Page, do_build_change_log},

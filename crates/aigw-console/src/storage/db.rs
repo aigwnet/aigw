@@ -1,13 +1,36 @@
-use std::{str::FromStr, sync::Arc};
+use std::{
+    fmt::{Display, Formatter},
+    ops::Deref,
+    str::FromStr,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
 
-use log::{LevelFilter, info};
 use rbatis::{
-    DefaultPool, RBatis, intercept_log::LogInterceptor, intercept_page::PageIntercept,
-    rbdc::DateTime,
+    DefaultPool, Intercept, RBatis, ResultType, async_trait,
+    executor::Executor,
+    intercept_page::PageIntercept,
+    rbdc::{DateTime, db::ExecResult},
 };
 use rbdc_mysql::{Driver, options::MySqlConnectOptions};
+use rbs::{Error, Value, is_debug_mode};
+use tracing::{Level, info, level_filters::LevelFilter};
 
 use crate::storage::tb_user::TbUser;
+
+macro_rules! dynamic_tracing_event {
+    ($level:expr, $($field:tt)*) => {
+        match $level {
+            tracing::Level::ERROR => tracing::error!($($field)*),
+            tracing::Level::WARN  => tracing::warn!($($field)*),
+            tracing::Level::INFO  => tracing::info!($($field)*),
+            tracing::Level::DEBUG => tracing::debug!($($field)*),
+            tracing::Level::TRACE => tracing::trace!($($field)*),
+        }
+    };
+}
 
 static INIT_SQL: &str = r#"
 
@@ -406,7 +429,7 @@ impl DatabaseClient {
         self.rb.intercepts.insert(0, Arc::new(PageIntercept::new()));
         self.rb
             .intercepts
-            .insert(1, Arc::new(LogInterceptor::new(LevelFilter::Debug)));
+            .insert(1, Arc::new(TracingInterceptor::new(LevelFilter::DEBUG)));
         self.rb
             .init_option::<Driver, MySqlConnectOptions, DefaultPool>(Driver {}, option)?;
 
@@ -440,6 +463,159 @@ impl DatabaseClient {
         .await?;
         info!("Create default user `admin` successfully.");
         info!("Install Completely.");
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct TracingInterceptor {
+    ///control log off,or change log level.
+    /// 0=Off,
+    /// 1=Error,
+    /// 2=Warn,
+    /// 3=Info,
+    /// 4=Debug,
+    /// 5=Trace
+    pub level_filter: AtomicUsize,
+}
+
+impl TracingInterceptor {
+    pub fn new(level_filter: LevelFilter) -> Self {
+        let s = Self {
+            level_filter: AtomicUsize::new(0),
+        };
+        s.set_level_filter(level_filter);
+        s
+    }
+
+    pub fn get_level_filter(&self) -> LevelFilter {
+        match self.level_filter.load(Ordering::Relaxed) {
+            0 => LevelFilter::OFF,
+            1 => LevelFilter::ERROR,
+            2 => LevelFilter::WARN,
+            3 => LevelFilter::INFO,
+            4 => LevelFilter::DEBUG,
+            5 => LevelFilter::TRACE,
+            _ => LevelFilter::OFF,
+        }
+    }
+
+    pub fn to_level(&self) -> Option<Level> {
+        match self.get_level_filter() {
+            LevelFilter::OFF => None,
+            LevelFilter::ERROR => Some(Level::ERROR),
+            LevelFilter::WARN => Some(Level::WARN),
+            LevelFilter::INFO => Some(Level::INFO),
+            LevelFilter::DEBUG => Some(Level::DEBUG),
+            LevelFilter::TRACE => Some(Level::TRACE),
+        }
+    }
+
+    pub fn set_level_filter(&self, level_filter: LevelFilter) {
+        match level_filter {
+            LevelFilter::OFF => self.level_filter.store(0, Ordering::SeqCst),
+            LevelFilter::ERROR => self.level_filter.store(1, Ordering::SeqCst),
+            LevelFilter::WARN => self.level_filter.store(2, Ordering::SeqCst),
+            LevelFilter::INFO => self.level_filter.store(3, Ordering::SeqCst),
+            LevelFilter::DEBUG => self.level_filter.store(4, Ordering::SeqCst),
+            LevelFilter::TRACE => self.level_filter.store(5, Ordering::SeqCst),
+        }
+    }
+}
+
+#[async_trait]
+impl Intercept for TracingInterceptor {
+    async fn before(
+        &self,
+        task_id: i64,
+        _rb: &dyn Executor,
+        sql: &mut String,
+        args: &mut Vec<Value>,
+        _result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Vec<Value>, Error>>,
+    ) -> Result<Option<bool>, Error> {
+        if self.get_level_filter() == LevelFilter::OFF {
+            return Ok(Some(true));
+        }
+        let level = self.to_level().unwrap_or(Level::DEBUG);
+        //send sql/args
+        dynamic_tracing_event!(
+            level, target: "database",
+            "[rb] [{}] => `{}` {}",
+            task_id,
+            &sql,
+            RbsValueDisplay::new(args)
+        );
+
+        Ok(Some(true))
+    }
+
+    async fn after(
+        &self,
+        task_id: i64,
+        _rb: &dyn Executor,
+        _sql: &mut String,
+        _args: &mut Vec<Value>,
+        result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Vec<Value>, Error>>,
+    ) -> Result<Option<bool>, Error> {
+        if self.get_level_filter() == LevelFilter::OFF {
+            return Ok(Some(true));
+        }
+        let level = self.to_level().unwrap_or_else(|| Level::DEBUG);
+        //ResultType
+        match result {
+            ResultType::Exec(result) => match result {
+                Ok(result) => {
+                    dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= rows_affected={}", task_id, result);
+                }
+                Err(e) => {
+                    dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= {}", task_id, e);
+                }
+            },
+            ResultType::Query(result) => match result {
+                Ok(result) => {
+                    if is_debug_mode() {
+                        dynamic_tracing_event!(
+                            level, target: "database",
+                            "[rb] [{}] <= len={},rows={}",
+                            task_id,
+                            result.len(),
+                            RbsValueDisplay { inner: result }
+                        );
+                    } else {
+                        dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= len={}", task_id, result.len());
+                    }
+                }
+                Err(e) => {
+                    dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= {}", task_id, e);
+                }
+            },
+        }
+        Ok(Some(true))
+    }
+}
+
+struct RbsValueDisplay<'a> {
+    inner: &'a Vec<Value>,
+}
+
+impl<'a> RbsValueDisplay<'a> {
+    pub fn new(v: &'a Vec<Value>) -> Self {
+        Self { inner: v }
+    }
+}
+
+impl<'a> Display for RbsValueDisplay<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[")?;
+        let mut idx = 0;
+        for x in self.inner.deref() {
+            std::fmt::Display::fmt(x, f)?;
+            if (idx + 1) < self.inner.len() {
+                f.write_str(",")?;
+            }
+            idx += 1;
+        }
+        f.write_str("]")?;
         Ok(())
     }
 }

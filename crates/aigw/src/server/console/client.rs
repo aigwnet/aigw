@@ -6,7 +6,7 @@ use aigw_core::{
     parse_pong, statistics,
 };
 use bytes::BytesMut;
-use log::{error, info};
+use tracing::{error, info};
 use sysinfo::System;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},

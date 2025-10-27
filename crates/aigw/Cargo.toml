@@ -22,10 +22,9 @@ http = {version = "1"}
 httpdate = {version = "1"}
 itoa = {version = "1"}
 lazy_static = {workspace = true}
-log = {workspace = true}
 maxminddb = {version = "0.26", features = ["mmap"]}
 mime_guess = {version = "2"}
-once_cell = {version = "1"}
+once_cell = {workspace = true}
 os_info = {version = "3", default-features = false}
 percent-encoding = {version = "2"}
 pingora-cache = {workspace = true}
@@ -39,12 +38,15 @@ rusqlite = {version = "0.35"}
 serde = {workspace = true}
 serde_json = {workspace = true}
 simple-useragent = {version = "0.1.2"}
-simplelog = {workspace = true}
 substring = {version = "1"}
 sysinfo = {version = "0.37"}
+time = {workspace = true}
 tokio = {workspace = true}
 tokio-util = {version = "0.7", features = ["codec"]}
 toml = {version = "0.8"}
+tracing = {workspace = true}
+tracing-appender = {workspace = true}
+tracing-subscriber = {workspace = true}
 url = {version = "2"}
 urlencoding = {version = "2"}
 

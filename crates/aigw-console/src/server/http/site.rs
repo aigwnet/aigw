@@ -4,9 +4,9 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use log::{debug, error};
 use rbatis::{PageRequest, RBatis};
 use tokio::sync::mpsc::Sender;
+use tracing::{debug, error};
 
 use crate::{
     server::http::{

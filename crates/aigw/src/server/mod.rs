@@ -7,7 +7,6 @@ mod storage;
 use std::sync::Arc;
 
 use aigw_core::Site;
-use log::info;
 use pingora_core::{
     apps::HttpServerOptions,
     listeners::tls::TlsSettings,
@@ -20,6 +19,7 @@ use runtime::{AigwProxy, DynamicTlsAccept};
 use shutdown::run_args;
 pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
+use tracing::info;
 
 use crate::server::console::AigwConsoleService;
 

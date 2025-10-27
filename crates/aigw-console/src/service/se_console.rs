@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use aigw_core::ChangeLog;
 use bytes::BytesMut;
-use log::{debug, error};
 use rbatis::{PageRequest, rbdc::DateTime};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
+use tracing::{debug, error};
 
 use crate::storage::tb_console::TbConsole;
 

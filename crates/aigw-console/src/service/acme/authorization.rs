@@ -1,9 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
 use boring::hash::{MessageDigest, hash};
-use log::debug;
 use serde::Deserialize;
 use serde_json::json;
+use tracing::debug;
 
 use crate::service::acme::{
     account::Account,
@@ -193,7 +193,7 @@ impl Authorization {
             if i >= attempts {
                 return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
             }
-            debug!(
+            debug!(target:"certificate",
                 "{:?},Authorization still pending. Waiting to poll.",
                 poll_interval
             );
@@ -316,7 +316,7 @@ impl Challenge {
             if i >= attempts {
                 return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
             }
-            debug!(
+            debug!(target:"certificate",
                 "{:?}, {:?}, Challenge not done. Waiting to poll.",
                 poll_interval, challenge.status
             );

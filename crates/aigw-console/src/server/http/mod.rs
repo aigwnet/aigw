@@ -7,10 +7,10 @@ use axum::{
     response::IntoResponse,
     routing::{delete, get, post, put},
 };
-use log::info;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::Sender;
 use tower_http::{services::ServeDir, trace::TraceLayer};
+use tracing::info;
 
 use crate::{
     AigwConsoleConfig, DatabaseClient,

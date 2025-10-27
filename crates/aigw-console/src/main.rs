@@ -1,24 +1,17 @@
-use std::{
-    collections::HashMap,
-    fs::{self, OpenOptions},
-    sync::Arc,
-};
+use std::{collections::HashMap, fs, sync::Arc};
 
 use aigw_core::ChangeLog;
 use conf::AigwConsoleConfig;
-use log::{Level, LevelFilter, debug, info};
 use regex::Regex;
-use simplelog::{
-    Color, ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode,
-    WriteLogger,
-};
 use storage::db::DatabaseClient;
 use tokio::{runtime::Runtime, sync::Mutex};
+use tracing::{debug, info};
 
 use crate::args::AigwConsoleArgs;
 
 mod args;
 mod conf;
+mod logger;
 mod server;
 mod service;
 mod storage;
@@ -40,36 +33,7 @@ fn main() -> anyhow::Result<()> {
         daemonize.start()?;
     }
 
-    let mut builder = ConfigBuilder::new();
-    let r = builder
-        .set_level_color(Level::Error, Some(Color::Magenta))
-        .set_level_color(Level::Trace, Some(Color::Green))
-        .set_time_offset_to_local();
-    let log_config = match r {
-        Ok(builder) => builder.build(),
-        Err(builder) => builder.build(),
-    };
-
-    let mut loggers: Vec<Box<dyn SharedLogger>> = vec![];
-    loggers.push(TermLogger::new(
-        LevelFilter::Info,
-        log_config.clone(),
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    ));
-
-    if let Some(file) = &args.log_file {
-        let log_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .append(true)
-            .open(file)?;
-        let logger = WriteLogger::new(LevelFilter::Info, log_config, log_file);
-        loggers.push(logger);
-    }
-
-    CombinedLogger::init(loggers)?;
+    logger::init_logger(args.log_dir.as_ref().map_or("logs", |s| s));
 
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
