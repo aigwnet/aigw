@@ -171,11 +171,11 @@ const fetchData = async () => {
   site.locations = site.locations.map((location: any) => ({
     ...location,
     upstream: location.upstream.toString().replaceAll(',', '\n'),
-    proxy_add_headers: location.proxy_add_headers.length == 0 ? [{
+    proxy_add_headers: !location.proxy_add_headers || location.proxy_add_headers.length == 0 ? [{
       name: "",
       value: "",
     }] : location.proxy_add_headers,
-    proxy_set_headers: location.proxy_set_headers.length == 0 ? [{
+    proxy_set_headers: !location.proxy_set_headers || location.proxy_set_headers.length == 0 ? [{
       name: "",
       value: "",
     }] : location.proxy_set_headers,
