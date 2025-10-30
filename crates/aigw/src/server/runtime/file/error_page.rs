@@ -140,7 +140,7 @@ const ERROR_TEMPLATE: &str = r##"
             <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                 <path fill="#667eea" d="M40,40 L160,40 L160,160 L40,160 Z" stroke="#764ba2" stroke-width="8" fill-opacity="0.1"/>
                 <circle cx="100" cy="100" r="40" fill="#667eea" fill-opacity="0.2"/>
-                <path d="M80,80 L120,120 M120,80 L80,120" stroke="\#764ba2" stroke-width="8" stroke-linecap="round"/>
+                <path d="M80,80 L120,120 M120,80 L80,120" stroke="#764ba2" stroke-width="8" stroke-linecap="round"/>
             </svg>
         </div>
         <div class="server-info">{}/{}</div>
