@@ -24,7 +24,6 @@ use crate::{
         auto_index::build_auto_index,
         error_page,
         path::{path_to_uri, resolve_uri},
-        static_css_js::{BS_CSS, BS_CSS_PATH, BS_JS, BS_JS_PATH},
     },
 };
 
@@ -651,23 +650,6 @@ async fn handle_file(
     }
 
     let uri = &session.req_header().uri;
-    if uri.path().eq(BS_CSS_PATH) {
-        return html_response(
-            session,
-            StatusCode::OK,
-            Bytes::from(BS_CSS),
-            "text/css;charset=utf-8",
-        )
-        .await;
-    } else if uri.path().eq(BS_JS_PATH) {
-        return html_response(
-            session,
-            StatusCode::OK,
-            Bytes::from(BS_JS),
-            "text/javascript;charset=utf-8",
-        )
-        .await;
-    }
 
     let root = if let Some(root) = file_root {
         root

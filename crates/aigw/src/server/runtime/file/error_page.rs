@@ -6,38 +6,157 @@ use http::StatusCode;
 use crate::{version::VERSION, SERVER};
 
 const ERROR_TEMPLATE: &str = r#"
-<!doctype html>
-<html lang="en" class="h-100" data-bs-theme="auto">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{}</title>
-    <link href="/.__aigw__reserved/assets/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .error-code {
+            font-size: 10rem;
+            font-weight: 800;
+            color: #667eea;
+            line-height: 1;
+            margin-bottom: 1rem;
+            text-shadow: 4px 4px 0px rgba(102, 126, 234, 0.2);
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #2d3748;
+        }
+
+        .error-message {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .server-info {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            margin: 1.5rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .illustration {
+            margin: 2rem 0;
+            opacity: 0.8;
+        }
+
+        .illustration svg {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+            
+            .error-title {
+                font-size: 2rem;
+            }
+            
+            .error-message {
+                font-size: 1rem;
+            }
+            
+            .server-info {
+                font-size: 0.8rem;
+            }
+            
+            .error-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-code {
+                font-size: 4rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
+            
+            .illustration svg {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
 </head>
-<body class="d-flex flex-column h-100">        
-    <main class="w-100 m-auto">
-        <div class="container">
-            <div class="row justify-content-center">
-                <h1 class="main" style="font-size: 20vw;">{}</h1>
-                <p class="sub" style="font-size: 1.95vw;">{}</p>
-            </div>
+<body>
+    <div class="error-container">
+        <div class="error-code">{}</div>
+        <h1 class="error-title">{}</h1>
+        <p class="error-message">{}</p>
+        
+        <div class="illustration">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path fill="\#667eea" d="M40,40 L160,40 L160,160 L40,160 Z" stroke="\#764ba2" stroke-width="8" fill-opacity="0.1"/>
+                <circle cx="100" cy="100" r="40" fill="\#667eea" fill-opacity="0.2"/>
+                <path d="M80,80 L120,120 M120,80 L80,120" stroke="\#764ba2" stroke-width="8" stroke-linecap="round"/>
+            </svg>
         </div>
-    </main>
-    <footer class="footer mt-auto py-3 bg-body-tertiary">
-        <div class="container">
-            <span class="text-body-secondary"> {}/{} </span>
-        </div>
-    </footer>
+        <div class="server-info">{}/{}</div>
+    </div>
+
 </body>
-</html>"#;
+</html>
+"#;
 
 lazy_static! {
-    static ref ERR_400: String = ERROR_TEMPLATE.format(&["400 Bad Request", "400", "This page isn't available.", SERVER, VERSION]);
-    static ref ERR_403: String = ERROR_TEMPLATE.format(&["403 Forbidden", "403", "This page isn't available.", SERVER, VERSION]);
-    static ref ERR_404: String = ERROR_TEMPLATE.format(&["404 Not Found", "404", "Sorry but the page you are looking for does not exist, have been removed. name changed or is temporarily unavailable.", SERVER, VERSION]);
-    static ref ERR_405: String = ERROR_TEMPLATE.format(&["405 Method Not Allowed", "405", "Your request could not be allowed.", SERVER, VERSION]);
-    static ref ERR_500: String = ERROR_TEMPLATE.format(&["500 Internal Server Error", "500", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
-    static ref ERR_DEFAULT: String = ERROR_TEMPLATE.format(&["Error", "Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
+    static ref ERR_400: String = ERROR_TEMPLATE.format(&["400 Bad Request", "400", "400 Bad Request", "This page isn't available.", SERVER, VERSION]);
+    static ref ERR_403: String = ERROR_TEMPLATE.format(&["403 Forbidden", "403", "403 Forbidden", "This page isn't available.", SERVER, VERSION]);
+    static ref ERR_404: String = ERROR_TEMPLATE.format(&["404 Not Found", "404", "404 Not Found", "Sorry but the page you are looking for does not exist, have been removed. name changed or is temporarily unavailable.", SERVER, VERSION]);
+    static ref ERR_405: String = ERROR_TEMPLATE.format(&["405 Method Not Allowed", "405", "405 Method Not Allowed", "Your request could not be allowed.", SERVER, VERSION]);
+    static ref ERR_500: String = ERROR_TEMPLATE.format(&["500 Internal Server Error", "500", "500 Internal Server Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
+    static ref ERR_DEFAULT: String = ERROR_TEMPLATE.format(&["Error", "Error", "Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
 }
 
 pub fn get_error_page(status: StatusCode) -> &'static str {
