@@ -13,13 +13,13 @@ const ERROR_TEMPLATE: &str = r#"
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{}</title>
     <style>
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        }}
 
-        body {
+        body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -27,9 +27,9 @@ const ERROR_TEMPLATE: &str = r#"
             justify-content: center;
             align-items: center;
             color: #333;
-        }
+        }}
 
-        .error-container {
+        .error-container {{
             text-align: center;
             max-width: 600px;
             padding: 2rem;
@@ -37,97 +37,97 @@ const ERROR_TEMPLATE: &str = r#"
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             animation: fadeIn 0.8s ease-out;
-        }
+        }}
 
-        .error-code {
+        .error-code {{
             font-size: 10rem;
             font-weight: 800;
             color: #667eea;
             line-height: 1;
             margin-bottom: 1rem;
             text-shadow: 4px 4px 0px rgba(102, 126, 234, 0.2);
-        }
+        }}
 
-        .error-title {
+        .error-title {{
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
             color: #2d3748;
-        }
+        }}
 
-        .error-message {
+        .error-message {{
             font-size: 1.2rem;
             color: #718096;
             margin-bottom: 2rem;
             line-height: 1.6;
-        }
+        }}
 
-        .server-info {
+        .server-info {{
             font-size: 0.9rem;
             color: #a0aec0;
             margin: 1.5rem 0;
             font-family: 'Courier New', monospace;
-        }
+        }}
 
-        .illustration {
+        .illustration {{
             margin: 2rem 0;
             opacity: 0.8;
-        }
+        }}
 
-        .illustration svg {
+        .illustration svg {{
             width: 200px;
             height: 200px;
             margin: 0 auto;
-        }
+        }}
 
-        @keyframes fadeIn {
-            from {
+        @keyframes fadeIn {{
+            from {{
                 opacity: 0;
                 transform: translateY(20px);
-            }
-            to {
+            }}
+            to {{
                 opacity: 1;
                 transform: translateY(0);
-            }
-        }
+            }}
+        }}
 
-        @media (max-width: 768px) {
-            .error-code {
+        @media (max-width: 768px) {{
+            .error-code {{
                 font-size: 6rem;
-            }
+            }}
             
-            .error-title {
+            .error-title {{
                 font-size: 2rem;
-            }
+            }}
             
-            .error-message {
+            .error-message {{
                 font-size: 1rem;
-            }
+            }}
             
-            .server-info {
+            .server-info {{
                 font-size: 0.8rem;
-            }
+            }}
             
-            .error-container {
+            .error-container {{
                 margin: 1rem;
                 padding: 1.5rem;
-            }
-        }
+            }}
+        }}
 
-        @media (max-width: 480px) {
-            .error-code {
+        @media (max-width: 480px) {{
+            .error-code {{
                 font-size: 4rem;
-            }
+            }}
             
-            .error-title {
+            .error-title {{
                 font-size: 1.5rem;
-            }
+            }}
             
-            .illustration svg {
+            .illustration svg {{
                 width: 150px;
                 height: 150px;
-            }
-        }
+            }}
+        }}
     </style>
 </head>
 <body>

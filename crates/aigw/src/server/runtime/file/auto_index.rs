@@ -47,30 +47,30 @@ const HTML: &str = r#"
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Index of /</title>
     <style>
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        }}
 
-        body {
+        body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-        }
+        }}
 
-        .container {
+        .container {{
             flex: 1;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             padding: 2rem;
-        }
+        }}
 
-        .index-container {
+        .index-container {{
             width: 100%;
             max-width: 800px;
             background: white;
@@ -78,64 +78,64 @@ const HTML: &str = r#"
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             padding: 2rem;
             overflow: hidden;
-        }
+        }}
 
-        h1 {
+        h1 {{
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
             color: #2d3748;
-        }
+        }}
 
-        table {
+        table {{
             width: 100%;
             border-collapse: collapse;
             font-family: monospace;
-        }
+        }}
 
-        th, td {
+        th, td {{
             padding: 0.75rem 1rem;
             text-align: left;
             vertical-align: top;
-        }
+        }}
 
-        th {
+        th {{
             font-weight: bold;
             color: #4a5568;
             border-bottom: 1px solid #e2e8f0;
-        }
+        }}
 
-        .item {
+        .item {{
             display: flex;
             align-items: center;
             gap: 12px;
-        }
+        }}
 
-        .icon {
+        .icon {{
             width: 18px;
             height: 18px;
-        }
+        }}
 
-        a {
+        a {{
             text-decoration: none;
             color: #000;
-        }
+        }}
 
-        a:hover {
+        a:hover {{
             text-decoration: underline;
-        }
+        }}
 
-        .current-item td:first-child {
+        .current-item td:first-child {{
             padding-left: 2rem;
-        }
+        }}
 
-        .server-info {
+        .server-info {{
             text-align: center;
             padding: 1rem;
             color: rgba(255, 255, 255, 0.8);
             font-size: 0.9rem;
             font-family: monospace;
-        }
+        }}
     </style>
 </head>
 <body>
