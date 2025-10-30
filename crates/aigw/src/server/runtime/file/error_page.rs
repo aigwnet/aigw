@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 
 use http::StatusCode;
 
-use crate::{version::VERSION, SERVER};
+use crate::{SERVER, version::VERSION};
 
 const ERROR_TEMPLATE: &str = r##"
 <!DOCTYPE html>
@@ -151,11 +151,11 @@ const ERROR_TEMPLATE: &str = r##"
 "##;
 
 lazy_static! {
-    static ref ERR_400: String = ERROR_TEMPLATE.format(&["400 Bad Request", "400", "400 Bad Request", "This page isn't available.", SERVER, VERSION]);
-    static ref ERR_403: String = ERROR_TEMPLATE.format(&["403 Forbidden", "403", "403 Forbidden", "This page isn't available.", SERVER, VERSION]);
-    static ref ERR_404: String = ERROR_TEMPLATE.format(&["404 Not Found", "404", "404 Not Found", "Sorry but the page you are looking for does not exist, have been removed. name changed or is temporarily unavailable.", SERVER, VERSION]);
-    static ref ERR_405: String = ERROR_TEMPLATE.format(&["405 Method Not Allowed", "405", "405 Method Not Allowed", "Your request could not be allowed.", SERVER, VERSION]);
-    static ref ERR_500: String = ERROR_TEMPLATE.format(&["500 Internal Server Error", "500", "500 Internal Server Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
+    static ref ERR_400: String = ERROR_TEMPLATE.format(&["400 Bad Request", "400", "Bad Request", "This page isn't available.", SERVER, VERSION]);
+    static ref ERR_403: String = ERROR_TEMPLATE.format(&["403 Forbidden", "403", "Forbidden", "This page isn't available.", SERVER, VERSION]);
+    static ref ERR_404: String = ERROR_TEMPLATE.format(&["404 Not Found", "404", "Not Found", "Sorry but the page you are looking for does not exist, have been removed. name changed or is temporarily unavailable.", SERVER, VERSION]);
+    static ref ERR_405: String = ERROR_TEMPLATE.format(&["405 Method Not Allowed", "405", "Method Not Allowed", "Your request could not be allowed.", SERVER, VERSION]);
+    static ref ERR_500: String = ERROR_TEMPLATE.format(&["500 Internal Server Error", "500", "Internal Server Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
     static ref ERR_DEFAULT: String = ERROR_TEMPLATE.format(&["Error", "Error", "Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
 }
 
