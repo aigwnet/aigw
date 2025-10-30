@@ -6,7 +6,6 @@ mod storage;
 
 use std::sync::Arc;
 
-use aigw_core::Site;
 use pingora_core::{
     apps::HttpServerOptions,
     listeners::tls::TlsSettings,
@@ -63,29 +62,7 @@ pub fn run(
     let mut server = Server::new_with_opt_and_conf(args, main_conf);
     let main_conf = server.configuration.clone();
 
-    let default_site = Site {
-        id: None,
-        name: "default".to_string(),
-        alt_names: vec![],
-        auto_index: config.basic().auto_index(),
-        root_dir: config.basic().root_dir().as_ref().map(|item| item.into()),
-        tls_on: false,
-        acme_on: false,
-        tls_cert: None,
-        tls_cert_start_date: None,
-        tls_cert_end_date: None,
-        tls_private_key: None,
-        locations: vec![],
-        cluster: config.console().cluster().to_string(),
-    };
-    let default_server = Arc::new(default_site);
-
-    let proxy = AigwProxy::new(
-        config.clone(),
-        storage.clone(),
-        geo_lite.clone(),
-        default_server.clone(),
-    );
+    let proxy = AigwProxy::new(config.clone(), storage.clone(), geo_lite.clone());
 
     let mut proxy_service_http = http_proxy_service_with_name(&main_conf, proxy, "Aigw-http");
     if let Some(proxy) = proxy_service_http.app_logic_mut() {
@@ -100,7 +77,7 @@ pub fn run(
     let addr = format!(":::{}", config.basic().http());
     proxy_service_http.add_tcp(addr.as_str());
 
-    let proxy = AigwProxy::new(config.clone(), storage.clone(), geo_lite, default_server);
+    let proxy = AigwProxy::new(config.clone(), storage.clone(), geo_lite);
     let dynamic_cert = DynamicTlsAccept::new(storage);
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;

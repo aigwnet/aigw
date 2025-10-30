@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use ahash::AHashMap;
-use aigw_core::ProxyLocation;
+use aigw_core::{ProxyLocation, Site};
 use bytes::BytesMut;
 use http::StatusCode;
 
@@ -84,6 +84,8 @@ pub struct AigwCtx {
     pub connection_time: u64,
     /// Indicates if this connection is reused
     pub connection_reused: bool,
+    /// Current site
+    pub site: Option<Arc<Site>>,
     /// The location handling request
     pub location: Option<(String, Arc<ProxyLocation>)>,
     /// Address of the upstream server

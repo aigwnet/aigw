@@ -7,7 +7,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use aigw_core::{BanckedProtocol, HttpHeader, Site, convert_headers};
+use aigw_core::{BanckedProtocol, HttpHeader, convert_headers};
 use async_trait::async_trait;
 use bytes::Bytes;
 use http::{
@@ -155,25 +155,18 @@ pub struct AigwProxy {
     /// Counter tracking number of currently active request processing operations
     processing: AtomicI32,
     storage: Arc<Storage>,
-    default_site: Arc<Site>,
     http01_handler: Http01Handler,
     user_agent_parser: Arc<UserAgentParser>,
     geo_lite: Arc<GeoLite>,
 }
 
 impl AigwProxy {
-    pub fn new(
-        config: Arc<AigwConfig>,
-        storage: Arc<Storage>,
-        geo_lite: Arc<GeoLite>,
-        default_site: Arc<Site>,
-    ) -> Self {
+    pub fn new(config: Arc<AigwConfig>, storage: Arc<Storage>, geo_lite: Arc<GeoLite>) -> Self {
         Self {
             config,
             accepted: AtomicU64::new(0),
             processing: AtomicI32::new(0),
             storage: storage.clone(),
-            default_site,
             http01_handler: Http01Handler::new(storage),
             user_agent_parser: Arc::new(simple_useragent::UserAgentParser::new()),
             geo_lite,
@@ -292,6 +285,7 @@ impl ProxyHttp for AigwProxy {
         let Some(site) = site else {
             return Ok(());
         };
+        ctx.site = Some(site.clone());
         let path = header.uri.path();
 
         if ctx.tls_version.is_none() && site.tls_on && !path.starts_with(ACME_PATH) {
@@ -401,13 +395,16 @@ impl ProxyHttp for AigwProxy {
             }
         }
         //
+        let Some(site) = &ctx.site else {
+            return Ok(true);
+        };
 
         let Some((_, location)) = &ctx.location else {
             StaticFilesHandler::handle(
-                self.default_site.root_dir.as_ref(),
+                site.root_dir.as_ref(),
                 &["index.html", "default.html"],
                 None,
-                self.default_site.auto_index,
+                site.auto_index,
                 session,
             )
             .await?;
@@ -417,7 +414,7 @@ impl ProxyHttp for AigwProxy {
         if !location.proxy {
             StaticFilesHandler::handle(
                 if location.root_dir.is_none() {
-                    self.default_site.root_dir.as_ref()
+                    site.root_dir.as_ref()
                 } else {
                     location.root_dir.as_ref()
                 },

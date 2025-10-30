@@ -23,10 +23,6 @@ pub struct BasicConfig {
     // default 443
     https: u32,
 
-    root_dir: Option<String>,
-
-    auto_index: bool,
-
     data_dir: Option<String>,
 }
 
@@ -37,14 +33,6 @@ impl BasicConfig {
 
     pub fn https(&self) -> u32 {
         self.https
-    }
-
-    pub fn root_dir(&self) -> &Option<String> {
-        &self.root_dir
-    }
-
-    pub fn auto_index(&self) -> bool {
-        self.auto_index
     }
 
     pub fn data_dir(&self) -> &Option<String> {
