@@ -9,12 +9,12 @@ use http::Uri;
 
 use crate::{SERVER, version::VERSION};
 
-const ROW_DIR: &str = r#"
+const ROW_DIR: &str = r##"
 <tr class="current-item">
     <td>
         <div class="item">
             <svg class="icon" viewBox="0 0 24 24">
-                <path fill="\#FFA000" d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                <path fill="#FFA000" d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
             </svg>
             <a href="{}">{}</a>
         </div>
@@ -22,14 +22,14 @@ const ROW_DIR: &str = r#"
     <td>{}</td>
     <td>{}</td>
 </tr>
-"#;
+"##;
 
-const ROW_FILE: &str = r#"
+const ROW_FILE: &str = r##"
 <tr class="current-item">
     <td>
         <div class="item">
             <svg class="icon" viewBox="0 0 24 24">
-                <path fill="\#4CAF50" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                <path fill="#4CAF50" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
             </svg>
             <a href="{}">{}</a>
         </div>
@@ -37,9 +37,9 @@ const ROW_FILE: &str = r#"
     <td>{}</td>
     <td>{}</td>
 </tr>
-"#;
+"##;
 
-const HTML: &str = r#"
+const HTML: &str = r##"
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -72,7 +72,7 @@ const HTML: &str = r#"
 
         .index-container {{
             width: 100%;
-            max-width: 800px;
+            max-width: 1200px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -155,7 +155,7 @@ const HTML: &str = r#"
                         <td>
                             <div class="item">
                                 <svg class="icon" viewBox="0 0 24 24">
-                                    <path fill="\#FFA000" d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                                    <path fill="#FFA000" d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
                                 </svg>
                                 <a href="../">../</a>
                             </div>
@@ -172,7 +172,7 @@ const HTML: &str = r#"
     <div class="server-info">{}/{}</div>
 </body>
 </html>
-"#;
+"##;
 
 pub async fn build_auto_index(uri: &Uri, path: &PathBuf) -> String {
     let mut rows = String::new();
@@ -205,7 +205,6 @@ pub async fn build_auto_index(uri: &Uri, path: &PathBuf) -> String {
 
                 if m.is_file() {
                     rows += &ROW_FILE.format(&[
-                        "file",
                         href.as_str(),
                         &file_display_name,
                         &gmt_create,
