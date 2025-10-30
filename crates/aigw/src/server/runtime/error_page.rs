@@ -1,7 +1,9 @@
+use bytes::Bytes;
 use dyn_fmt::AsStrFormatExt;
 use lazy_static::lazy_static;
 
-use http::StatusCode;
+use http::{StatusCode, header};
+use pingora_http::ResponseHeader;
 
 use crate::{SERVER, version::VERSION};
 
@@ -156,20 +158,36 @@ lazy_static! {
     static ref ERR_404: String = ERROR_TEMPLATE.format(&["404 Not Found", "404", "Not Found", "Sorry but the page you are looking for does not exist, have been removed. name changed or is temporarily unavailable.", SERVER, VERSION]);
     static ref ERR_405: String = ERROR_TEMPLATE.format(&["405 Method Not Allowed", "405", "Method Not Allowed", "Your request could not be allowed.", SERVER, VERSION]);
     static ref ERR_500: String = ERROR_TEMPLATE.format(&["500 Internal Server Error", "500", "Internal Server Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
+    static ref ERR_502: String = ERROR_TEMPLATE.format(&["502 Bad Gateway", "502", "Bad Gateway", "Server Error! The server encountered a temporary error and could not complete your request.", SERVER, VERSION]);
     static ref ERR_DEFAULT: String = ERROR_TEMPLATE.format(&["Error", "Error", "Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
 }
 
-pub fn get_error_page(status: StatusCode) -> &'static str {
+pub fn get_error_page(status: StatusCode) -> &'static [u8] {
     if status == StatusCode::BAD_REQUEST {
-        return ERR_400.as_str();
+        return ERR_400.as_str().as_bytes();
     } else if status == StatusCode::FORBIDDEN {
-        return ERR_403.as_str();
+        return ERR_403.as_str().as_bytes();
     } else if status == StatusCode::NOT_FOUND {
-        return ERR_404.as_str();
+        return ERR_404.as_str().as_bytes();
     } else if status == StatusCode::METHOD_NOT_ALLOWED {
-        return ERR_405.as_str();
+        return ERR_405.as_str().as_bytes();
     } else if status == StatusCode::INTERNAL_SERVER_ERROR {
-        return ERR_500.as_str();
+        return ERR_500.as_str().as_bytes();
+    } else if status == StatusCode::BAD_GATEWAY {
+        return ERR_502.as_str().as_bytes();
     }
-    ERR_DEFAULT.as_str()
+    ERR_DEFAULT.as_str().as_bytes()
+}
+
+pub fn generate_error(code: StatusCode) -> (ResponseHeader, Bytes) {
+    let body = Bytes::from_static(get_error_page(code));
+
+    let length = body.len();
+    let mut resp = ResponseHeader::build(code, Some(3)).unwrap();
+    resp.insert_header(header::SERVER, SERVER).unwrap();
+    resp.insert_header(header::CONTENT_LENGTH, &length.to_string())
+        .unwrap();
+    resp.insert_header(header::CACHE_CONTROL, "private, no-store")
+        .unwrap();
+    (resp, body)
 }

@@ -1,7 +1,7 @@
 mod cert;
 mod conf;
 mod context;
-mod err;
+mod error_page;
 mod file;
 mod geo_lite;
 mod http_header;

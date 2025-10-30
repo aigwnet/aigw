@@ -38,7 +38,7 @@ use crate::{
     server::{
         acme::Http01Handler,
         runtime::{
-            GeoLite, err,
+            GeoLite, error_page,
             file::StaticFilesHandler,
             get_hostname,
             http_header::{
@@ -649,7 +649,9 @@ impl ProxyHttp for AigwProxy {
             }
         };
         if code > 0 {
-            let (header, body) = err::generate_error(code);
+            let (header, body) = error_page::generate_error(
+                StatusCode::from_u16(code).map_or(StatusCode::INTERNAL_SERVER_ERROR, |s| s),
+            );
             session
                 .write_error_response(header, body)
                 .await

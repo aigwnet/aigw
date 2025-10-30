@@ -20,10 +20,12 @@ use tracing::{debug, error, warn};
 
 use crate::{
     SERVER,
-    server::runtime::file::{
-        auto_index::build_auto_index,
+    server::runtime::{
         error_page,
-        path::{path_to_uri, resolve_uri},
+        file::{
+            auto_index::build_auto_index,
+            path::{path_to_uri, resolve_uri},
+        },
     },
 };
 
