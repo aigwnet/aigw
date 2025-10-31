@@ -433,13 +433,14 @@ impl Metadata {
         header: &mut ResponseHeader,
         charset: Option<&str>,
     ) -> Result<(), Box<Error>> {
+        let mime_type = self.mime.as_ref();
         if let Some(charset) = charset {
             header.append_header(
                 header::CONTENT_TYPE,
-                format!("{};charset={charset}", self.mime.as_ref()),
+                format!("{};charset={charset}", mime_type),
             )?;
         } else {
-            header.append_header(header::CONTENT_TYPE, self.mime.as_ref())?;
+            header.append_header(header::CONTENT_TYPE, mime_type)?;
         }
         Ok(())
     }
@@ -787,8 +788,7 @@ async fn handle_file(
 
     // list files
     if path.is_dir() && auto_index {
-        let uri_path = ".".to_string() + uri.path();
-        let s = build_auto_index(uri_path, &path).await;
+        let s = build_auto_index(&path).await;
         html_response(session, StatusCode::OK, s.into(), "text/html;charset=utf-8").await?;
     } else {
         let meta = match Metadata::from_path(&path, orig_path.as_ref()) {
