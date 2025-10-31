@@ -39,14 +39,14 @@
   },
   "cluster": {
     "title": "Cluster",
-    "list": "Clusters List",
-    "new": "Add Cluster",
+    "list": "Clusters",
+    "new": "New Cluster",
     "edit": "Edit Cluster"
   },
   "site": {
     "title": "Manage Sites",
-    "list": "Sites List",
-    "new": "Add New Site",
+    "list": "Sites",
+    "new": "New Site",
     "edit": "Edit Site"
   },
   "user": {

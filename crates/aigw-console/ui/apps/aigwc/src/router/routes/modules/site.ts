@@ -13,37 +13,6 @@ const routes: RouteRecordRaw[] = [
     path: '/site',
     children: [
       {
-        name: 'sites',
-        path: '/sites',
-        component: () => import('#/views/sites/list/index.vue'),
-        meta: {
-          affixTab: true,
-          icon: 'lucide:list',
-          title: $t('page.site.list'),
-        },
-      },
-      {
-        name: 'Site Edit',
-        path: '/sites/edit/:id',
-        component: () =>
-          import('#/views/sites/edit/index.vue'),
-        meta: {
-          activePath: '/sites',
-          hideInMenu: true,
-          maxNumOfOpenTab: 1,
-          title: $t('page.site.edit'),
-        },
-      },
-      {
-        name: 'Site Add',
-        path: '/sites/add',
-        component: () => import('#/views/sites/new/index.vue'),
-        meta: {
-          icon: 'lucide:plus',
-          title: $t('page.site.new'),
-        },
-      },
-      {
         name: 'cluster',
         path: '/sites/clusters',
         component: () => import('#/views/clusters/list/index.vue'),
@@ -73,6 +42,37 @@ const routes: RouteRecordRaw[] = [
           hideInMenu: true,
           maxNumOfOpenTab: 1,
           title: $t('page.cluster.new'),
+        },
+      },
+      {
+        name: 'sites',
+        path: '/sites',
+        component: () => import('#/views/sites/list/index.vue'),
+        meta: {
+          affixTab: true,
+          icon: 'lucide:list',
+          title: $t('page.site.list'),
+        },
+      },
+      {
+        name: 'Site Edit',
+        path: '/sites/edit/:id',
+        component: () =>
+          import('#/views/sites/edit/index.vue'),
+        meta: {
+          activePath: '/sites',
+          hideInMenu: true,
+          maxNumOfOpenTab: 1,
+          title: $t('page.site.edit'),
+        },
+      },
+      {
+        name: 'Site Add',
+        path: '/sites/add',
+        component: () => import('#/views/sites/new/index.vue'),
+        meta: {
+          icon: 'lucide:plus',
+          title: $t('page.site.new'),
         },
       },
     ],
