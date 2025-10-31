@@ -204,7 +204,7 @@ pub async fn build_auto_index(uri_path: String, path: &PathBuf) -> String {
                     ]);
                 } else {
                     rows += &ROW_DIR.format(&[
-                        href.as_str(),
+                        &(href + "/"),
                         &file_display_name,
                         &gmt_create,
                         &file_size,
