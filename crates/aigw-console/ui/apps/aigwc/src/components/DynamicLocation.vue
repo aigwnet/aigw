@@ -184,7 +184,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
                 <FormItem label="Rewrite" :label-col="{ span: 3 }" :name="getFieldPath(index, 'rewrite')">
-                    <Input v-model:value="localFields[index].rewrite" placeholder="" />
+                    <Input v-model:value="localFields[index].rewrite" placeholder="Example: ^/(.*) /v2/api/$1" />
                 </FormItem>
                 </Col>
             </Row>

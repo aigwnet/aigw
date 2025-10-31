@@ -5,7 +5,6 @@ use std::{
 };
 
 use dyn_fmt::AsStrFormatExt;
-use http::Uri;
 
 use crate::{SERVER, version::VERSION};
 
@@ -174,7 +173,7 @@ const HTML: &str = r##"
 </html>
 "##;
 
-pub async fn build_auto_index(uri: &Uri, path: &PathBuf) -> String {
+pub async fn build_auto_index(uri_path: String, path: &PathBuf) -> String {
     let mut rows = String::new();
 
     if let Ok(mut entries) = tokio::fs::read_dir(&path).await {
@@ -189,14 +188,7 @@ pub async fn build_auto_index(uri: &Uri, path: &PathBuf) -> String {
                     continue;
                 }
 
-                let mut href = if !uri.path().eq("/") {
-                    uri.path().to_owned() + file_name
-                } else {
-                    file_name.to_owned()
-                };
-                if m.is_dir() {
-                    href += "/";
-                }
+                let href = uri_path.clone() + file_name;
 
                 let file_display_name = smart_truncate(file_name, 60);
                 let gmt_create =

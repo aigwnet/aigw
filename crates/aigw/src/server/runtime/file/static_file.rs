@@ -787,7 +787,8 @@ async fn handle_file(
 
     // list files
     if path.is_dir() && auto_index {
-        let s = build_auto_index(uri, &path).await;
+        let uri_path = ".".to_string() + uri.path();
+        let s = build_auto_index(uri_path, &path).await;
         html_response(session, StatusCode::OK, s.into(), "text/html;charset=utf-8").await?;
     } else {
         let meta = match Metadata::from_path(&path, orig_path.as_ref()) {
