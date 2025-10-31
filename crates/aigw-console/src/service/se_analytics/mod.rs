@@ -3,6 +3,7 @@ mod traffic;
 
 pub use monitor::AnalyticsMonitorItem;
 pub use monitor::get_analytics_monitor;
+pub use monitor::get_analytics_monitor_server;
 pub use traffic::AnalyticsTrafficItem;
 pub use traffic::ExtInfo;
 pub use traffic::get_analytics_traffic;

@@ -81,12 +81,12 @@ const gridOptions: VxeGridProps<RowType> = {
   columns: [
     { title: 'No', type: 'seq', width: 50 },
     { field: 'ip', sortable: true, title: 'IP' },
-    { field: 'version', sortable: true, title: 'Version' },
-    { slots: { default: 'os_info' }, title: 'OS' },
+    { field: 'version', sortable: true, title: $t('page.dashboard.version') },
+    { slots: { default: 'os_info' }, title: $t('page.dashboard.os') },
     { slots: { default: 'cpu_info' }, title: 'CPU' },
-    { field: 'cpu_nums', sortable: true, title: 'CPU核数' },
-    { field: 'gmt_modified', sortable: true, title: '修改时间' },
-    { slots: { default: 'action' }, title: 'Actions', width: 160 },
+    { field: 'cpu_nums', sortable: true, title: $t('page.dashboard.cpuNum') },
+    { field: 'gmt_modified', sortable: true, title: $t('page.modifiedTime') },
+    { slots: { default: 'action' }, title: $t('page.actions'), width: 160 },
   ],
   exportConfig: {},
   //height: 'auto',
@@ -129,7 +129,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
 const router = useRouter();
 
 const onClickServer = (row: RowType) => {
-  //router.push('/sites/add');
+  router.push('/dashboard/mointor/' + clusterRef.value + "/" + row.ip);
 };
 </script>
 
@@ -139,7 +139,7 @@ const onClickServer = (row: RowType) => {
     <template #description>
       <div class="text-muted-foreground">
         <p>
-          查看集群访问情况、集群状态以及服务器详情等信息。
+          {{ $t('page.dashboard.monitorTip') }}
         </p>
       </div>
     </template>
@@ -151,43 +151,43 @@ const onClickServer = (row: RowType) => {
       <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" title="CPU">
         <MonitorCpu :data="analyticsMonitor" />
       </AnalysisChartCard>
-      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" title="CPU Load">
+      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" :title="$t('page.dashboard.load')">
         <MonitorCpuLoad :data="analyticsMonitor" />
       </AnalysisChartCard>
     </div>
     <div v-if="isClusterLoaded" class="w-full md:flex">
-      <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" title="Memory">
+      <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" :title="$t('page.dashboard.memory')">
         <MonitorMem :data="analyticsMonitor" />
       </AnalysisChartCard>
-      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" title="Disk">
+      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" :title="$t('page.dashboard.disk')">
         <MonitorDisk :data="analyticsMonitor" />
       </AnalysisChartCard>
     </div>
     <div class="w-full md:flex">
-      <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" title="磁盘IO">
+      <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" :title="$t('page.dashboard.io')">
         <MonitorIO :data="analyticsMonitor" />
       </AnalysisChartCard>
-      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" title="流量统计">
+      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" :title="$t('page.dashboard.network')">
         <MonitorNet :data="analyticsMonitor" />
       </AnalysisChartCard>
     </div>
     <div class="w-full md:flex">
-      <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" title="耗时">
+      <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" :title="$t('page.dashboard.rt')">
         <MonitorRt :data="analyticsMonitor" />
       </AnalysisChartCard>
-      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" title="错误">
+      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/2" :title="$t('page.dashboard.error')">
         <MonitorError :data="analyticsMonitor" />
       </AnalysisChartCard>
     </div>
 
     <div v-if="isClusterLoaded">
-      <Grid table-title="服务器列表" table-title-help="提示">
+      <Grid :table-title="$t('page.dashboard.serverList')" table-title-help="">
         <template #toolbar-tools>
           <Button class="mr-2" type="primary" @click="() => gridApi.query()">
-            刷新当前页面
+            {{ $t('page.refreshCurrentPage') }}
           </Button>
           <Button type="primary" @click="() => gridApi.reload()">
-            刷新并返回第一页
+            {{ $t('page.refreshAndReturnFirst') }}
           </Button>
         </template>
         <template #os_info="{ row }">
@@ -197,7 +197,7 @@ const onClickServer = (row: RowType) => {
           {{ row.cpu_name }}
         </template>
         <template #action="{ row }">
-          <Button type="link" @click="onClickServer(row)">查看详情</Button>
+          <Button type="link" @click="onClickServer(row)">{{ $t('page.viewDetails') }}</Button>
         </template>
       </Grid>
     </div>

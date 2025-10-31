@@ -1,4 +1,10 @@
 {
+  "modifiedTime":"Modified Time",
+  "actions":"Actions",
+  "refreshCurrentPage":"Refresh current page",
+  "refreshAndReturnFirst":"Refresh to the first page",
+  "viewDetails":"View Details",
+  "details":"Details",
   "auth": {
     "login": "Login",
     "register": "Register",
@@ -16,7 +22,20 @@
     "trafficPvD": "Daily PV",
     "trafficSC": "Status Code",
     "trafficSrc": "Traffic Source",
-    "trafficGeo": "Geographic"
+    "trafficGeo": "Geographic",
+    "monitorTip": "Monitor the operational status of resources such as CPU, memory, disk, and network for the cluster and individual servers.",
+    "monitorServerTip": "Monitor the operational status of server resources such as CPU, memory, disk, and network.",
+    "load": "Load",
+    "memory": "Memory",
+    "disk": "Disk",
+    "io":"IO",
+    "network":"Network",
+    "rt":"Response Time",
+    "error":"Error",
+    "serverList":"Server List",
+    "version":"Version",
+    "os":"OS",
+    "cpuNum":"CPU Num"
   },
   "cluster": {
     "title": "Cluster",

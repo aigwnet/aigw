@@ -131,6 +131,10 @@ pub async fn run(
             get(HttpApiAnalytics::analytics_monitor).layer(auth_layer.clone()),
         )
         .route(
+            "/api/v1/analytics/monitor/{cluster}/{ip}",
+            get(HttpApiAnalytics::analytics_monitor_server).layer(auth_layer.clone()),
+        )
+        .route(
             "/api/v1/analytics/traffic/{cluster}",
             get(HttpApiAnalytics::analytics_traffic).layer(auth_layer.clone()),
         )

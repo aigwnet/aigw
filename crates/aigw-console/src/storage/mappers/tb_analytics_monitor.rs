@@ -1,4 +1,4 @@
-use rbatis::{impl_delete, impl_insert, impl_select_page, rbdc::DateTime};
+use rbatis::{impl_delete, impl_insert, impl_select, impl_select_page, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,5 +29,6 @@ pub struct TbAnalyticsMonitor {
 }
 
 impl_insert!(TbAnalyticsMonitor {});
+impl_select!(TbAnalyticsMonitor { select_by_cluster_and_ip(cluster_name: &str, ip: &str, limit: usize) => "`WHERE cluster_name = #{cluster_name} and ip= #{ip} ORDER BY ID DESC LIMIT #{limit}`"});
 impl_select_page!(TbAnalyticsMonitor{select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) => "`WHERE cluster_name = #{cluster_name} AND gmt_create >=#{start_time} AND gmt_create <#{end_time} ORDER BY ID DESC`"});
 impl_delete!(TbAnalyticsMonitor { delete_by_gmt_create(gmt_create: DateTime) => "`WHERE gmt_create < #{gmt_create}`"});

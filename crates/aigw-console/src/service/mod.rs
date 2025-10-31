@@ -18,6 +18,7 @@ pub(crate) use se_analytics::AnalyticsMonitorItem;
 pub(crate) use se_analytics::AnalyticsTrafficItem;
 pub(crate) use se_analytics::ExtInfo;
 pub(crate) use se_analytics::get_analytics_monitor;
+pub(crate) use se_analytics::get_analytics_monitor_server;
 pub(crate) use se_analytics::get_analytics_traffic;
 pub(crate) use se_analytics::get_analytics_traffic_1day;
 pub(crate) use se_analytics::get_analytics_traffic_1month;

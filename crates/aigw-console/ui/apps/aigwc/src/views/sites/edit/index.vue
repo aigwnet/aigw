@@ -21,7 +21,7 @@ const index = computed(() => {
   return route.params?.id ?? -1;
 });
 
-setTabTitle(`${index.value} - 详情信息`);
+setTabTitle(`${index.value} - `+ $t('page.details'));
 
 const submitting = ref(true);
 

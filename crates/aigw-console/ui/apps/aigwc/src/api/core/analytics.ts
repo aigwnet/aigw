@@ -70,6 +70,32 @@ export async function getAnalyticsMonitorApi(name: string): Promise<Array<Analyt
     return arrays
 }
 
+export async function getAnalyticsMonitorServerApi(name: string, ip: string): Promise<Array<AnalyticsApi.AnalyticsMonitor>> {
+    var arrays = Array();
+    const items = await requestClient.get(`/analytics/monitor/${name}/${ip}`);
+    for (const a of items) {
+        const r: AnalyticsApi.AnalyticsMonitor = {
+            time: a.time,
+            cpu: a.item.cpu,
+            cpu_current_process: a.item.cpu_current_process,
+            cpu_load_one: a.item.cpu_load_one,
+            cpu_load_five: a.item.cpu_load_five,
+            cpu_load_fifteen: a.item.cpu_load_fifteen,
+            mem: a.item.mem,
+            swap: a.item.swap,
+            disk: a.item.disk,
+            io_read: a.item.io_read,
+            io_written: a.item.io_written,
+            net_send: a.item.net_send,
+            net_received: a.item.net_received,
+            rt: a.item.rt,
+            error: a.item.error,
+        };
+        arrays.push(r)
+    }
+    return arrays
+}
+
 export async function getAnalyticsTraffic(name: string): Promise<AnalyticsApi.AnalyticsTraffic> {
     return await requestClient.get(`/analytics/traffic/${name}`);
 }

@@ -5,8 +5,8 @@ use crate::{
     server::http::{ApiContext, ApiData, ApiError, ApiResponseResult},
     service::{
         AnalyticsMonitorItem, AnalyticsTrafficItem, ExtInfo, get_analytics_monitor,
-        get_analytics_traffic, get_analytics_traffic_1day, get_analytics_traffic_1month,
-        get_analytics_traffic_ext_info_1month,
+        get_analytics_monitor_server, get_analytics_traffic, get_analytics_traffic_1day,
+        get_analytics_traffic_1month, get_analytics_traffic_ext_info_1month,
     },
 };
 
@@ -56,6 +56,16 @@ impl HttpApiAnalytics {
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Vec<AnalyticsMonitorItem>> {
         let data = get_analytics_monitor(&context.database_client.rb, &cluster, 30)
+            .await
+            .map_err(ApiError::from)?;
+        Ok(ApiData(Some(data)))
+    }
+
+    pub async fn analytics_monitor_server(
+        Path((cluster, ip)): Path<(String, String)>,
+        State(context): State<ApiContext>,
+    ) -> ApiResponseResult<Vec<AnalyticsMonitorItem>> {
+        let data = get_analytics_monitor_server(&context.database_client.rb, &cluster, &ip, 30)
             .await
             .map_err(ApiError::from)?;
         Ok(ApiData(Some(data)))

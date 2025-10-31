@@ -1,4 +1,6 @@
 [Unit]
+Description=AI Gateway
+After=network.target
 PartOf=aigw.target
 Documentation=man:aigw(1)
 
