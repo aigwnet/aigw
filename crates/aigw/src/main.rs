@@ -29,7 +29,10 @@ fn main() -> anyhow::Result<()> {
     let config = fs::read_to_string(config_file)?;
     let config: AigwConfig = toml::from_str(config.as_str())?;
 
-    let storage = Arc::new(Storage::new(config.basic().data_dir().as_ref())?);
+    let storage = Arc::new(Storage::new(
+        config.basic().data_dir().as_ref(),
+        config.console().cluster().to_owned(),
+    )?);
     storage.load_sites()?;
 
     let geo_lite_file = if let Some(geo_lite_file) = args.geo_lite.as_ref() {

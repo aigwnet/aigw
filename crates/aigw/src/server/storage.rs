@@ -15,6 +15,7 @@ use tokio::sync::Mutex;
 
 pub struct Storage {
     pub(crate) data_dir: PathBuf,
+    cluster: String,
     sqlite_conn: Arc<Mutex<Connection>>,
     sites: arc_swap::ArcSwap<HashMap<String, Arc<Site>>>,
     default_tls_site: arc_swap::ArcSwap<Option<Arc<Site>>>,
@@ -42,7 +43,7 @@ pub struct Counter {
 }
 
 impl Storage {
-    pub fn new(data_dir: Option<&String>) -> anyhow::Result<Self> {
+    pub fn new(data_dir: Option<&String>, cluster: String) -> anyhow::Result<Self> {
         let path = data_dir.map_or(Err(anyhow::anyhow!("Data directory is null")), |item| {
             Ok(item.parse::<PathBuf>()?)
         })?;
@@ -59,6 +60,7 @@ impl Storage {
 
         Ok(Self {
             data_dir: path,
+            cluster,
             sqlite_conn: Arc::new(Mutex::new(init_sqlit(&db_path)?)),
             sites: arc_swap::ArcSwap::new(Default::default()),
             default_tls_site: arc_swap::ArcSwap::new(Default::default()),
@@ -90,8 +92,13 @@ impl Storage {
             let entry = entry?;
             let path = entry.path();
             if path.is_file() {
-                let content = fs::read_to_string(path)?;
+                let content = fs::read_to_string(&path)?;
                 let site: Site = serde_json::from_str(&content)?;
+                if !site.cluster.eq(&self.cluster) {
+                    // Delete invalid data
+                    let _ = fs::remove_file(&path);
+                    continue;
+                }
                 ss.push(Arc::new(site));
             }
         }
@@ -362,7 +369,7 @@ mod tests {
     #[test]
     fn test_sqlite() {
         let data_dir = "tmp/data".to_owned();
-        let storage = Storage::new(Some(&data_dir)).unwrap();
+        let storage = Storage::new(Some(&data_dir), "test".to_string()).unwrap();
         let _ = storage.load_log_points();
     }
 }

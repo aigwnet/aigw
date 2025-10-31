@@ -7,7 +7,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use aigw_core::{BanckedProtocol, HttpHeader, convert_headers};
+use aigw_core::{BanckedProtocol, HttpHeader, convert_headers, find_matched_location};
 use async_trait::async_trait;
 use bytes::Bytes;
 use http::{
@@ -308,24 +308,17 @@ impl ProxyHttp for AigwProxy {
             return Ok(());
         }
 
-        let mut current_location = None;
-        for location in site.locations.iter() {
-            current_location = Some(location.clone());
-            let (matched, variables) = location.match_host_path(path);
-            if matched {
-                ctx.location = Some((path.to_string(), location.clone()));
-                if let Some(variables) = variables {
-                    for (key, value) in variables.iter() {
-                        ctx.add_variable(key, value);
-                    }
-                };
-                break;
+        if let Some((location, variables)) = find_matched_location(&site.locations, path) {
+            ctx.location = Some((path.to_string(), location.clone()));
+            for (key, value) in variables.iter() {
+                ctx.add_variable(key, value);
             }
         }
+
         ctx.add_variable("hostname", get_hostname());
         debug!("variables: {:?}", ctx.variables);
 
-        if let Some(location) = current_location {
+        if let Some((_, location)) = &ctx.location {
             location
                 .validate_content_length(header)
                 .map_err(|e| new_internal_error(413, e.to_string()))?;

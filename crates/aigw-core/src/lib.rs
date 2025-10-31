@@ -11,6 +11,7 @@ pub use model::cluster::Cluster;
 pub use model::location::BanckedProtocol;
 pub use model::location::PathSelector;
 pub use model::location::ProxyLocation;
+pub use model::location::find_matched_location;
 pub use model::location::new_path_selector;
 pub use model::location::new_rewrite;
 pub use model::site::DynamicCert;

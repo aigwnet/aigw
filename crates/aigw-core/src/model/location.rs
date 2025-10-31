@@ -215,43 +215,6 @@ pub struct ProxyLocation {
 }
 
 impl ProxyLocation {
-    /// Checks if a request matches this location's path and host rules
-    /// Returns a tuple containing:
-    /// - bool: Whether the request matched both path and host rules
-    /// - Option<Vec<(String, String)>>: Any captured variables from regex host matching
-    #[inline]
-    pub fn match_host_path(&self, path: &str) -> (bool, Option<Vec<(String, String)>>) {
-        // Check host matching against configured host patterns
-        let mut variables: Vec<(String, String)> = vec![];
-
-        let matched = match &*self.path {
-            // For exact path matching, compare path strings directly
-            PathSelector::EqualPath(_, EqualPath { value }) => value == path,
-            // For regex path matching, use regex is_match
-            PathSelector::RegexPath(_, RegexPath { value }) => {
-                let (matched, value) = value.captures(path);
-                if let (true, Some(vars)) = (matched, value) {
-                    variables.extend(vars);
-                }
-                matched
-            }
-            // For prefix path matching, check if path starts with prefix
-            PathSelector::PrefixPath(_, PrefixPath { value }) => path.starts_with(value),
-            // Empty path selector matches everything
-            PathSelector::Empty => true,
-        };
-        // If path doesn't match, return false early
-        if !matched {
-            return (false, None);
-        }
-        if variables.is_empty() {
-            return (matched, None);
-        }
-
-        // Return whether both path and host matched, along with any captured variables
-        (matched, Some(variables))
-    }
-
     /// Validates that the request's Content-Length header does not exceed the configured maximum
     ///
     /// # Arguments
@@ -440,4 +403,67 @@ where
             .map_err(|_| serde::de::Error::custom("Convert headers error"))?;
         Ok(Some(r))
     }
+}
+
+pub fn find_matched_location(
+    locations: &[Arc<ProxyLocation>],
+    path: &str,
+) -> Option<(Arc<ProxyLocation>, Vec<(String, String)>)> {
+    // Stage 1: Exact match (=) — highest priority
+    for location in locations {
+        match &*location.path {
+            PathSelector::EqualPath(_, EqualPath { value }) => {
+                if value == path {
+                    return Some((location.clone(), vec![]));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Stage 2: Non-exact matches
+    let mut best_prefix: Option<(&Arc<ProxyLocation>, usize)> = None;
+    let mut empty_match: Option<&Arc<ProxyLocation>> = None;
+
+    for location in locations {
+        match &*location.path {
+            // For exact path matching, compare path strings directly
+            PathSelector::EqualPath(_, _) => {
+                continue;
+            }
+            // For regex path matching, use regex is_match
+            PathSelector::RegexPath(_, RegexPath { value }) => {
+                let (matched, captures) = value.captures(path);
+                if matched {
+                    // Assuming captures is Some(_) when matched; if not, use unwrap_or_default()
+                    return Some((location.clone(), captures.unwrap_or_default()));
+                }
+            }
+            // For prefix path matching, check if path starts with prefix
+            PathSelector::PrefixPath(_, PrefixPath { value }) => {
+                if path.starts_with(value) {
+                    let len = value.len();
+                    if best_prefix.as_ref().map_or(true, |&(_, l)| len > l) {
+                        best_prefix = Some((location, len));
+                    }
+                }
+            }
+            PathSelector::Empty => {
+                // Empty matches everything, but lowest priority
+                if empty_match.is_none() {
+                    empty_match = Some(location);
+                }
+            }
+        }
+    }
+
+    // Stage 3: Return longest prefix or empty
+    if let Some((location, _)) = best_prefix {
+        return Some((location.clone(), vec![]));
+    }
+
+    if let Some(location) = empty_match {
+        return Some((location.clone(), vec![]));
+    }
+    None
 }
