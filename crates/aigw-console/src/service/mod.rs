@@ -33,6 +33,7 @@ pub(crate) use se_cluster::add_new_cluster;
 pub(crate) use se_cluster::delete_cluster;
 pub(crate) use se_cluster::find_all;
 pub(crate) use se_cluster::find_cluster;
+pub(crate) use se_cluster::find_cluster_by_name;
 pub(crate) use se_cluster::find_cluster_by_page;
 pub(crate) use se_cluster::modify_cluster;
 pub(crate) use se_console::send_change_log_to_peers;

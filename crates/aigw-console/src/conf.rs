@@ -18,7 +18,6 @@ pub(crate) struct ServerConfig {
     pub(crate) tcp: TcpConfig,
     pub(crate) http: HttpConfig,
     pub(crate) boradcast: BoradcastConfig,
-    pub(crate) key: String,
     pub(crate) ui: Option<String>,
 }
 

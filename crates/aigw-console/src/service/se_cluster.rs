@@ -10,6 +10,7 @@ pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<(
         &TbCluster {
             id: None,
             name: Some(cluster.name.clone()),
+            key: Some(cluster.key.clone()),
             description: cluster.description.clone(),
             gmt_create: Some(now.clone()),
             gmt_modified: Some(now),
@@ -24,6 +25,7 @@ pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::
     let table = &TbCluster {
         id: None,
         name: Some(cluster.name.clone()),
+        key: Some(cluster.key.clone()),
         description: cluster.description.clone(),
         gmt_create: None,
         gmt_modified: Some(now),
@@ -34,6 +36,13 @@ pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::
 
 pub async fn find_cluster(rb: &RBatis, id: u64) -> anyhow::Result<Cluster> {
     let cluster = TbCluster::select_by_id(rb, id)
+        .await?
+        .ok_or(anyhow::anyhow!("Cluster not found."))?;
+    Ok(convert_tb_cluster(&cluster))
+}
+
+pub async fn find_cluster_by_name(rb: &RBatis, name: &str) -> anyhow::Result<Cluster> {
+    let cluster = TbCluster::select_by_name(rb, name)
         .await?
         .ok_or(anyhow::anyhow!("Cluster not found."))?;
     Ok(convert_tb_cluster(&cluster))
@@ -85,6 +94,7 @@ fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
     Cluster {
         id: cluster.id,
         name: cluster.name.clone().map_or("".to_string(), |name| name),
+        key: cluster.key.clone().map_or("".to_string(), |key| key),
         description: cluster.description.clone(),
         gmt_create,
         gmt_modified,

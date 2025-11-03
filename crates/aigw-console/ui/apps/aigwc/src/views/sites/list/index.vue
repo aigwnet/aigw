@@ -2,6 +2,7 @@
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import { useRouter } from 'vue-router';
 import { ref } from 'vue';
+import { $t } from '#/locales';
 
 import { confirm, Page } from '@vben/common-ui';
 
@@ -59,19 +60,19 @@ const gridOptions: VxeGridProps<RowType> = {
   },
   columns: [
     { title: 'No', type: 'seq', width: 50 },
-    { align: 'left', title: 'Name', type: 'checkbox', width: 160 },
-    { field: 'alt_names', sortable: true, title: 'Alternative Names' },
-    { field: 'root_dir', sortable: true, title: 'Root Directory' },
-    { field: 'tls_on', sortable: true, title: 'TLS Enable' },
-    { slots: { default: 'tls_cert_date' }, title: 'TLS Cert' },
-    { slots: { default: 'action' }, title: 'Actions', width: 160 },
+    { align: 'left', title: $t('page.site.name'), type: 'checkbox', width: 160 },
+    { field: 'alt_names', sortable: true, title: $t('page.site.alternativeNames') },
+    { field: 'root_dir', sortable: true, title: $t('page.site.rootDir') },
+    { field: 'tls_on', sortable: true, title: $t('page.site.tlsOn') },
+    { slots: { default: 'tls_cert_date' }, title: $t('page.site.tlsCertDate') },
+    { slots: { default: 'action' }, title: $t('page.actions'), width: 160 },
   ],
   exportConfig: {},
   keepSource: true,
   proxyConfig: {
     ajax: {
       query: async ({ page, sort }) => {
-         var cluster = clusterRef.value;
+        var cluster = clusterRef.value;
         let data = await getSiteTableApi(cluster, {
           page: page.currentPage,
           page_size: page.pageSize,
@@ -120,13 +121,13 @@ const onDelete = async (row: RowType) => {
       return deleteSiteApi(row.name);
     },
     centered: false,
-    content: 'Are you sure to delete this item?',
+    content: $t('page.deleteConfirm'),
     icon: 'question',
   })
     .then(() => {
 
       message.success({
-        content: `Delete site successfully!`,
+        content: $t('page.site.deleteSuccess'),
       });
       gridApi.reload()
     })
@@ -145,7 +146,7 @@ const onDelete = async (row: RowType) => {
     <template #description>
       <div class="text-muted-foreground">
         <p>
-          查看集群所有站点信息。
+          {{ $t('page.site.tip') }}
         </p>
       </div>
     </template>
@@ -154,16 +155,16 @@ const onDelete = async (row: RowType) => {
     </template>
 
     <div v-if="isClusterLoaded">
-      <Grid :table-title="$t('page.site.list')" table-title-help="提示">
+      <Grid :table-title="$t('page.site.list')">
         <template #toolbar-tools>
           <Button class="mr-2" type="primary" @click="onAdd()">
-            Add
+            {{ $t('page.new') }}
           </Button>
           <Button class="mr-2" type="primary" @click="() => gridApi.query()">
-            刷新当前页面
+            {{ $t('page.refreshCurrentPage') }}
           </Button>
           <Button type="primary" @click="() => gridApi.reload()">
-            刷新并返回第一页
+            {{ $t('page.refreshAndReturnFirst') }}
           </Button>
         </template>
         <template #tls_cert_date="{ row }">

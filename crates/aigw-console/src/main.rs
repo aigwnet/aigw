@@ -158,7 +158,6 @@ fn start(
             database_client,
             config.server.tcp.port,
             config.server.tcp.max_connections,
-            &config.server.key,
             shutdown,
         )
         .await;

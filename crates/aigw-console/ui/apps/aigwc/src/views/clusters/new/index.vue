@@ -16,7 +16,16 @@ const [Form, formApi] = useVbenForm({
                 placeholder: 'Unique name',
             },
             fieldName: 'name',
-            label: 'Name',
+            label: $t('page.cluster.name'),
+            rules: z.string().min(3, { message: 'Enter at least 3 letters' }),
+        },
+        {
+            component: 'Input',
+            componentProps: {
+                placeholder: 'Security key',
+            },
+            fieldName: 'key',
+            label: $t('page.cluster.key'),
             rules: z.string().min(3, { message: 'Enter at least 3 letters' }),
         },
         {
@@ -26,7 +35,7 @@ const [Form, formApi] = useVbenForm({
             },
             defaultValue: '',
             fieldName: 'description',
-            label: 'Description',
+            label: $t('page.cluster.description'),
         },
     ],
     wrapperClass: 'grid-cols-1',

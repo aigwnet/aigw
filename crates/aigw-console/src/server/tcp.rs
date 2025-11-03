@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc, time::Duration};
+use std::{collections::HashMap, net::SocketAddr, pin::Pin, sync::Arc, time::Duration};
 
 use aigw_core::{
     Algorithm, Buffer, CryptoCore, Frame, Shutdown, Signature, build_handshake_response,
@@ -7,7 +7,7 @@ use aigw_core::{
 use tokio::{
     io::AsyncReadExt,
     net::{TcpListener, TcpStream, tcp::OwnedReadHalf},
-    sync::{Mutex, Semaphore, broadcast, mpsc},
+    sync::{Mutex, RwLock, Semaphore, broadcast, mpsc},
     time,
 };
 use tracing::{debug, error, info};
@@ -15,7 +15,8 @@ use tracing::{debug, error, info};
 use crate::{
     DatabaseClient,
     service::{
-        save_ping, send_all_sites_to_aigw, send_change_logs_to_aigw, update_or_insert_server,
+        find_cluster_by_name, save_ping, send_all_sites_to_aigw, send_change_logs_to_aigw,
+        update_or_insert_server,
     },
 };
 
@@ -26,11 +27,12 @@ struct Handler {
     database_client: Arc<DatabaseClient>,
     addr: SocketAddr,
     reader: OwnedReadHalf,
-    signature: Arc<Signature>,
     connection: Arc<Mutex<Connection>>,
 
     /// Connections
     connections: Connections,
+
+    signatures: Arc<RwLock<HashMap<String, Arc<Signature>>>>,
 
     /// Listen for shutdown notifications.
     shutdown: Shutdown,
@@ -95,7 +97,26 @@ impl Handler {
             Frame::HANDLESHAKE_REQ => {
                 debug!("Received handshake from: {}", &self.addr);
 
-                let handshake_request = parse_handshake_request(&buffer[..], &self.signature)?;
+                let provider = move |cluster: &str| {
+                    let database_client = self.database_client.clone();
+                    let cluster = cluster.to_string();
+                    let signatures = self.signatures.clone();
+
+                    Box::pin(async move {
+                        if let Some(r) = signatures.read().await.get(&cluster) {
+                            return Ok(r.clone());
+                        }
+
+                        let c = find_cluster_by_name(&database_client.rb, &cluster).await?;
+                        let signature = Arc::new(Signature::new(&c.key));
+                        signatures.write().await.insert(cluster, signature.clone());
+                        Ok(signature)
+                    })
+                        as Pin<Box<dyn Future<Output = anyhow::Result<Arc<Signature>>> + Send>>
+                };
+
+                let (handshake_request, signature) =
+                    parse_handshake_request(&buffer[..], provider).await?;
                 {
                     let algorithm = Algorithm::Aes256Gcm;
                     let (private_key, ecdh_public_key) = CryptoCore::create_ecdh_keypair();
@@ -108,12 +129,8 @@ impl Handler {
                     connection.crypto = Some(crypto);
                     connection.cluster = Some(handshake_request.info.cluster.clone());
                     connection.ip = Some(handshake_request.info.ip.clone());
-
-                    let buf = build_handshake_response(
-                        &self.signature,
-                        &algorithm,
-                        ecdh_public_key.bytes(),
-                    )?;
+                    let buf =
+                        build_handshake_response(&signature, &algorithm, ecdh_public_key.bytes())?;
                     connection.write(buf.as_ref()).await?;
                 }
 
@@ -192,7 +209,6 @@ impl Handler {
 
 struct TcpServer {
     database_client: Arc<DatabaseClient>,
-    signature: Arc<Signature>,
     /// TCP listener supplied by the `run` caller.
     listener: TcpListener,
 
@@ -233,11 +249,11 @@ impl TcpServer {
                 database_client: self.database_client.clone(),
                 addr,
                 reader,
-                signature: self.signature.clone(),
                 // Initialize the connection state. This allocates read/write
                 // buffers to perform redis protocol frame parsing.
                 connection: Arc::new(Mutex::new(connection)),
                 connections: self.connections.clone(),
+                signatures: Arc::new(RwLock::new(HashMap::new())),
                 // Receive shutdown notifications.
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
 
@@ -296,7 +312,6 @@ pub async fn run(
     database_client: Arc<DatabaseClient>,
     port: u16,
     max_connections: usize,
-    key: &str,
     shutdown: impl Future,
 ) {
     let addr: SocketAddr = ("[::]:".to_string() + port.to_string().as_str())
@@ -315,7 +330,6 @@ pub async fn run(
 
         let mut server = TcpServer {
             database_client,
-            signature: Arc::new(Signature::new(key)),
             listener,
             connections,
             limit_connections: Arc::new(Semaphore::new(max_connections)),

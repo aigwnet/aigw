@@ -35,7 +35,6 @@ mod user;
 struct ApiContext {
     sender: Sender<ChangeLog>,
     database_client: Arc<DatabaseClient>,
-    config: Arc<AigwConsoleConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,7 +51,6 @@ pub async fn run(
     let api_context = ApiContext {
         sender,
         database_client: database_client.clone(),
-        config: config.clone(),
     };
 
     let auth_handler = Arc::new(AuthHandler::new(database_client));

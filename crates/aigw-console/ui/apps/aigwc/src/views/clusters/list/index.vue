@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import { useRouter } from 'vue-router';
-
+import { $t } from '#/locales';
 import { confirm, Page } from '@vben/common-ui';
 
 import { message, Button } from 'ant-design-vue';
@@ -24,10 +24,11 @@ const gridOptions: VxeGridProps<RowType> = {
     },
     columns: [
         { title: 'No', type: 'seq', width: 50 },
-        { align: 'left', title: 'Name', type: 'checkbox', width: 160 },
-        { field: 'description', sortable: true, title: 'Description' },
-        { field: 'gmt_create', sortable: true, title: 'Create Time' },
-        { field: 'gmt_modified', sortable: true, title: 'Modified Time' },
+        { align: 'left', title: $t('page.cluster.name'), type: 'checkbox', width: 160 },
+        { field: 'key', title: $t('page.cluster.key') },
+        { field: 'description', sortable: true, title: $t('page.cluster.description') },
+        { field: 'gmt_create', sortable: true, title: $t('page.createTime') },
+        { field: 'gmt_modified', sortable: true, title: $t('page.modifiedTime') },
         { slots: { default: 'action' }, title: 'Actions', width: 160 },
     ],
     exportConfig: {},
@@ -84,13 +85,12 @@ const onDelete = async (row: RowType) => {
             return deleteClusterApi(row.name);
         },
         centered: false,
-        content: 'Are you sure to delete this item?',
+        content: $t('page.deleteConfirm'),
         icon: 'question',
     })
         .then(() => {
-
             message.success({
-                content: `Delete cluster successfully!`,
+                content: $t('page.cluster.deleteSuccess'),
             });
             gridApi.reload()
         })
@@ -106,16 +106,16 @@ const onDelete = async (row: RowType) => {
 
 <template>
     <Page auto-content-height>
-        <Grid :table-title="$t('page.cluster.list')" table-title-help="提示">
+        <Grid :table-title="$t('page.cluster.list')">
             <template #toolbar-tools>
                 <Button class="mr-2" type="primary" @click="onAdd()">
-                    Add
+                    {{ $t('page.new') }}
                 </Button>
                 <Button class="mr-2" type="primary" @click="() => gridApi.query()">
-                    刷新当前页面
+                    {{ $t('page.refreshCurrentPage') }}
                 </Button>
                 <Button type="primary" @click="() => gridApi.reload()">
-                    刷新并返回第一页
+                    {{ $t('page.refreshAndReturnFirst') }}
                 </Button>
             </template>
             <template #action="{ row }">

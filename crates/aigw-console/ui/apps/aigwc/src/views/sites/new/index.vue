@@ -26,7 +26,7 @@ const [Form, formApi] = useVbenForm({
         autoSelect: 'first',
       },
       fieldName: 'cluster',
-      label: 'Cluster',
+      label: $t('page.cluster.name'),
     },
     {
       component: 'Input',
@@ -35,7 +35,7 @@ const [Form, formApi] = useVbenForm({
         autocomplete: 'off',
       },
       fieldName: 'name',
-      label: 'Name',
+      label: $t('page.site.name'),
       rules: z.string().min(3, { message: 'Enter at least 3 letters' }),
     },
     {
@@ -45,7 +45,7 @@ const [Form, formApi] = useVbenForm({
       },
       defaultValue: '',
       fieldName: 'alt_names',
-      label: 'Alternative Names',
+      label: $t('page.site.alternativeNames'),
     },
     {
       component: 'Input',
@@ -53,20 +53,20 @@ const [Form, formApi] = useVbenForm({
         placeholder: '/opt/aigw/data/www/',
       },
       fieldName: 'root_dir',
-      label: 'Root Directory',
+      label: $t('page.site.rootDir'),
       rules: z.string().default('').optional(),
     },
     {
       component: 'Switch',
       defaultValue: false,
       fieldName: 'auto_index',
-      label: 'Auto Index',
+      label: $t('page.site.autoIndex'),
     },
     {
       component: 'Switch',
       defaultValue: false,
       fieldName: 'tls_on',
-      label: 'Enable TLS',
+      label: $t('page.site.tlsOn'),
     },
     {
       component: 'Switch',
@@ -78,7 +78,7 @@ const [Form, formApi] = useVbenForm({
         },
         triggerFields: ['tls_on'],
       },
-      label: 'Enable with Let\'s Encrypt',
+      label: $t('page.site.letsEncryptOn'),
     },
     {
       component: 'Textarea',
@@ -89,7 +89,7 @@ const [Form, formApi] = useVbenForm({
         triggerFields: ['tls_on', 'acme_on'],
       },
       fieldName: 'tls_cert',
-      label: 'Certificate',
+      label: $t('page.site.cert'),
       componentProps: {
         placeholder: '-----BEGIN CERTIFICATE-----',
         rows: 20,
@@ -106,7 +106,7 @@ const [Form, formApi] = useVbenForm({
         triggerFields: ['tls_on', 'acme_on'],
       },
       fieldName: 'tls_private_key',
-      label: 'Private Key',
+      label: $t('page.site.pkey'),
       componentProps: {
         placeholder: '-----BEGIN PRIVATE KEY-----',
         rows: 20,
@@ -200,7 +200,7 @@ async function handleAsyncSubmit(values: Record<string, any>) {
     await addSiteApi(processedValues);
     formApi.resetForm();
     message.success({
-      content: `Add site successfully!`,
+      content: $t('page.site.addSuccess'),
     });
   } catch {
 

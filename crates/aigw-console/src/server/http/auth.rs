@@ -123,9 +123,7 @@ impl Auth {
             + "-"
             + login_form.password.as_str()
             + "-"
-            + client_ip.as_str()
-            + "-"
-            + context.config.server.key.as_str();
+            + client_ip.as_str();
         sha.digest(s.as_bytes());
         let token = hex::encode(sha.to_bytes());
 

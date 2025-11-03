@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, pin::Pin, sync::Arc};
 
 use bytes::{BufMut, BytesMut};
 use prost::Message;
@@ -70,11 +70,15 @@ pub fn build_handshake_request(
 ///
 /// Parse handshake
 ///
-pub fn parse_handshake_request(
+pub async fn parse_handshake_request<F>(
     data: &[u8],
-    signature: &Signature,
-) -> anyhow::Result<HandshakeRequest> {
+    signature: F,
+) -> anyhow::Result<(HandshakeRequest, Arc<Signature>)>
+where
+    F: Fn(&str) -> Pin<Box<dyn Future<Output = anyhow::Result<Arc<Signature>>> + Send>>,
+{
     let r = pb::HandshakeRequest::decode(data)?;
+    let signature = signature(&r.cluster).await?;
 
     let mut buf = BytesMut::new();
     buf.put(&r.public_key_salt[..]);
@@ -86,7 +90,8 @@ pub fn parse_handshake_request(
         return Err(anyhow::anyhow!("Signature error."));
     }
 
-    r.try_into()
+    let result = r.try_into()?;
+    Ok((result, signature))
 }
 
 pub fn build_handshake_response(

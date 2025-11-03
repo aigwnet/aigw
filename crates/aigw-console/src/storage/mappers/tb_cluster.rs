@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct TbCluster {
     pub id: Option<u64>,
     pub name: Option<String>,
+    pub key: Option<String>,
     pub description: Option<String>,
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,

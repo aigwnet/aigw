@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct Cluster {
     pub id: Option<u64>,
     pub name: String,
+    pub key: String,
     pub description: Option<String>,
     pub gmt_create: Option<String>,
     pub gmt_modified: Option<String>,
