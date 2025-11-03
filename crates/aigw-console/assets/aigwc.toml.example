@@ -8,4 +8,3 @@ tcp.port=9527
 tcp.max_connections=1024
 http.port=8066
 boradcast.port=6608
-key="abc123"

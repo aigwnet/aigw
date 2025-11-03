@@ -1,4 +1,6 @@
 [Unit]
+Description=AI Gateway Console
+After=network.target
 PartOf=aigwc.target
 Documentation=man:aigwc(1)
 
