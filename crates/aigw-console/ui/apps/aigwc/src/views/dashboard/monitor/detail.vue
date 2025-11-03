@@ -23,18 +23,18 @@ const route = useRoute();
 const { setTabTitle } = useTabs();
 
 const ip = computed(() => {
-    return route.params?.ip ;
+    return route.params?.ip;
 });
 const cluster = computed(() => {
     return route.params?.cluster;
 });
 
-setTabTitle(`${ip.value} - `+ $t('page.details'));
+setTabTitle(`${ip.value} - ` + $t('page.details'));
 
 const analyticsMonitor = ref<Array<AnalyticsApi.AnalyticsMonitor>>([]);
 
 async function loadAnalyticsMonitor() {
-    const items = await getAnalyticsMonitorServerApi(cluster.value, ip.value);
+    const items = await getAnalyticsMonitorServerApi(cluster.value as string, ip.value as string);
     analyticsMonitor.value = items;
 };
 loadAnalyticsMonitor();
