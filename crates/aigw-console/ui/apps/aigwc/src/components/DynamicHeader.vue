@@ -79,7 +79,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Row>
                 <Col :span="24">
 
-                <FormItem :label="label" :label-col="{ span: 3 }">
+                <FormItem :colon="false" :label="label" :label-col="{ span: 3 }">
                     <InputGroup>
                         <Input style="width: 200px;" v-model:value="localFields[index].name"
                             placeholder="Example: Connection" :name="getFieldPath(index, 'name')" />
