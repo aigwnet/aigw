@@ -433,6 +433,7 @@ async fn do_modify_site(
     tb_site.tls_cert_end_date = tls_cert_end_date.map(|d| DateTime::from_timestamp(d.timestamp()));
     tb_site.tls_private_key = tls_private_key;
     tb_site.tls_on = site.tls_on;
+    tb_site.tls_enforce = site.tls_enforce;
     tb_site.acme_on = site.acme_on;
     tb_site.gmt_modified = Some(now.clone());
 

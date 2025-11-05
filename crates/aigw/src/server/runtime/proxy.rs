@@ -172,6 +172,7 @@ impl AigwProxy {
             geo_lite,
         }
     }
+
 }
 
 #[async_trait]
@@ -355,19 +356,7 @@ impl ProxyHttp for AigwProxy {
     {
         let path = session.req_header().uri.path();
         if path.starts_with(ACME_PATH) {
-            let host = {
-                let mut host = session.req_header().uri.host();
-                if host.is_none() {
-                    host = session
-                        .req_header()
-                        .headers
-                        .get("Host")
-                        .and_then(|h| h.to_str().ok())
-                        .map(|h| h.split(':').next().unwrap_or(h));
-                }
-                host
-            };
-
+            let host = get_host(session.req_header());
             if let Some(host) = host {
                 let token = path.substring(ACME_PATH.len(), path.len());
                 let r = self.http01_handler.handle(host, token);
@@ -694,18 +683,7 @@ impl ProxyHttp for AigwProxy {
                 .map_or("-", |s| s.to_str().map_or("-", |s| s))
         });
 
-        let host = {
-            let mut host = session.req_header().uri.host();
-            if host.is_none() {
-                host = session
-                    .req_header()
-                    .headers
-                    .get("Host")
-                    .and_then(|h| h.to_str().ok())
-                    .map(|h| h.split(':').next().unwrap_or(h));
-            }
-            host
-        };
+        let host = get_host(session.req_header()).map_or("-", |s|s);
         let ua = session
             .req_header()
             .headers
@@ -719,6 +697,6 @@ impl ProxyHttp for AigwProxy {
 
         info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
-            path, host.map_or("", |s|s),ua);
+            path, host, ua);
     }
 }
