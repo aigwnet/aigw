@@ -17,7 +17,7 @@ const index = computed(() => {
     return route.params?.id ?? -1;
 });
 
-setTabTitle(`${index.value} - `+ $t('page.details'));
+setTabTitle(`${index.value} - ` + $t('page.details'));
 
 const submitting = ref(true);
 
@@ -34,13 +34,25 @@ const [Form, formApi] = useVbenForm({
             rules: z.string().min(3, { message: 'Enter at least 3 letters' }),
         },
         {
-            component: 'Input',
+            component: 'VbenInputPassword',
             componentProps: {
                 placeholder: 'Security key',
             },
             fieldName: 'key',
             label: $t('page.cluster.key'),
             rules: z.string().min(3, { message: 'Enter at least 3 letters' }),
+        },
+        {
+            component: 'Switch',
+            defaultValue: false,
+            fieldName: 'enable',
+            label: $t('page.site.enable'),
+        },
+        {
+            component: 'Switch',
+            defaultValue: false,
+            fieldName: 'default_site_enable',
+            label: $t('page.site.defaultSiteEnable'),
         },
         {
             component: 'Input',

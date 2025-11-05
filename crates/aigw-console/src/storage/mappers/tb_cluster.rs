@@ -1,3 +1,4 @@
+use super::{from_i8_to_bool, serialize_bool_to_i8};
 use rbatis::{
     impl_delete, impl_insert, impl_select, impl_select_page, impl_update, rbdc::DateTime,
 };
@@ -8,6 +9,16 @@ pub struct TbCluster {
     pub id: Option<u64>,
     pub name: Option<String>,
     pub key: Option<String>,
+    #[serde(
+        deserialize_with = "from_i8_to_bool",
+        serialize_with = "serialize_bool_to_i8"
+    )]
+    pub enable: bool,
+    #[serde(
+        deserialize_with = "from_i8_to_bool",
+        serialize_with = "serialize_bool_to_i8"
+    )]
+    pub default_site_enable: bool,
     pub description: Option<String>,
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,

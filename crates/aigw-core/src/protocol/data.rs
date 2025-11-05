@@ -4,6 +4,7 @@ use super::pb;
 
 #[derive(Clone, Debug, Copy, Hash, PartialEq, Eq)]
 pub enum LogType {
+    Cluster,
     Site,
     Acme,
 }
@@ -11,8 +12,9 @@ pub enum LogType {
 impl LogType {
     pub fn code(&self) -> u32 {
         match &self {
-            LogType::Site => 1,
-            LogType::Acme => 2,
+            LogType::Cluster => 1,
+            LogType::Site => 2,
+            LogType::Acme => 3,
         }
     }
 
@@ -27,8 +29,9 @@ impl TryFrom<u32> for LogType {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(LogType::Site),
-            2 => Ok(LogType::Acme),
+            1 => Ok(LogType::Cluster),
+            2 => Ok(LogType::Site),
+            3 => Ok(LogType::Acme),
             _ => Err(anyhow::anyhow!("Unknow error.")),
         }
     }

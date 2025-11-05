@@ -1,6 +1,6 @@
 use std::{fs, sync::Arc};
 
-use aigw_core::{AcmeToken, DataFrame, LogAction, LogType, Site};
+use aigw_core::{AcmeToken, Cluster, DataFrame, LogAction, LogType, Site};
 use tracing::info;
 
 use crate::server::storage::Storage;
@@ -19,6 +19,20 @@ impl DataFrameHandler {
         for change_log in &item.logs {
             //
             match change_log.log_type {
+                LogType::Cluster => {
+                    let cluster: Cluster = serde_json::from_slice(&change_log.data)?;
+
+                     let mut path = self.storage.data_dir.clone();
+                    if !path.exists() {
+                        fs::create_dir_all(&path)?;
+                    }
+                    path.push("cluster.json");
+
+                    let cluster_str = serde_json::to_string(&cluster)?;
+                    fs::write(path, cluster_str)?;
+
+                    self.storage.store_cluster(Arc::new(cluster));
+                }
                 LogType::Site => match change_log.log_action {
                     LogAction::Add | LogAction::Update => {
                         let site: Site = serde_json::from_slice(&change_log.data)?;

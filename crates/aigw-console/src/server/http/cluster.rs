@@ -20,9 +20,10 @@ impl HttpApiCluster {
         State(context): State<ApiContext>,
         Json(cluster): Json<Cluster>,
     ) -> ApiResponseResult<()> {
-        add_new_cluster(&context.database_client.rb, &cluster)
+        let change_log = add_new_cluster(&context.database_client.rb, &cluster)
             .await
             .map_err(ApiError::from)?;
+        let _ = context.sender.send(change_log).await;
         Ok(ApiData(None))
     }
 
@@ -31,10 +32,10 @@ impl HttpApiCluster {
         State(context): State<ApiContext>,
         Json(cluster): Json<Cluster>,
     ) -> ApiResponseResult<()> {
-        modify_cluster(&context.database_client.rb, &cluster, id)
+        let change_log = modify_cluster(&context.database_client.rb, &cluster, id)
             .await
             .map_err(ApiError::from)?;
-
+        let _ = context.sender.send(change_log).await;
         Ok(ApiData(None))
     }
 

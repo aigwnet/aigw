@@ -8,7 +8,7 @@ use std::{
     },
 };
 
-use aigw_core::{AcmeToken, LogPoint, LogType, Site};
+use aigw_core::{AcmeToken, Cluster, LogPoint, LogType, Site};
 use dashmap::DashMap;
 use rusqlite::{Connection, params};
 use tokio::sync::Mutex;
@@ -17,6 +17,7 @@ pub struct Storage {
     pub(crate) data_dir: PathBuf,
     cluster: String,
     sqlite_conn: Arc<Mutex<Connection>>,
+    cluster_config: arc_swap::ArcSwap<Cluster>,
     sites: arc_swap::ArcSwap<HashMap<String, Arc<Site>>>,
     default_tls_site: arc_swap::ArcSwap<Option<Arc<Site>>>,
     acme_tokens: arc_swap::ArcSwap<HashMap<String, AcmeToken>>,
@@ -60,7 +61,16 @@ impl Storage {
 
         Ok(Self {
             data_dir: path,
-            cluster,
+            cluster: cluster.clone(),
+            cluster_config: arc_swap::ArcSwap::new(Arc::new(Cluster {
+                id: None,
+                name: cluster,
+                key: "".to_string(),
+                enable: false,
+                default_site_enable: false,
+                description: None,
+                gmt_modified: None,
+            })),
             sqlite_conn: Arc::new(Mutex::new(init_sqlit(&db_path)?)),
             sites: arc_swap::ArcSwap::new(Default::default()),
             default_tls_site: arc_swap::ArcSwap::new(Default::default()),
@@ -77,7 +87,34 @@ impl Storage {
     }
 
     pub fn find_default_tls_site(&self) -> Option<Arc<Site>> {
-        (&**self.default_tls_site.load()).clone()
+        if self.cluster().default_site_enable {
+            (&**self.default_tls_site.load()).clone()
+        } else {
+            None
+        }
+    }
+
+    pub fn load_cluster(&self) -> anyhow::Result<()> {
+        let mut path = self.data_dir.clone();
+        if !path.exists() {
+            return Ok(());
+        }
+        path.push("cluster.json");
+
+        if let Ok(content) = fs::read_to_string(&path) {
+            let cluster: Cluster = serde_json::from_str(&content)?;
+            self.store_cluster(Arc::new(cluster));
+        }
+
+        Ok(())
+    }
+
+    pub fn cluster(&self) -> Arc<Cluster> {
+        self.cluster_config.load().clone()
+    }
+
+    pub fn store_cluster(&self, cluster: Arc<Cluster>) {
+        self.cluster_config.store(cluster);
     }
 
     pub fn load_sites(&self) -> anyhow::Result<()> {

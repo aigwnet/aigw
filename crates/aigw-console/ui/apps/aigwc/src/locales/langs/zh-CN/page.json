@@ -48,6 +48,8 @@
     "edit": "修改集群",
     "name": "集群名称",
     "key": "集群密钥",
+    "enable": "启用集群",
+    "defaultSiteEnable": "启用默认站点",
     "description": "集群描述",
     "deleteSuccess": "删除集群成功！"
   },

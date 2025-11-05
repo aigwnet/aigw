@@ -48,6 +48,8 @@
     "edit": "Edit Cluster",
     "name": "Name",
     "key": "Key",
+    "enable": "Enable Cluster",
+    "defaultSiteEnable": "Enable Default Site",
     "description": "Description",
     "deleteSuccess": "Delete cluster successfully!"
   },

@@ -1,9 +1,12 @@
-use aigw_core::Cluster;
+use aigw_core::{ChangeLog, Cluster, LogAction, LogType};
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 
-use crate::{service::Page, storage::tb_cluster::TbCluster};
+use crate::{
+    service::{Page, do_build_change_log},
+    storage::tb_cluster::TbCluster,
+};
 
-pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<()> {
+pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<ChangeLog> {
     let now = DateTime::utc();
     TbCluster::insert(
         rb,
@@ -11,27 +14,56 @@ pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<(
             id: None,
             name: Some(cluster.name.clone()),
             key: Some(cluster.key.clone()),
+            enable: cluster.enable,
+            default_site_enable: cluster.default_site_enable,
             description: cluster.description.clone(),
             gmt_create: Some(now.clone()),
             gmt_modified: Some(now),
         },
     )
     .await?;
-    Ok(())
+
+    let c = find_cluster_by_name(rb, &cluster.name).await?;
+    let s = serde_json::to_string_pretty(&c)?;
+    let change_log = do_build_change_log(
+        rb,
+        cluster.name.clone(),
+        LogType::Cluster,
+        LogAction::Update,
+        c.id.unwrap_or_default(),
+        0,
+        Some(s),
+    )
+    .await?;
+    Ok(change_log)
 }
 
-pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::Result<()> {
+pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::Result<ChangeLog> {
     let now = DateTime::utc();
     let table = &TbCluster {
         id: None,
         name: Some(cluster.name.clone()),
         key: Some(cluster.key.clone()),
+        enable: cluster.enable,
+        default_site_enable: cluster.default_site_enable,
         description: cluster.description.clone(),
         gmt_create: None,
         gmt_modified: Some(now),
     };
     TbCluster::update_by_id(rb, table, id).await?;
-    Ok(())
+    let c = find_cluster_by_name(rb, &cluster.name).await?;
+    let s = serde_json::to_string_pretty(&c)?;
+    let change_log = do_build_change_log(
+        rb,
+        cluster.name.clone(),
+        LogType::Cluster,
+        LogAction::Update,
+        id,
+        0,
+        Some(s),
+    )
+    .await?;
+    Ok(change_log)
 }
 
 pub async fn find_cluster(rb: &RBatis, id: u64) -> anyhow::Result<Cluster> {
@@ -77,13 +109,6 @@ pub async fn find_cluster_by_page(
 }
 
 fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
-    let gmt_create = cluster.gmt_create.as_ref().map_or(None, |s| {
-        chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
-            t.with_timezone(&chrono::Local)
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        })
-    });
     let gmt_modified = cluster.gmt_modified.as_ref().map_or(None, |s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
@@ -95,8 +120,9 @@ fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
         id: cluster.id,
         name: cluster.name.clone().map_or("".to_string(), |name| name),
         key: cluster.key.clone().map_or("".to_string(), |key| key),
+        enable: cluster.enable,
+        default_site_enable: cluster.default_site_enable,
         description: cluster.description.clone(),
-        gmt_create,
         gmt_modified,
     }
 }
