@@ -1,18 +1,18 @@
 {
-  "name": "@vben/playground",
+  "name": "aigw-console",
   "version": "5.5.9",
-  "homepage": "https://vben.pro",
-  "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
+  "homepage": "https://aigw.net",
+  "bugs": "https://github.com/aigwnet/aigw/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vbenjs/vue-vben-admin.git",
-    "directory": "playground"
+    "url": "git+https://github.com/aigwnet/aigw.git",
+    "directory": "apps/aigwc"
   },
   "license": "MIT",
   "author": {
-    "name": "vben",
-    "email": "ann.vben@gmail.com",
-    "url": "https://github.com/anncwb"
+    "name": "aigwnet",
+    "email": "aigwnet@gmail.com",
+    "url": "https://github.com/aigwnet"
   },
   "type": "module",
   "scripts": {
