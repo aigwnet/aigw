@@ -283,16 +283,25 @@ impl ProxyHttp for AigwProxy {
             .map_or(self.storage.find_default_tls_site(), |s| Some(s));
 
         let Some(site) = site else {
-            let mut header = ResponseHeader::build(StatusCode::FORBIDDEN, Some(2))?;
+            let (mut header, body) = error_page::generate_error(StatusCode::FORBIDDEN);
             header.insert_header(http::header::CONNECTION, "close")?;
-            header.insert_header(header::CONTENT_LENGTH, 0.to_string())?;
-            session.write_error_response(header, Bytes::new()).await?;
+            session
+                .write_error_response(header, body)
+                .await
+                .unwrap_or_else(|e| {
+                    error!("failed to send error response to downstream: {e}");
+                });
+
             return Ok(());
         };
         ctx.site = Some(site.clone());
         let path = header.uri.path();
 
-        if ctx.tls_version.is_none() && site.tls_on && !path.starts_with(ACME_PATH) {
+        if ctx.tls_version.is_none()
+            && site.tls_on
+            && site.tls_enforce
+            && !path.starts_with(ACME_PATH)
+        {
             let mut uri = format!("https://{host}");
             let port = self.config.basic().https();
             if port != 443 {
@@ -679,15 +688,37 @@ impl ProxyHttp for AigwProxy {
             .response_written()
             .map_or("-", |r| r.status.as_str());
 
-         let content_length = session
-            .response_written()
-            .map_or("-", |r| r.headers.get(header::CONTENT_LENGTH).map_or("-", |s|s.to_str().map_or("-", |s|s)));
+        let content_length = session.response_written().map_or("-", |r| {
+            r.headers
+                .get(header::CONTENT_LENGTH)
+                .map_or("-", |s| s.to_str().map_or("-", |s| s))
+        });
 
-        let ua = session.req_header().headers.get(USER_AGENT).and_then(|v| v.to_str().ok()).unwrap_or("");
+        let host = {
+            let mut host = session.req_header().uri.host();
+            if host.is_none() {
+                host = session
+                    .req_header()
+                    .headers
+                    .get("Host")
+                    .and_then(|h| h.to_str().ok())
+                    .map(|h| h.split(':').next().unwrap_or(h));
+            }
+            host
+        };
+        let ua = session
+            .req_header()
+            .headers
+            .get(USER_AGENT)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        let path = match session.req_header().uri.query() {
+            Some(q) => session.req_header().uri.path().to_string() + "?" + &q,
+            None => session.req_header().uri.path().to_string(),
+        };
 
-        info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:>5} {}\" \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
+        info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
-            session.req_header().uri, 
-            ua)
+            path, host.map_or("", |s|s),ua);
     }
 }

@@ -25,6 +25,11 @@ pub struct TbSite {
         deserialize_with = "from_i8_to_bool",
         serialize_with = "serialize_bool_to_i8"
     )]
+    pub tls_enforce: bool,
+    #[serde(
+        deserialize_with = "from_i8_to_bool",
+        serialize_with = "serialize_bool_to_i8"
+    )]
     pub acme_on: bool,
     pub tls_cert: Option<String>,
     pub tls_cert_start_date: Option<DateTime>,

@@ -70,6 +70,18 @@ const [Form, formApi] = useVbenForm({
     },
     {
       component: 'Switch',
+      defaultValue: true,
+      fieldName: 'tls_enforce',
+      dependencies: {
+        if(values) {
+          return !!values.tls_on;
+        },
+        triggerFields: ['tls_on'],
+      },
+      label: $t('page.site.tlsEnforce'),
+    },
+    {
+      component: 'Switch',
       defaultValue: false,
       fieldName: 'acme_on',
       dependencies: {

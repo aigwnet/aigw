@@ -63,6 +63,7 @@
     "rootDir": "根目录",
     "autoIndex": "显示目录内容",
     "tlsOn": "开启TLS",
+    "tlsEnforce":"强制TLS",
     "tlsCertDate": "证书有效期",
     "path": "路径",
     "proxy": "启用代理",

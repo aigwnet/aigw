@@ -29,6 +29,9 @@ pub struct Site {
     pub tls_on: bool,
 
     #[serde(default)]
+    pub tls_enforce: bool,
+
+    #[serde(default)]
     pub acme_on: bool,
 
     #[serde(

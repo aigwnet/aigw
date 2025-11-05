@@ -63,6 +63,7 @@
     "rootDir": "Root Directory",
     "autoIndex": "Auto Index",
     "tlsOn": "TLS Enable",
+    "tlsEnforce":"TLS Enforce",
     "tlsCertDate": "TLS Cert Date",
     "path": "Path",
     "proxy": "Proxy",
