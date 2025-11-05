@@ -86,7 +86,7 @@ const gridOptions: VxeGridProps<RowType> = {
     { slots: { default: 'cpu_info' }, title: 'CPU' },
     { field: 'cpu_nums', sortable: true, title: $t('page.dashboard.cpuNum') },
     { field: 'gmt_modified', sortable: true, title: $t('page.modifiedTime') },
-    { slots: { default: 'action' }, title: $t('page.actions'), width: 160 },
+    { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
   ],
   exportConfig: {},
   //height: 'auto',

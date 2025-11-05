@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 import { useRouter } from 'vue-router';
 import { $t } from '#/locales';
 import { confirm, Page } from '@vben/common-ui';
@@ -17,20 +17,16 @@ interface RowType {
     gmt_modified: string;
 }
 
-const gridOptions: VxeGridProps<RowType> = {
-    checkboxConfig: {
-        highlight: true,
-        labelField: 'name',
-    },
+const gridOptions: VxeTableGridOptions<RowType> = {
     columns: [
         { title: 'No', type: 'seq', width: 50 },
-        { align: 'left', title: $t('page.cluster.name'), type: 'checkbox', width: 160 },
-        { field: 'security_key', title: $t('page.cluster.key') },
-        { field: 'enable', title: $t('page.cluster.enable') },
-        { field: 'default_site_enable', sortable: true, title: $t('page.cluster.defaultSiteEnable') },
-        { field: 'description', sortable: true, title: $t('page.cluster.description') },
+        { field: 'name', title: $t('page.cluster.name'), align: "left", width: 160 },
+        { field: 'security_key', title: $t('page.cluster.key'), align: "left" },
+        { field: 'enable', cellRender: { name: 'CellTag' }, title: $t('page.cluster.enable') },
+        { field: 'default_site_enable', cellRender: { name: 'CellTag' }, title: $t('page.cluster.defaultSiteEnable') },
+        { field: 'description', align: "left", title: $t('page.cluster.description') },
         { field: 'gmt_modified', sortable: true, title: $t('page.modifiedTime') },
-        { slots: { default: 'action' }, title: 'Actions', width: 160 },
+        { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
     ],
     exportConfig: {},
     height: 'auto',

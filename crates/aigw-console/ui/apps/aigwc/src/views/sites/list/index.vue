@@ -54,18 +54,14 @@ interface RowType {
 }
 
 const gridOptions: VxeGridProps<RowType> = {
-  checkboxConfig: {
-    highlight: true,
-    labelField: 'name',
-  },
   columns: [
     { title: 'No', type: 'seq', width: 50 },
-    { align: 'left', title: $t('page.site.name'), type: 'checkbox', width: 160 },
-    { field: 'alt_names', sortable: true, title: $t('page.site.alternativeNames') },
-    { field: 'root_dir', sortable: true, title: $t('page.site.rootDir') },
-    { field: 'tls_on', sortable: true, title: $t('page.site.tlsOn') },
+    { field: 'name', title: $t('page.site.name'),align:"left", width: 160 },
+    { field: 'alt_names', align:"left", title: $t('page.site.alternativeNames') },
+    { field: 'root_dir', align:"left", title: $t('page.site.rootDir') },
+    { field: 'tls_on', cellRender: { name: 'CellTag' }, title: $t('page.site.tlsOn') },
     { slots: { default: 'tls_cert_date' }, title: $t('page.site.tlsCertDate') },
-    { slots: { default: 'action' }, title: $t('page.actions'), width: 160 },
+    { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
   ],
   exportConfig: {},
   keepSource: true,
