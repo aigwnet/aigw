@@ -16,7 +16,10 @@
     "register": "注册",
     "codeLogin": "验证码登录",
     "qrcodeLogin": "二维码登录",
-    "forgetPassword": "忘记密码"
+    "forgetPassword": "忘记密码",
+    "loginTitle": "轻量级AI网关控制台",
+    "loginTip": "一个简单易用、高效运行且安全可靠的产品",
+    "loginSubTitle": "请输入您的用户信息登录系统"
   },
   "dashboard": {
     "title": "概览",

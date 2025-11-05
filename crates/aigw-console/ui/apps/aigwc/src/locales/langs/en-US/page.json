@@ -16,7 +16,10 @@
     "register": "Register",
     "codeLogin": "Code Login",
     "qrcodeLogin": "Qr Code Login",
-    "forgetPassword": "Forget Password"
+    "forgetPassword": "Forget Password",
+    "loginTitle": "Lite AI Gateway Console",
+    "loginTip": "A simple-to-use, high-performance, and secure product.",
+    "loginSubTitle": "Please enter your user information to log in to the system."
   },
   "dashboard": {
     "title": "Dashboard",

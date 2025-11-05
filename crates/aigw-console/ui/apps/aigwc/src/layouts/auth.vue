@@ -15,8 +15,8 @@ const logo = computed(() => preferences.logo.source);
   <AuthPageLayout
     :app-name="appName"
     :logo="logo"
-    :page-description="$t('authentication.pageDesc')"
-    :page-title="$t('authentication.pageTitle')"
+    :page-description="$t('page.auth.loginTip')"
+    :page-title="$t('page.auth.loginTitle')"
   >
     <!-- 自定义工具栏 -->
     <!-- <template #toolbar></template> -->

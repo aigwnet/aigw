@@ -13,7 +13,7 @@ export const overridesPreferences = defineOverridesPreferences({
 
   },
   copyright: {
-    companyName: "Aigw",
+    companyName: "Aigw.net",
     /** 版权公司名链接 */
     companySiteLink: "https://aigw.net",
     /** 版权日期 */

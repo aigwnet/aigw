@@ -52,6 +52,7 @@ const formSchema = computed((): VbenFormSchema[] => {
     :showThirdPartyLogin="false"
     :showCodeLogin="false" 
     :showQrcodeLogin="false" 
+    :subTitle="$t('page.auth.loginSubTitle')"
     @submit="authStore.authLogin"
   />
 </template>
