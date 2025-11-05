@@ -31,7 +31,7 @@ use pingora_http::{RequestHeader, ResponseHeader};
 use pingora_proxy::{FailToProxy, ProxyHttp, Session};
 use simple_useragent::UserAgentParser;
 use substring::Substring;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use crate::{
     AigwConfig, SERVER,
@@ -660,7 +660,7 @@ impl ProxyHttp for AigwProxy {
         }
     }
 
-    async fn logging(&self, _session: &mut Session, e: Option<&Error>, ctx: &mut Self::CTX)
+    async fn logging(&self, session: &mut Session, e: Option<&Error>, ctx: &mut Self::CTX)
     where
         Self::CTX: Send + Sync,
     {
@@ -670,5 +670,15 @@ impl ProxyHttp for AigwProxy {
         // Record rt
         let rt = now_ms() - ctx.created_at;
         self.storage.rt(rt);
+
+        let code = session
+            .response_written()
+            .map_or("-", |r| r.status.as_str());
+
+        info!(target: "access", "{:?} - \"{} {}\" {} {} \"{}\", ", ctx.client_ip, session.req_header().method, session.req_header().uri, code ,rt, session.req_header()
+            .headers
+            .get(USER_AGENT)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or(""))
     }
 }
