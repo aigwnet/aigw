@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct TbCluster {
     pub id: Option<u64>,
     pub name: Option<String>,
+    #[rbatis(table_column = "`key`")]
     pub key: Option<String>,
     #[serde(
         deserialize_with = "from_i8_to_bool",
