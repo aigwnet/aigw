@@ -675,7 +675,7 @@ impl ProxyHttp for AigwProxy {
             .response_written()
             .map_or("-", |r| r.status.as_str());
 
-        info!(target: "access", "{:?} - \"{} {}\" {} {} \"{}\", ", ctx.client_ip, session.req_header().method, session.req_header().uri, code ,rt, session.req_header()
+        info!(target: "access", "{:<17} - {} {:<4} \"{:<5} {}\" \"{}\", ", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, session.req_header().method, session.req_header().uri.path(), session.req_header()
             .headers
             .get(USER_AGENT)
             .and_then(|v| v.to_str().ok())
