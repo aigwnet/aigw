@@ -1,3 +1,3 @@
 systemctl daemon-reload
 chmod 755 /etc/aigw
-unzip -o /etc/aigw/aigwc.ui.zip -d /etc/aigw/ui/
+unzip -q -o /etc/aigw/aigwc.ui.zip -d /etc/aigw/ui/

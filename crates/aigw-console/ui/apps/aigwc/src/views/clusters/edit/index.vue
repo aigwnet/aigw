@@ -46,13 +46,13 @@ const [Form, formApi] = useVbenForm({
             component: 'Switch',
             defaultValue: false,
             fieldName: 'enable',
-            label: $t('page.site.enable'),
+            label: $t('page.cluster.enable'),
         },
         {
             component: 'Switch',
             defaultValue: false,
             fieldName: 'default_site_enable',
-            label: $t('page.site.defaultSiteEnable'),
+            label: $t('page.cluster.defaultSiteEnable'),
         },
         {
             component: 'Input',
