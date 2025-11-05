@@ -108,7 +108,7 @@ impl Handler {
                         }
 
                         let c = find_cluster_by_name(&database_client.rb, &cluster).await?;
-                        let signature = Arc::new(Signature::new(&c.key));
+                        let signature = Arc::new(Signature::new(&c.security_key));
                         signatures.write().await.insert(cluster, signature.clone());
                         Ok(signature)
                     })

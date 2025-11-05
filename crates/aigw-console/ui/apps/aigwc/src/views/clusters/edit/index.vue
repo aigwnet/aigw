@@ -38,7 +38,7 @@ const [Form, formApi] = useVbenForm({
             componentProps: {
                 placeholder: 'Security key',
             },
-            fieldName: 'key',
+            fieldName: 'security_key',
             label: $t('page.cluster.key'),
             rules: z.string().min(3, { message: 'Enter at least 3 letters' }),
         },

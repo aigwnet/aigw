@@ -25,7 +25,7 @@ const gridOptions: VxeGridProps<RowType> = {
     columns: [
         { title: 'No', type: 'seq', width: 50 },
         { align: 'left', title: $t('page.cluster.name'), type: 'checkbox', width: 160 },
-        { field: 'key', title: $t('page.cluster.key') },
+        { field: 'security_key', title: $t('page.cluster.key') },
         { field: 'enable', title: $t('page.cluster.enable') },
         { field: 'default_site_enable', sortable: true, title: $t('page.cluster.defaultSiteEnable') },
         { field: 'description', sortable: true, title: $t('page.cluster.description') },

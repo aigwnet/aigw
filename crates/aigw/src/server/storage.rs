@@ -65,7 +65,7 @@ impl Storage {
             cluster_config: arc_swap::ArcSwap::new(Arc::new(Cluster {
                 id: None,
                 name: cluster,
-                key: "".to_string(),
+                security_key: "".to_string(),
                 enable: false,
                 default_site_enable: false,
                 description: None,

@@ -13,7 +13,7 @@ pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<C
         &TbCluster {
             id: None,
             name: Some(cluster.name.clone()),
-            key: Some(cluster.key.clone()),
+            security_key: Some(cluster.security_key.clone()),
             enable: cluster.enable,
             default_site_enable: cluster.default_site_enable,
             description: cluster.description.clone(),
@@ -43,7 +43,7 @@ pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::
     let table = &TbCluster {
         id: None,
         name: Some(cluster.name.clone()),
-        key: Some(cluster.key.clone()),
+        security_key: Some(cluster.security_key.clone()),
         enable: cluster.enable,
         default_site_enable: cluster.default_site_enable,
         description: cluster.description.clone(),
@@ -119,7 +119,10 @@ fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
     Cluster {
         id: cluster.id,
         name: cluster.name.clone().map_or("".to_string(), |name| name),
-        key: cluster.key.clone().map_or("".to_string(), |key| key),
+        security_key: cluster
+            .security_key
+            .clone()
+            .map_or("".to_string(), |key| key),
         enable: cluster.enable,
         default_site_enable: cluster.default_site_enable,
         description: cluster.description.clone(),
