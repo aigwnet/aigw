@@ -22,7 +22,7 @@ impl DataFrameHandler {
                 LogType::Cluster => {
                     let cluster: Cluster = serde_json::from_slice(&change_log.data)?;
 
-                     let mut path = self.storage.data_dir.clone();
+                    let mut path = self.storage.data_dir.clone();
                     if !path.exists() {
                         fs::create_dir_all(&path)?;
                     }
@@ -30,7 +30,7 @@ impl DataFrameHandler {
 
                     let cluster_str = serde_json::to_string(&cluster)?;
                     fs::write(path, cluster_str)?;
-
+                    info!("{:?} cluster: {:?}", change_log.log_action, cluster.name);
                     self.storage.store_cluster(Arc::new(cluster));
                 }
                 LogType::Site => match change_log.log_action {
