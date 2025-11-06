@@ -1,27 +1,20 @@
 {
-  "name": "vben-admin-monorepo",
+  "name": "aigw-monorepo",
   "version": "5.5.9",
   "private": true,
   "keywords": [
     "monorepo",
     "turbo",
-    "vben",
-    "vben admin",
-    "vben pro",
-    "vue",
-    "vue admin",
-    "vue vben admin",
-    "vue vben admin pro",
     "vue3"
   ],
-  "homepage": "https://github.com/vbenjs/vue-vben-admin",
-  "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
-  "repository": "vbenjs/vue-vben-admin.git",
+  "homepage": "https://aigw.net",
+  "bugs": "https://github.com/aigwnet/aigw/issues",
+  "repository": "aigwnet/aigw.git",
   "license": "MIT",
   "author": {
-    "name": "vben",
-    "email": "ann.vben@gmail.com",
-    "url": "https://github.com/anncwb"
+    "name": "aigwnet",
+    "email": "aigwnet@gmail.com",
+    "url": "https://github.com/aigwnet"
   },
   "type": "module",
   "scripts": {
