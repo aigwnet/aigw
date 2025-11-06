@@ -284,7 +284,7 @@ impl ProxyHttp for AigwProxy {
             .map_or(self.storage.find_default_tls_site(), |s| Some(s));
 
         let Some(site) = site else {
-            let (mut header, body) = error_page::generate_error(StatusCode::FORBIDDEN);
+            let (mut header, body) = error_page::generate_error(StatusCode::NOT_FOUND);
             header.insert_header(http::header::CONNECTION, "close")?;
             session
                 .write_error_response(header, body)
