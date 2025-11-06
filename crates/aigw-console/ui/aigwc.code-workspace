@@ -1,0 +1,148 @@
+{
+  "folders": [
+    {
+      "name": "@vben/commitlint-config",
+      "path": "vue-vben-admin/internal/lint-configs/commitlint-config",
+    },
+    {
+      "name": "@vben/eslint-config",
+      "path": "vue-vben-admin/internal/lint-configs/eslint-config",
+    },
+    {
+      "name": "@vben/prettier-config",
+      "path": "vue-vben-admin/internal/lint-configs/prettier-config",
+    },
+    {
+      "name": "@vben/stylelint-config",
+      "path": "vue-vben-admin/internal/lint-configs/stylelint-config",
+    },
+    {
+      "name": "@vben/node-utils",
+      "path": "vue-vben-admin/internal/node-utils",
+    },
+    {
+      "name": "@vben/tailwind-config",
+      "path": "vue-vben-admin/internal/tailwind-config",
+    },
+    {
+      "name": "@vben/tsconfig",
+      "path": "vue-vben-admin/internal/tsconfig",
+    },
+    {
+      "name": "@vben/vite-config",
+      "path": "vue-vben-admin/internal/vite-config",
+    },
+    {
+      "name": "@vben-core/design",
+      "path": "vue-vben-admin/packages/@core/base/design",
+    },
+    {
+      "name": "@vben-core/icons",
+      "path": "vue-vben-admin/packages/@core/base/icons",
+    },
+    {
+      "name": "@vben-core/shared",
+      "path": "vue-vben-admin/packages/@core/base/shared",
+    },
+    {
+      "name": "@vben-core/typings",
+      "path": "vue-vben-admin/packages/@core/base/typings",
+    },
+    {
+      "name": "@vben-core/composables",
+      "path": "vue-vben-admin/packages/@core/composables",
+    },
+    {
+      "name": "@vben-core/preferences",
+      "path": "vue-vben-admin/packages/@core/preferences",
+    },
+    {
+      "name": "@vben-core/form-ui",
+      "path": "vue-vben-admin/packages/@core/ui-kit/form-ui",
+    },
+    {
+      "name": "@vben-core/layout-ui",
+      "path": "vue-vben-admin/packages/@core/ui-kit/layout-ui",
+    },
+    {
+      "name": "@vben-core/menu-ui",
+      "path": "vue-vben-admin/packages/@core/ui-kit/menu-ui",
+    },
+    {
+      "name": "@vben-core/popup-ui",
+      "path": "vue-vben-admin/packages/@core/ui-kit/popup-ui",
+    },
+    {
+      "name": "@vben-core/shadcn-ui",
+      "path": "vue-vben-admin/packages/@core/ui-kit/shadcn-ui",
+    },
+    {
+      "name": "@vben-core/tabs-ui",
+      "path": "vue-vben-admin/packages/@core/ui-kit/tabs-ui",
+    },
+    {
+      "name": "@vben/constants",
+      "path": "vue-vben-admin/packages/constants",
+    },
+    {
+      "name": "@vben/access",
+      "path": "vue-vben-admin/packages/effects/access",
+    },
+    {
+      "name": "@vben/common-ui",
+      "path": "vue-vben-admin/packages/effects/common-ui",
+    },
+    {
+      "name": "@vben/hooks",
+      "path": "vue-vben-admin/packages/effects/hooks",
+    },
+    {
+      "name": "@vben/layouts",
+      "path": "vue-vben-admin/packages/effects/layouts",
+    },
+    {
+      "name": "@vben/plugins",
+      "path": "vue-vben-admin/packages/effects/plugins",
+    },
+    {
+      "name": "@vben/request",
+      "path": "vue-vben-admin/packages/effects/request",
+    },
+    {
+      "name": "@vben/icons",
+      "path": "vue-vben-admin/packages/icons",
+    },
+    {
+      "name": "@vben/locales",
+      "path": "vue-vben-admin/packages/locales",
+    },
+    {
+      "name": "@vben/preferences",
+      "path": "vue-vben-admin/packages/preferences",
+    },
+    {
+      "name": "@vben/stores",
+      "path": "vue-vben-admin/packages/stores",
+    },
+    {
+      "name": "@vben/styles",
+      "path": "vue-vben-admin/packages/styles",
+    },
+    {
+      "name": "@vben/types",
+      "path": "vue-vben-admin/packages/types",
+    },
+    {
+      "name": "@vben/utils",
+      "path": "vue-vben-admin/packages/utils",
+    },
+    {
+      "name": "@vben/turbo-run",
+      "path": "vue-vben-admin/scripts/turbo-run",
+    },
+    {
+      "name": "@vben/vsh",
+      "path": "vue-vben-admin/scripts/vsh",
+    },
+  ],
+}

@@ -1,17 +1,15 @@
 packages:
-  - internal/*
-  - internal/lint-configs/*
-  - packages/*
-  - packages/@core/base/*
-  - packages/@core/ui-kit/*
-  - packages/@core/forward/*
-  - packages/@core/*
-  - packages/effects/*
-  - packages/business/*
+  - vue-vben-admin/internal/*
+  - vue-vben-admin/internal/lint-configs/*
+  - vue-vben-admin/packages/*
+  - vue-vben-admin/packages/@core/base/*
+  - vue-vben-admin/packages/@core/ui-kit/*
+  - vue-vben-admin/packages/@core/forward/*
+  - vue-vben-admin/packages/@core/*
+  - vue-vben-admin/packages/effects/*
+  - vue-vben-admin/packages/business/*
   - apps/*
-  - scripts/*
-  - docs
-  - playground
+  - vue-vben-admin/scripts/*
 
 catalog:
   '@ast-grep/napi': ^0.37.0
