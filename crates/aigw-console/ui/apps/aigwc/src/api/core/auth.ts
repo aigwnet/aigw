@@ -1,5 +1,5 @@
 import { baseRequestClient, requestClient } from '#/api/request';
-import md5 from 'blueimp-md5';
+import { md5 } from 'js-md5';
 
 export namespace AuthApi {
   /** 登录接口参数 */
@@ -23,7 +23,7 @@ export namespace AuthApi {
 /**
  * 登录
  */
-export async function loginApi(data: AuthApi.LoginParams| any) {
+export async function loginApi(data: AuthApi.LoginParams | any) {
   data.password = md5(data.password);
   return requestClient.post<AuthApi.LoginResult>('/auth/login', data);
 }

@@ -52,7 +52,7 @@
     "pinia": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:",
-    "blueimp-md5": "^2.19.0",
+    "js-md5": "^0.8.3",
     "echarts": "catalog:"
   },
   "devDependencies": {
