@@ -12,6 +12,10 @@ export const overridesPreferences = defineOverridesPreferences({
     defaultHomePath: "/dashboard/traffic"
 
   },
+
+  logo: {
+    source: "/logo.png",
+  },
   copyright: {
     companyName: "Aigw.net",
     /** 版权公司名链接 */
