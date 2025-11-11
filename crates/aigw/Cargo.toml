@@ -1,7 +1,7 @@
 [package]
 authors = ["aigwnet@gmail.com"]
 description = "Lite AI Gateway"
-edition = "2024"
+edition.workspace = true
 name = "aigw"
 version = "0.1.0"
 
@@ -49,6 +49,18 @@ tracing-appender = {workspace = true}
 tracing-subscriber = {workspace = true}
 url = {version = "2"}
 urlencoding = {version = "2"}
+
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = {workspace = true}
+aya-log = {workspace = true}
+libc = {workspace = true}
+which = {version = "6", default-features = false}
+
+
+[build-dependencies]
+anyhow = {workspace = true}
+aya-build = {workspace = true}
+cargo_metadata = {workspace = true}
 
 [package.metadata.deb]
 assets = [

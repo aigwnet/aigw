@@ -140,12 +140,12 @@ const [Form, formApi] = useVbenForm({
     {
       component: 'InputNumber',
       componentProps: {
-        placeholder: '1000',
+        placeholder: '0',
       },
       fieldName: 'rate_limit',
       label: $t('page.site.limitingValue'),
       rules: z.string().default('').optional(),
-      help: $t('page.site.limitingValueTip'),
+      description: $t('page.site.limitingValueTip'),
     },
     {
       component: 'InputNumber',
@@ -155,7 +155,8 @@ const [Form, formApi] = useVbenForm({
       fieldName: 'rate_limit_unit',
       label: $t('page.site.limitingUnit'),
       rules: z.string().default('').optional(),
-      help: $t('page.site.limitingUnitTip'),
+      description: $t('page.site.limitingUnitTip'),
+      suffix: 'ms',
     },
     {
       component: 'Divider',

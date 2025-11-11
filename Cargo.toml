@@ -19,7 +19,7 @@ cargo_metadata = {version = "0.23", default-features = false}
 clap = {version = "4", features = ["derive", "std"]}
 daemonize = {version = "0.5"}
 lazy_static = {version = "1"}
-libc = {version = "0.2.159", default-features = false}
+libc = {version = "0.2", default-features = false}
 once_cell = {version = "1"}
 pingora-cache = {version = "0.6"}
 pingora-core = {version = "0.6", features = ["boringssl"]}

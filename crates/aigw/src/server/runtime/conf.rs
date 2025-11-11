@@ -23,6 +23,8 @@ pub struct BasicConfig {
     // default 443
     https: u32,
 
+    iface: String,
+
     data_dir: Option<String>,
 }
 
@@ -33,6 +35,10 @@ impl BasicConfig {
 
     pub fn https(&self) -> u32 {
         self.https
+    }
+
+    pub fn iface(&self) -> &str {
+        &self.iface
     }
 
     pub fn data_dir(&self) -> &Option<String> {
