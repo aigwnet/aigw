@@ -2,13 +2,24 @@
 members = ["crates/*"]
 resolver = "2"
 
+[workspace.package]
+edition = "2024"
+license = "MIT"
+
 [workspace.dependencies]
 anyhow = {version = "1"}
 arc-swap = {version = "1.7"}
+aya = {git = "https://github.com/aya-rs/aya"}
+aya-build = {git = "https://github.com/aya-rs/aya"}
+aya-ebpf = {git = "https://github.com/aya-rs/aya", default-features = false}
+aya-log = {git = "https://github.com/aya-rs/aya", default-features = false}
+aya-log-ebpf = {git = "https://github.com/aya-rs/aya", default-features = false}
 base64 = {version = "0.22"}
-clap = {version = "4", features = ["derive"]}
+cargo_metadata = {version = "0.23", default-features = false}
+clap = {version = "4", features = ["derive", "std"]}
 daemonize = {version = "0.5"}
 lazy_static = {version = "1"}
+libc = {version = "0.2.159", default-features = false}
 once_cell = {version = "1"}
 pingora-cache = {version = "0.6"}
 pingora-core = {version = "0.6", features = ["boringssl"]}
@@ -24,3 +35,4 @@ tokio = {version = "1", features = ["full"]}
 tracing = {version = "0.1"}
 tracing-appender = {version = "0.2"}
 tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "time"]}
+which = {version = "6", default-features = false}
