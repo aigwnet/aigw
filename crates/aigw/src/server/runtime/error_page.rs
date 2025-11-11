@@ -157,6 +157,7 @@ lazy_static! {
     static ref ERR_403: String = ERROR_TEMPLATE.format(&["403 Forbidden", "403", "Forbidden", "This page isn't available.", SERVER, VERSION]);
     static ref ERR_404: String = ERROR_TEMPLATE.format(&["404 Not Found", "404", "Not Found", "Sorry but the page you are looking for does not exist, have been removed. name changed or is temporarily unavailable.", SERVER, VERSION]);
     static ref ERR_405: String = ERROR_TEMPLATE.format(&["405 Method Not Allowed", "405", "Method Not Allowed", "Your request could not be allowed.", SERVER, VERSION]);
+    static ref ERR_429: String = ERROR_TEMPLATE.format(&["429 Too Many Requests", "429", "Too Many Requests", "Your request could not be allowed.", SERVER, VERSION]);
     static ref ERR_500: String = ERROR_TEMPLATE.format(&["500 Internal Server Error", "500", "Internal Server Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
     static ref ERR_502: String = ERROR_TEMPLATE.format(&["502 Bad Gateway", "502", "Bad Gateway", "Server Error! The server encountered a temporary error and could not complete your request.", SERVER, VERSION]);
     static ref ERR_DEFAULT: String = ERROR_TEMPLATE.format(&["Error", "Error", "Error", "Oh eyeballs! Something went wrong. We're looking to see what happened.", SERVER, VERSION]);
@@ -171,6 +172,8 @@ pub fn get_error_page(status: StatusCode) -> &'static [u8] {
         return ERR_404.as_str().as_bytes();
     } else if status == StatusCode::METHOD_NOT_ALLOWED {
         return ERR_405.as_str().as_bytes();
+    } else if status == StatusCode::TOO_MANY_REQUESTS {
+        return ERR_429.as_str().as_bytes();
     } else if status == StatusCode::INTERNAL_SERVER_ERROR {
         return ERR_500.as_str().as_bytes();
     } else if status == StatusCode::BAD_GATEWAY {

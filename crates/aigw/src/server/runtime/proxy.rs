@@ -172,7 +172,6 @@ impl AigwProxy {
             geo_lite,
         }
     }
-
 }
 
 #[async_trait]
@@ -296,6 +295,7 @@ impl ProxyHttp for AigwProxy {
             return Ok(());
         };
         ctx.site = Some(site.clone());
+        ctx.rate = self.storage.find_rate(host);
         let path = header.uri.path();
 
         if ctx.tls_version.is_none()
@@ -354,6 +354,23 @@ impl ProxyHttp for AigwProxy {
     where
         Self::CTX: Send + Sync,
     {
+        if let Some(rate) = &ctx.rate
+            && rate.max_request > 0
+        {
+            let curr_window_requests = rate.rate.observe(b"global", 1);
+            if curr_window_requests > rate.max_request {
+                let (mut header, body) = error_page::generate_error(StatusCode::TOO_MANY_REQUESTS);
+                header.insert_header(http::header::CONNECTION, "close")?;
+                session
+                    .write_error_response(header, body)
+                    .await
+                    .unwrap_or_else(|e| {
+                        error!("failed to send error response to downstream: {e}");
+                    });
+
+                return Ok(true);
+            }
+        }
         let path = session.req_header().uri.path();
         if path.starts_with(ACME_PATH) {
             let host = get_host(session.req_header());
@@ -376,13 +393,14 @@ impl ProxyHttp for AigwProxy {
                 } else {
                     error!("Acme validate error: {},{} not found.", host, token);
 
-                    let b = Bytes::from("Not Found".bytes().collect::<Vec<u8>>());
-                    let mut header = ResponseHeader::build(StatusCode::NOT_FOUND, Some(2))?;
-                    header.insert_header(header::CONTENT_TYPE, "text/plain")?;
-                    header.insert_header(header::CONTENT_LENGTH, b.len())?;
-                    let _ = session.write_response_header(Box::new(header), false).await;
-                    let body = Some(b);
-                    let _ = session.write_response_body(body, true).await;
+                    let (mut header, body) = error_page::generate_error(StatusCode::NOT_FOUND);
+                    header.insert_header(http::header::CONNECTION, "close")?;
+                    session
+                        .write_error_response(header, body)
+                        .await
+                        .unwrap_or_else(|e| {
+                            error!("failed to send error response to downstream: {e}");
+                        });
                 }
                 return Ok(true);
             } else {
@@ -683,7 +701,7 @@ impl ProxyHttp for AigwProxy {
                 .map_or("-", |s| s.to_str().map_or("-", |s| s))
         });
 
-        let host = get_host(session.req_header()).map_or("-", |s|s);
+        let host = get_host(session.req_header()).map_or("-", |s| s);
         let ua = session
             .req_header()
             .headers

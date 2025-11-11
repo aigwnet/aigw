@@ -35,6 +35,8 @@ pub struct TbSite {
     pub tls_cert_start_date: Option<DateTime>,
     pub tls_cert_end_date: Option<DateTime>,
     pub tls_private_key: Option<String>,
+    pub rate_limit: Option<isize>,
+    pub rate_limit_unit: Option<u64>,
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,
 }

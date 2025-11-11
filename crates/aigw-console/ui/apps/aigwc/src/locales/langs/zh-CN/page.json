@@ -70,7 +70,7 @@
     "rootDir": "根目录",
     "autoIndex": "显示目录内容",
     "tlsOn": "开启TLS",
-    "tlsEnforce":"强制TLS",
+    "tlsEnforce": "强制TLS",
     "tlsCertDate": "证书有效期",
     "path": "路径",
     "proxy": "启用代理",
@@ -91,7 +91,12 @@
     "addHeaders": "添加HTTP头",
     "setHeaders": "设置HTTP头",
     "addSuccess": "添加站点信息成功！",
-    "updateSuccess": "更新站点信息成功！"
+    "updateSuccess": "更新站点信息成功！",
+    "limiting": "限流配置",
+    "limitingValue": "限流值",
+    "limitingValueTip": "0表示不限流",
+    "limitingUnit": "限流单位",
+    "limitingUnitTip": "限流单位为毫秒"
   },
   "user": {
     "profile": "用户资料",

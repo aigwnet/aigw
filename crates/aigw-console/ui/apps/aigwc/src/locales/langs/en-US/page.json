@@ -91,7 +91,12 @@
     "addHeaders": "Add Headers",
     "setHeaders": "Set Headers",
     "addSuccess": "Add site successfully!",
-    "updateSuccess": "Upadte site successfully!"
+    "updateSuccess": "Upadte site successfully!",
+    "limiting": "Rate Limiting",
+    "limitingValue": "Rate Limit",
+    "limitingValueTip": "A value of 0 indicates no rate limiting.",
+    "limitingUnit": "Rate Limiting Unit",
+    "limitingUnitTip": "The time unit for rate limiting is milliseconds."
   },
   "user": {
     "profile": "Profile",

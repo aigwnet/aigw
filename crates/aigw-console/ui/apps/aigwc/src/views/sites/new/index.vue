@@ -128,7 +128,38 @@ const [Form, formApi] = useVbenForm({
     },
     {
       component: 'Divider',
-      fieldName: '_divider',
+      fieldName: '_dividerLimit',
+      formItemClass: '',
+      hideLabel: true,
+      renderComponentContent: () => {
+        return {
+          default: () => h('div', $t('page.site.limiting')),
+        };
+      },
+    },
+    {
+      component: 'InputNumber',
+      componentProps: {
+        placeholder: '1000',
+      },
+      fieldName: 'rate_limit',
+      label: $t('page.site.limitingValue'),
+      rules: z.string().default('').optional(),
+      help: $t('page.site.limitingValueTip'),
+    },
+    {
+      component: 'InputNumber',
+      componentProps: {
+        placeholder: '1000',
+      },
+      fieldName: 'rate_limit_unit',
+      label: $t('page.site.limitingUnit'),
+      rules: z.string().default('').optional(),
+      help: $t('page.site.limitingUnitTip'),
+    },
+    {
+      component: 'Divider',
+      fieldName: '_dividerLocation',
       formItemClass: '',
       hideLabel: true,
       renderComponentContent: () => {

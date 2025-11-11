@@ -1,9 +1,9 @@
 [package]
 authors = ["aigwnet@gmail.com"]
 description = "Lite AI Gateway Console"
-edition = "2024"
 name = "aigw-console"
 version = "0.1.0"
+edition.workspace = true
 
 [dependencies]
 aigw-core = {path = "../aigw-core"}

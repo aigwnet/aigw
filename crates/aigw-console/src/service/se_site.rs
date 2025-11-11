@@ -213,6 +213,10 @@ async fn convert_tb_site(
         tls_cert_start_date,
         tls_cert_end_date,
         tls_private_key,
+        rate_limit: tb_site.rate_limit.map_or(0, |i| i),
+        rate_limit_unit: tb_site
+            .rate_limit_unit
+            .map_or(1000, |i| if i == 0 { 1000 } else { i }),
         locations: vec![],
     };
 
@@ -340,6 +344,8 @@ async fn do_add_new_site(
         tls_cert_start_date: tls_cert_start_date.map(|d| DateTime::from_timestamp(d.timestamp())),
         tls_cert_end_date: tls_cert_end_date.map(|d| DateTime::from_timestamp(d.timestamp())),
         tls_private_key,
+        rate_limit: Some(site.rate_limit),
+        rate_limit_unit: Some(site.rate_limit_unit),
         gmt_create: Some(now.clone()),
         gmt_modified: Some(now.clone()),
     };

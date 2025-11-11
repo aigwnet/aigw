@@ -60,6 +60,9 @@ pub struct Site {
         deserialize_with = "deserialize_locs"
     )]
     pub locations: Vec<Arc<ProxyLocation>>,
+
+    pub rate_limit: isize,
+    pub rate_limit_unit: u64,
 }
 
 fn serialize_tls_private_key<S>(

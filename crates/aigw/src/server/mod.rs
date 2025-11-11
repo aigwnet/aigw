@@ -12,6 +12,7 @@ use pingora_core::{
     server::{Server, configuration::ServerConf},
     tls::ssl::SslVersion,
 };
+use pingora_limits::rate::Rate;
 use pingora_proxy::http_proxy_service_with_name;
 pub(crate) use runtime::{AigwConfig, GeoLite, ServerOpt};
 use runtime::{AigwProxy, DynamicTlsAccept};
@@ -21,6 +22,10 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::server::console::AigwConsoleService;
+pub struct RateLimit {
+    pub(crate) max_request: isize,
+    pub(crate) rate: Rate,
+}
 
 pub fn run(
     args: ServerOpt,

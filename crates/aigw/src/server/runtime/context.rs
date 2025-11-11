@@ -5,6 +5,8 @@ use aigw_core::{ProxyLocation, Site};
 use bytes::BytesMut;
 use http::StatusCode;
 
+use crate::server::RateLimit;
+
 use super::now_ms;
 
 /// Statistics about response compression operations
@@ -129,6 +131,7 @@ pub struct AigwCtx {
     pub compression_stat: Option<CompressionStat>,
     /// Custom variables map for request processing
     pub variables: Option<AHashMap<String, String>>,
+    pub rate: Option<Arc<RateLimit>>,
 }
 
 impl AigwCtx {

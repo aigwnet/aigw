@@ -6,12 +6,16 @@ use std::{
         Arc,
         atomic::{AtomicU64, Ordering},
     },
+    time::Duration,
 };
 
 use aigw_core::{AcmeToken, Cluster, LogPoint, LogType, Site};
 use dashmap::DashMap;
+use pingora_limits::rate::Rate;
 use rusqlite::{Connection, params};
 use tokio::sync::Mutex;
+
+use crate::server::RateLimit;
 
 pub struct Storage {
     pub(crate) data_dir: PathBuf,
@@ -19,6 +23,7 @@ pub struct Storage {
     sqlite_conn: Arc<Mutex<Connection>>,
     cluster_config: arc_swap::ArcSwap<Cluster>,
     sites: arc_swap::ArcSwap<HashMap<String, Arc<Site>>>,
+    rates: arc_swap::ArcSwap<HashMap<String, Arc<RateLimit>>>,
     default_tls_site: arc_swap::ArcSwap<Option<Arc<Site>>>,
     acme_tokens: arc_swap::ArcSwap<HashMap<String, AcmeToken>>,
     counter: Counter,
@@ -73,6 +78,7 @@ impl Storage {
             })),
             sqlite_conn: Arc::new(Mutex::new(init_sqlit(&db_path)?)),
             sites: arc_swap::ArcSwap::new(Default::default()),
+            rates: arc_swap::ArcSwap::new(Default::default()),
             default_tls_site: arc_swap::ArcSwap::new(Default::default()),
             acme_tokens: arc_swap::ArcSwap::new(Default::default()),
             counter: Counter::default(),
@@ -84,6 +90,11 @@ impl Storage {
     pub fn find_site(&self, host: &str) -> Option<Arc<Site>> {
         let sites = self.sites.load();
         sites.get(host).cloned()
+    }
+
+    pub fn find_rate(&self, host: &str) -> Option<Arc<RateLimit>> {
+        let rates = self.rates.load();
+        rates.get(host).cloned()
     }
 
     pub fn find_default_tls_site(&self) -> Option<Arc<Site>> {
@@ -141,9 +152,17 @@ impl Storage {
         }
 
         let mut sites = HashMap::new();
+        let mut rates = HashMap::new();
         for s in ss {
+            let rate_limit = Arc::new(RateLimit {
+                max_request: s.rate_limit,
+                rate: Rate::new(Duration::from_millis(s.rate_limit_unit)),
+            });
             for host in &s.alt_names {
                 sites.insert(host.to_owned(), s.clone());
+                if s.rate_limit > 0 {
+                    rates.insert(host.to_owned(), rate_limit.clone());
+                }
             }
 
             // set default site
@@ -152,16 +171,29 @@ impl Storage {
                     self.default_tls_site.store(Arc::new(Some(s.clone())));
                 }
             }
+            if s.rate_limit > 0 {
+                rates.insert(s.name.clone(), rate_limit.clone());
+            }
             sites.insert(s.name.clone(), s);
         }
         self.sites.store(Arc::new(sites));
+        self.rates.store(Arc::new(rates));
         Ok(())
     }
 
     pub fn add_site(&self, site: Arc<Site>) {
         let mut sites = (**self.sites.load()).clone();
+        let mut rates = (**self.rates.load()).clone();
+
+        let rate_limit = Arc::new(RateLimit {
+            max_request: site.rate_limit,
+            rate: Rate::new(Duration::from_millis(site.rate_limit_unit)),
+        });
         for host in &site.alt_names {
             sites.insert(host.to_owned(), site.clone());
+            if site.rate_limit > 0 {
+                rates.insert(host.to_owned(), rate_limit.clone());
+            }
         }
 
         if self.default_tls_site.load().is_none() {
@@ -169,17 +201,24 @@ impl Storage {
                 self.default_tls_site.store(Arc::new(Some(site.clone())));
             }
         }
+        if site.rate_limit > 0 {
+            rates.insert(site.name.clone(), rate_limit.clone());
+        }
         sites.insert(site.name.clone(), site);
 
         self.sites.store(Arc::new(sites));
+        self.rates.store(Arc::new(rates));
     }
 
     pub fn remove_site(&self, site: &Site) {
         let mut sites = (**self.sites.load()).clone();
+        let mut rates = (**self.rates.load()).clone();
         for host in &site.alt_names {
             sites.remove(host);
+            rates.remove(host);
         }
         sites.remove(&site.name);
+        rates.remove(&site.name);
 
         if let Some(default_site) = &**self.default_tls_site.load() {
             if default_site.name.eq(&site.name) {
