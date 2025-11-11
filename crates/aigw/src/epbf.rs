@@ -1,9 +1,10 @@
-#[cfg(target_os = "linux")]
 use anyhow::Context as _;
-#[cfg(target_os = "linux")]
-use aya::programs::{Xdp, XdpFlags};
+use aya::{
+    Ebpf,
+    programs::{Xdp, XdpFlags},
+};
+use tracing::{debug, warn};
 
-#[cfg(target_os = "linux")]
 pub fn run(iface: &str) -> anyhow::Result<Ebpf> {
     // Bump the memlock rlimit. This is needed for older kernels that don't use the
     // new memcg based accounting, see https://lwn.net/Articles/837122/
@@ -41,7 +42,7 @@ pub fn run(iface: &str) -> anyhow::Result<Ebpf> {
             });
         }
     }
-    let Opt { iface } = opt;
+
     let program: &mut Xdp = ebpf.program_mut("aigw").unwrap().try_into()?;
     program.load()?;
     program.attach(&iface, XdpFlags::default())

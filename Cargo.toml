@@ -1,5 +1,6 @@
 [workspace]
-members = ["crates/*"]
+default-members = ["crates/aigw", "crates/aigw-common", "crates/aigw-console", "crates/aigw-core"]
+members = ["crates/aigw", "crates/aigw-common", "crates/aigw-console", "crates/aigw-core"]
 resolver = "2"
 
 [workspace.package]
@@ -10,7 +11,6 @@ license = "MIT"
 anyhow = {version = "1"}
 arc-swap = {version = "1.7"}
 aya = {git = "https://github.com/aya-rs/aya"}
-aya-build = {git = "https://github.com/aya-rs/aya"}
 aya-ebpf = {git = "https://github.com/aya-rs/aya", default-features = false}
 aya-log = {git = "https://github.com/aya-rs/aya", default-features = false}
 aya-log-ebpf = {git = "https://github.com/aya-rs/aya", default-features = false}
@@ -36,3 +36,7 @@ tracing = {version = "0.1"}
 tracing-appender = {version = "0.2"}
 tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "time"]}
 which = {version = "6", default-features = false}
+
+[profile.release.package.aigw-ebpf]
+codegen-units = 1
+debug = 2
