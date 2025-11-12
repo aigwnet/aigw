@@ -442,6 +442,8 @@ async fn do_modify_site(
         tls_cert_start_date.map(|d| DateTime::from_timestamp(d.timestamp()));
     tb_site.tls_cert_end_date = tls_cert_end_date.map(|d| DateTime::from_timestamp(d.timestamp()));
     tb_site.tls_private_key = tls_private_key;
+    tb_site.rate_limit = Some(site.rate_limit);
+    tb_site.rate_limit_unit = Some(site.rate_limit_unit);
     tb_site.tls_on = site.tls_on;
     tb_site.tls_enforce = site.tls_enforce;
     tb_site.acme_on = site.acme_on;
