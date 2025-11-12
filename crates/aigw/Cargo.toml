@@ -54,10 +54,9 @@ urlencoding = {version = "2"}
 aya = {workspace = true}
 aya-log = {workspace = true}
 libc = {workspace = true}
-which = {version = "6", default-features = false}
+which = {workspace = true}
 
 [build-dependencies]
-aigw-ebpf = {path = "../aigw-ebpf"}
 anyhow = {workspace = true}
 cargo_metadata = {workspace = true}
 

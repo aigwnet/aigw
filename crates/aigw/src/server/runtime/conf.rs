@@ -23,6 +23,7 @@ pub struct BasicConfig {
     // default 443
     https: u32,
 
+    #[cfg(target_os = "linux")]
     iface: String,
 
     data_dir: Option<String>,
@@ -37,6 +38,7 @@ impl BasicConfig {
         self.https
     }
 
+    #[cfg(target_os = "linux")]
     pub fn iface(&self) -> &str {
         &self.iface
     }
