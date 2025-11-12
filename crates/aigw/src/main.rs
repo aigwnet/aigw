@@ -2,8 +2,6 @@ use core::panic;
 use std::{fs, sync::Arc};
 
 mod server;
-#[cfg(target_os = "linux")]
-mod epbf;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
@@ -30,9 +28,6 @@ fn main() -> anyhow::Result<()> {
 
     let config = fs::read_to_string(config_file)?;
     let config: AigwConfig = toml::from_str(config.as_str())?;
-
-    #[cfg(target_os = "linux")]
-    epbf::run(config.basic().iface(), args.ebpf.as_ref())?;
 
     let storage = Arc::new(Storage::new(
         config.basic().data_dir().as_ref(),

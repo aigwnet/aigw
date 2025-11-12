@@ -42,6 +42,10 @@ pub fn run(
         config.console().address(),
         config.console().key(),
         config.console().cluster().to_string(),
+        #[cfg(target_os = "linux")]
+        config.basic().iface().to_string(),
+        #[cfg(target_os = "linux")]
+        args.ebpf.clone(),
     );
 
     let mut works = std::thread::available_parallelism()
