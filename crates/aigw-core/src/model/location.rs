@@ -10,6 +10,35 @@ use tracing::error;
 
 use crate::{HttpHeader, http::convert_headers, util::regex::RegexCapture};
 
+pub enum HttpVersion {
+    H1,
+    H2,
+    H2H1,
+}
+
+impl TryFrom<&str> for HttpVersion {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "H1" | "h1" => Ok(HttpVersion::H1),
+            "H2" | "h2" => Ok(HttpVersion::H2),
+            "H2H1" | "H2h1" => Ok(HttpVersion::H2H1),
+            _ => Err(anyhow::anyhow!("not valid http version")),
+        }
+    }
+}
+
+impl ToString for HttpVersion {
+    fn to_string(&self) -> String {
+        match self {
+            HttpVersion::H1 => "H1".to_string(),
+            HttpVersion::H2 => "H2".to_string(),
+            HttpVersion::H2H1 => "H2H1".to_string(),
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum LocationError {
     #[error("Request Entity Too Large, max:{0}")]
@@ -190,6 +219,14 @@ pub struct ProxyLocation {
     )]
     pub rewrite: Option<(Regex, String)>,
 
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_http_version",
+        deserialize_with = "deserialize_http_version"
+    )]
+    pub http_version: Option<HttpVersion>,
+
     /// Additional headers to append to proxied requests
     /// These are added without removing existing headers
     #[serde(
@@ -364,6 +401,33 @@ where
     // rewrite: "^/users/(.*)$ /api/users/$1"
     let rewrite = String::deserialize(deserializer)?;
     new_rewrite(Some(&rewrite)).map_err(|_| serde::de::Error::custom("Regex compile error"))
+}
+
+fn serialize_http_version<S>(value: &Option<HttpVersion>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    if let Some(value) = value {
+        let s = match value {
+            HttpVersion::H1 => "H1",
+            HttpVersion::H2 => "H2",
+            HttpVersion::H2H1 => "H2H1",
+        };
+        serializer.serialize_str(s)
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+fn deserialize_http_version<'de, D>(deserializer: D) -> Result<Option<HttpVersion>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let version = String::deserialize(deserializer)?;
+    if let Ok(v) = HttpVersion::try_from(version.as_str()) {
+        return Ok(Some(v));
+    }
+    Ok(None)
 }
 
 fn serialize_http_headers<S>(

@@ -481,11 +481,20 @@ impl ProxyHttp for AigwProxy {
                     });
                     peer.options.verify_hostname = true;
 
-                    if session.is_upgrade_req() {
-                        peer.options.alpn = ALPN::H1;
+                    if let Some(http_version) = &location.http_version {
+                        match http_version {
+                            aigw_core::HttpVersion::H1 => peer.options.alpn = ALPN::H1,
+                            aigw_core::HttpVersion::H2 => peer.options.alpn = ALPN::H2,
+                            aigw_core::HttpVersion::H2H1 => peer.options.alpn = ALPN::H2H1,
+                        }
                     } else {
-                        peer.options.alpn = ALPN::H2H1;
+                        if session.is_upgrade_req() {
+                            peer.options.alpn = ALPN::H1;
+                        } else {
+                            peer.options.alpn = ALPN::H2H1;
+                        }
                     }
+
                     debug!("peer: {:?}", &peer);
 
                     return Ok(Box::new(peer));
@@ -712,7 +721,6 @@ impl ProxyHttp for AigwProxy {
             Some(q) => session.req_header().uri.path().to_string() + "?" + &q,
             None => session.req_header().uri.path().to_string(),
         };
-
         info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
             path, host, ua);

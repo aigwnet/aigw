@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, h } from 'vue'
-import { Card, Row, Col, FormItem, Input, InputNumber, Switch, RadioGroup, Radio, Textarea, Button, Divider } from 'ant-design-vue'
+import { Card, Row, Col, FormItem, Input, Select, InputNumber, Switch, RadioGroup, Radio, Textarea, Button, Divider } from 'ant-design-vue'
 import { Plus, X } from '@vben/icons'
 import DynamicHeader from './DynamicHeader.vue'
 
@@ -39,6 +39,13 @@ watch(
     { deep: true }
 )
 
+const httpVersionOptions = ref([
+    { label: '-', value: '' },
+    { label: 'HTTP/1.1', value: 'H1' },
+    { label: 'HTTP/2', value: 'H2' },
+    { label: 'HTTP/2 Over HTTP/1.1', value: 'H2H1' },
+]);
+
 // 添加新项
 const addItem = () => {
     if (localFields.value.length >= props.max) return
@@ -53,6 +60,7 @@ const addItem = () => {
         sni: "",
         client_max_body_size: 0,
         rewrite: "",
+        http_version: "",
         upstream: "",
         root_dir: "",
         auto_index: false,
@@ -81,6 +89,7 @@ const ensureMinFields = () => {
             sni: "",
             client_max_body_size: 0,
             rewrite: "",
+            http_version: "",
             upstream: "",
             root_dir: "",
             auto_index: false,
@@ -114,14 +123,16 @@ const getFieldPath = (index: number, fieldName: string) => {
             </Row>
             <Row>
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.path')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'path')">
+                <FormItem :colon="false" :label="$t('page.site.path')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'path')">
                     <Input v-model:value="localFields[index].path" placeholder="/" />
                 </FormItem>
                 </Col>
             </Row>
             <Row>
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.proxy')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'proxy')">
+                <FormItem :colon="false" :label="$t('page.site.proxy')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'proxy')">
                     <Switch v-model:checked="localFields[index].proxy" />
                 </FormItem>
                 </Col>
@@ -129,7 +140,8 @@ const getFieldPath = (index: number, fieldName: string) => {
 
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.protocol')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'protocol')">
+                <FormItem :colon="false" :label="$t('page.site.protocol')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'protocol')">
                     <RadioGroup :name="`protocol-${index}`" v-model:value="localFields[index].protocol">
                         <Radio value="http">http</Radio>
                         <Radio value="https">https</Radio>
@@ -147,28 +159,32 @@ const getFieldPath = (index: number, fieldName: string) => {
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.readTimeout')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'read_timeout')">
+                <FormItem :colon="false" :label="$t('page.site.readTimeout')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'read_timeout')">
                     <InputNumber v-model:value="localFields[index].read_timeout" placeholder="5" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.writeTimeout')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'write_timeout')">
+                <FormItem :colon="false" :label="$t('page.site.writeTimeout')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'write_timeout')">
                     <InputNumber v-model:value="localFields[index].write_timeout" placeholder="5" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.idleTimeout')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'idle_timeout')">
+                <FormItem :colon="false" :label="$t('page.site.idleTimeout')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'idle_timeout')">
                     <InputNumber v-model:value="localFields[index].idle_timeout" placeholder="30" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.sni')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'sni')">
+                <FormItem :colon="false" :label="$t('page.site.sni')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'sni')">
                     <Input v-model:value="localFields[index].sni" placeholder="" />
                 </FormItem>
                 </Col>
@@ -183,29 +199,40 @@ const getFieldPath = (index: number, fieldName: string) => {
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.rewrite')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'rewrite')">
+                <FormItem :colon="false" :label="$t('page.site.rewrite')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'rewrite')">
                     <Input v-model:value="localFields[index].rewrite" placeholder="Example: ^/(.*) /v2/api/$1" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.upstream')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'upstream')"
-                    :extra="$t('page.site.upstreamTip')">
+                <FormItem :colon="false" :label="$t('page.site.httpVersion')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'rewrite')">
+                    <Select v-model:value="localFields[index].http_version" :options="httpVersionOptions" />
+                </FormItem>
+                </Col>
+            </Row>
+            <Row v-show="localFields[index].proxy">
+                <Col :span="24">
+                <FormItem :colon="false" :label="$t('page.site.upstream')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'upstream')" :extra="$t('page.site.upstreamTip')">
                     <Textarea v-model:value="localFields[index].upstream" :rows="5" placeholder="Enter something..." />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="!localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.rootDir')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'root_dir')">
+                <FormItem :colon="false" :label="$t('page.site.rootDir')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'root_dir')">
                     <Input v-model:value="localFields[index].root_dir" placeholder="" />
                 </FormItem>
                 </Col>
             </Row>
             <Row v-show="!localFields[index].proxy">
                 <Col :span="24">
-                <FormItem :colon="false" :label="$t('page.site.autoIndex')" :label-col="{ span: 3 }" :name="getFieldPath(index, 'auto_index')">
+                <FormItem :colon="false" :label="$t('page.site.autoIndex')" :label-col="{ span: 3 }"
+                    :name="getFieldPath(index, 'auto_index')">
                     <Switch v-model:checked="localFields[index].auto_index" />
                 </FormItem>
                 </Col>
@@ -223,7 +250,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Divider v-show="localFields[index].proxy" />
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
-                <DynamicHeader :label="$t('page.site.setHeaders')"  :min="1" :max="10"
+                <DynamicHeader :label="$t('page.site.setHeaders')" :min="1" :max="10"
                     :namePath="getFieldPath(index, 'proxy_set_headers')"
                     v-model:modelValue="localFields[index].proxy_set_headers" />
                 </Col>

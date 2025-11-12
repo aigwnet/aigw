@@ -9,6 +9,7 @@ pub use http::convert_headers_to_string;
 pub use model::acme::AcmeToken;
 pub use model::cluster::Cluster;
 pub use model::location::BanckedProtocol;
+pub use model::location::HttpVersion;
 pub use model::location::PathSelector;
 pub use model::location::ProxyLocation;
 pub use model::location::find_matched_location;

@@ -88,6 +88,7 @@
     "rewrite": "Rewrite",
     "upstream": "Upstream",
     "upstreamTip": "Example: ip:port, enter each IP on a new line.",
+    "httpVersion": "Http Version",
     "addHeaders": "Add Headers",
     "setHeaders": "Set Headers",
     "addSuccess": "Add site successfully!",

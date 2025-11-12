@@ -4,7 +4,7 @@ use std::{
 };
 
 use aigw_core::{
-    ChangeLog, DynamicCert, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
+    ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
     convert_headers, convert_headers_to_string, new_path_selector, new_rewrite,
 };
 use anyhow::anyhow;
@@ -256,6 +256,10 @@ async fn convert_tb_site(
             sni: location.sni.map_or("$host".to_string(), |item| item),
             client_max_body_size: location.client_max_body_size.map_or(0, |t| t),
             rewrite: new_rewrite(location.rewrite.as_deref())?,
+            http_version: location
+                .http_version
+                .as_ref()
+                .map_or(None, |s| HttpVersion::try_from(s.as_str()).ok()),
             proxy_add_headers: location.add_headers.and_then(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
@@ -605,6 +609,7 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
             .rewrite
             .as_ref()
             .map(|(r, s)| "".to_owned() + r.as_str() + " " + s),
+        http_version: location.http_version.as_ref().map(|v| v.to_string()),
         root_dir: location.root_dir.as_ref().map(|item| unsafe {
             String::from_utf8_unchecked(item.as_os_str().as_encoded_bytes().to_vec())
         }),

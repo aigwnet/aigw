@@ -15,6 +15,7 @@ pub struct TbLocation {
     pub write_timeout: Option<u32>,
     pub idle_timeout: Option<u32>,
     pub rewrite: Option<String>,
+    pub http_version: Option<String>,
     pub set_headers: Option<String>,
     pub add_headers: Option<String>,
     pub root_dir: Option<String>,
