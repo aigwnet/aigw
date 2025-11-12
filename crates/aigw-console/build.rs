@@ -13,7 +13,7 @@ fn main() {
     {
         Ok(_) => {}
         Err(err) => {
-            panic!("npm run install error. {:?}", err);
+            panic!("pnpm run install error. {:?}", err);
         }
     }
 

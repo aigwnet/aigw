@@ -144,8 +144,8 @@ pub fn build_ebpf<'a>(
         let stderr = BufReader::new(stderr);
         let stderr = std::thread::spawn(move || {
             for line in stderr.lines() {
-                let line = line.expect("read line");
-                println!("cargo:warning={line}");
+                let _line = line.expect("read line");
+                //println!("cargo:warning={line}");
             }
         });
 
@@ -165,12 +165,12 @@ pub fn build_ebpf<'a>(
                     }
                 }
                 Message::CompilerMessage(CompilerMessage { message, .. }) => {
-                    for line in message.rendered.unwrap_or_default().split('\n') {
-                        println!("cargo:warning={line}");
+                    for _line in message.rendered.unwrap_or_default().split('\n') {
+                        //println!("cargo:warning={line}");
                     }
                 }
-                Message::TextLine(line) => {
-                    println!("cargo:warning={line}");
+                Message::TextLine(_line) => {
+                    //println!("cargo:warning={line}");
                 }
                 _ => {}
             }
@@ -190,7 +190,7 @@ pub fn build_ebpf<'a>(
 
         for (name, binary) in executables {
             let dst = PathBuf::from(env::var_os("CARGO_TARGET_DIR").unwrap_or("target".into()))
-                .join(name.clone() + ".epbf");
+                .join(name.clone() + ".ebpf");
             let _: u64 = fs::copy(&binary, &dst)
                 .with_context(|| format!("failed to copy {binary:?} to {dst:?}"))?;
 

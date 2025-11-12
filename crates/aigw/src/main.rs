@@ -32,7 +32,7 @@ fn main() -> anyhow::Result<()> {
     let config: AigwConfig = toml::from_str(config.as_str())?;
 
     #[cfg(target_os = "linux")]
-    epbf::run(config.basic().iface())?;
+    epbf::run(config.basic().iface(), args.ebpf.as_ref())?;
 
     let storage = Arc::new(Storage::new(
         config.basic().data_dir().as_ref(),

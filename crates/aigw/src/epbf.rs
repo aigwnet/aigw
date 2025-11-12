@@ -5,7 +5,7 @@ use aya::{
 };
 use tracing::{debug, warn};
 
-pub fn run(iface: &str) -> anyhow::Result<Ebpf> {
+pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<Ebpf> {
     // Bump the memlock rlimit. This is needed for older kernels that don't use the
     // new memcg based accounting, see https://lwn.net/Articles/837122/
     let rlim = libc::rlimit {
@@ -17,14 +17,14 @@ pub fn run(iface: &str) -> anyhow::Result<Ebpf> {
         debug!("remove limit on locked memory failed, ret is: {ret}");
     }
 
-    // This will include your eBPF object file as raw bytes at compile-time and load it at
-    // runtime. This approach is recommended for most real-world use cases. If you would
-    // like to specify the eBPF program at runtime rather than at compile-time, you can
-    // reach for `Bpf::load_file` instead.
-    let mut ebpf = aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
-        env!("OUT_DIR"),
-        "/aigw"
-    )))?;
+    let mut ebpf = if let Some(epbf) = epbf {
+        aya::Ebpf::load_file(epbf)?
+    } else {
+        aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
+            env!("OUT_DIR"),
+            "/aigw"
+        )))?
+    };
     match aya_log::EbpfLogger::init(&mut ebpf) {
         Err(e) => {
             // This can happen if you remove all log statements from your eBPF program.

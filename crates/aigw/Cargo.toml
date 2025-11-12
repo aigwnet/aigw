@@ -64,7 +64,7 @@ cargo_metadata = {workspace = true}
 [package.metadata.deb]
 assets = [
   ["target/release/aigw", "/usr/bin/aigw", "755"],
-  ["target/aigw.epbf", "/etc/aigw/aigw.epbf", "755"],
+  ["target/aigw.ebpf", "/etc/aigw/aigw.ebpf", "755"],
   ["target/aigw.1.gz", "/usr/share/man/man1/aigw.1.gz", "644"],
   ["assets/aigw.toml.example", "/etc/aigw/aigw.toml.example", "600"],
   ["assets/aigw.service", "/lib/systemd/system/aigw.service", "644"],

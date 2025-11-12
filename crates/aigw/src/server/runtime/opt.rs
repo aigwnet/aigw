@@ -31,6 +31,9 @@ pub struct ServerOpt {
     #[arg(short, long)]
     pub log_dir: Option<String>,
 
+    #[arg(short, long)]
+    pub ebpf: Option<String>,
+
     /// Run as other user
     #[structopt(long)]
     pub user: Option<String>,
