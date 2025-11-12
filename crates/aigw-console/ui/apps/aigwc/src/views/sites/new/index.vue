@@ -144,7 +144,7 @@ const [Form, formApi] = useVbenForm({
       },
       fieldName: 'rate_limit',
       label: $t('page.site.limitingValue'),
-      rules: z.string().default('').optional(),
+      rules: z.number().default(0).optional(),
       description: $t('page.site.limitingValueTip'),
     },
     {
@@ -154,7 +154,7 @@ const [Form, formApi] = useVbenForm({
       },
       fieldName: 'rate_limit_unit',
       label: $t('page.site.limitingUnit'),
-      rules: z.string().default('').optional(),
+      rules: z.number().default(1000).optional(),
       description: $t('page.site.limitingUnitTip'),
       suffix: 'ms',
     },

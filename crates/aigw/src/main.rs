@@ -2,6 +2,7 @@ use core::panic;
 use std::{fs, sync::Arc};
 
 mod server;
+#[cfg(target_os = "linux")]
 mod epbf;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
