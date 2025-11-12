@@ -7,11 +7,20 @@ use crate::server::storage::Storage;
 
 pub struct DataFrameHandler {
     pub(crate) storage: Arc<Storage>,
+    #[cfg(target_os = "linux")]
+    pub(crate) ebpf_handler: Arc<crate::server::epbf::EbpfHandler>,
 }
 
 impl DataFrameHandler {
-    pub fn new(storage: Arc<Storage>) -> Self {
-        Self { storage }
+    pub fn new(
+        storage: Arc<Storage>,
+        #[cfg(target_os = "linux")] ebpf_handler: Arc<crate::server::epbf::EbpfHandler>,
+    ) -> Self {
+        Self {
+            storage,
+            #[cfg(target_os = "linux")]
+            ebpf_handler,
+        }
     }
 
     pub async fn handle(&self, item: &DataFrame) -> anyhow::Result<bool> {
@@ -76,6 +85,27 @@ impl DataFrameHandler {
                         }
                     }
                     return Ok(true);
+                }
+                LogType::IpLayer4 => {
+                    #[cfg(target_os = "linux")]
+                    {
+                        match change_log.log_action {
+                            LogAction::Add | LogAction::Update => {
+                                use aigw_core::IpUpdateList;
+
+                                let ip_list_for_update: IpUpdateList =
+                                    serde_json::from_slice(&change_log.data)?;
+                                self.ebpf_handler.handle_update(ip_list_for_update)?;
+                            }
+                            LogAction::Delete => {
+                                use aigw_core::IpDeleteList;
+
+                                let ip_list_for_delete: IpDeleteList =
+                                    serde_json::from_slice(&change_log.data)?;
+                                self.ebpf_handler.handle_delete(ip_list_for_delete)?;
+                            }
+                        }
+                    }
                 }
             }
         }

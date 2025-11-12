@@ -1,6 +1,6 @@
 [workspace]
-default-members = ["crates/aigw", "crates/aigw-common", "crates/aigw-console", "crates/aigw-core"]
-members = ["crates/aigw", "crates/aigw-common", "crates/aigw-console", "crates/aigw-core"]
+default-members = ["crates/aigw", "crates/aigw-console", "crates/aigw-core"]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]

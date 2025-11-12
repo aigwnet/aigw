@@ -1,5 +1,7 @@
 mod acme;
 mod console;
+#[cfg(target_os = "linux")]
+mod epbf;
 mod runtime;
 mod shutdown;
 mod storage;
@@ -36,6 +38,12 @@ pub fn run(
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let shutdown_tx = Arc::new(shutdown_tx);
 
+    #[cfg(target_os = "linux")]
+    let ebpf_handler = Arc::new({
+        let rt = tokio::runtime::Builder::new_current_thread().build()?;
+        rt.block_on(async { epbf::run(config.basic().iface(), args.ebpf.as_ref()) })
+    }?);
+
     let aigwc_service = AigwConsoleService::new(
         storage.clone(),
         shutdown_tx.clone(),
@@ -43,9 +51,7 @@ pub fn run(
         config.console().key(),
         config.console().cluster().to_string(),
         #[cfg(target_os = "linux")]
-        config.basic().iface().to_string(),
-        #[cfg(target_os = "linux")]
-        args.ebpf.clone(),
+        ebpf_handler,
     );
 
     let mut works = std::thread::available_parallelism()

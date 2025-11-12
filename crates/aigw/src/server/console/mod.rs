@@ -1,6 +1,4 @@
 mod client;
-#[cfg(target_os = "linux")]
-mod epbf;
 mod handler;
 
 use std::sync::Arc;
@@ -22,10 +20,6 @@ use crate::server::Storage;
 pub struct AigwConsoleService {
     console_client: Arc<ConsoleClient>,
     rx: Arc<Mutex<Receiver<Vec<u8>>>>,
-    #[cfg(target_os = "linux")]
-    ifcae: String,
-    #[cfg(target_os = "linux")]
-    ebpf: Option<String>,
 }
 
 impl AigwConsoleService {
@@ -35,8 +29,7 @@ impl AigwConsoleService {
         address: &str,
         password: &str,
         cluster: String,
-        #[cfg(target_os = "linux")] ifcae: String,
-        #[cfg(target_os = "linux")] ebpf: Option<String>,
+        #[cfg(target_os = "linux")] ebpf_handler: Arc<super::epbf::EbpfHandler>,
     ) -> Self {
         let (tx, rx) = mpsc::channel::<Vec<u8>>(1024);
         let tx = Arc::new(tx);
@@ -49,16 +42,11 @@ impl AigwConsoleService {
             password,
             cluster,
             tx,
+            #[cfg(target_os = "linux")]
+            ebpf_handler,
         ));
 
-        Self {
-            console_client,
-            rx,
-            #[cfg(target_os = "linux")]
-            ifcae,
-            #[cfg(target_os = "linux")]
-            ebpf,
-        }
+        Self { console_client, rx }
     }
 }
 
@@ -70,8 +58,6 @@ impl Service for AigwConsoleService {
         mut _shutdown: ShutdownWatch,
         _listeners_per_fd: usize,
     ) {
-        #[cfg(target_os = "linux")]
-        let _e = epbf::run(&self.ifcae, self.ebpf.as_ref());
         self.console_client.start(self.rx.clone()).await;
     }
 

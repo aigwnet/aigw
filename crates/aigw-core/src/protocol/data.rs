@@ -7,6 +7,7 @@ pub enum LogType {
     Cluster,
     Site,
     Acme,
+    IpLayer4,
 }
 
 impl LogType {
@@ -15,11 +16,12 @@ impl LogType {
             LogType::Cluster => 1,
             LogType::Site => 2,
             LogType::Acme => 3,
+            LogType::IpLayer4 => 4,
         }
     }
 
     pub fn all_types() -> Vec<LogType> {
-        let types = vec![LogType::Site, LogType::Acme];
+        let types = vec![LogType::Site, LogType::Acme, LogType::IpLayer4];
         types
     }
 }
@@ -32,6 +34,7 @@ impl TryFrom<u32> for LogType {
             1 => Ok(LogType::Cluster),
             2 => Ok(LogType::Site),
             3 => Ok(LogType::Acme),
+            4 => Ok(LogType::IpLayer4),
             _ => Err(anyhow::anyhow!("Unknow error.")),
         }
     }

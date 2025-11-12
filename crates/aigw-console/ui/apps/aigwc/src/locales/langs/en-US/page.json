@@ -1,6 +1,8 @@
 {
   "new": "New",
   "add": "Add",
+  "edit": "Edit",
+  "delete": "Delete",
   "modifiedTime": "Modified Time",
   "createTime": "Create Time",
   "operation": "Operation",

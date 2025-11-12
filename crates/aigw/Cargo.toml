@@ -57,7 +57,6 @@ libc = {workspace = true}
 which = {workspace = true}
 
 [build-dependencies]
-aigw-ebpf = {path = "../aigw-ebpf"}
 anyhow = {workspace = true}
 cargo_metadata = {workspace = true}
 

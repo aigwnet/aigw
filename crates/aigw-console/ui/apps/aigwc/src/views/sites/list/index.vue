@@ -167,8 +167,8 @@ const onDelete = async (row: RowType) => {
           {{ row.tls_cert_start_date }} - {{ row.tls_cert_end_date }}
         </template>
         <template #action="{ row }">
-          <Button type="link" @click="onEdit(row)">Edit</Button>
-          <Button type="link" @click="onDelete(row)">Delete</Button>
+          <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
+          <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
         </template>
       </Grid>
     </div>

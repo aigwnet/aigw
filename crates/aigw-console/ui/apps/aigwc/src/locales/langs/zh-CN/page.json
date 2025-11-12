@@ -1,6 +1,8 @@
 {
   "new": "创建",
   "add": "添加",
+  "edit": "编辑",
+  "delete": "删除",
   "modifiedTime": "修改时间",
   "createTime": "创建时间",
   "operation": "操作",

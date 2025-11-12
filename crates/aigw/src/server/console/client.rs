@@ -6,7 +6,6 @@ use aigw_core::{
     parse_pong, statistics,
 };
 use bytes::BytesMut;
-use tracing::{error, info};
 use sysinfo::System;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -17,6 +16,7 @@ use tokio::{
     sync::{Mutex, RwLock, broadcast::Sender, mpsc},
     time::Instant,
 };
+use tracing::{error, info};
 
 use crate::{server::storage::Storage, version::VERSION};
 
@@ -43,12 +43,17 @@ impl ConsoleClient {
         password: &str,
         cluster: String,
         sender: Arc<mpsc::Sender<Vec<u8>>>,
+        #[cfg(target_os = "linux")] ebpf_handler: Arc<crate::server::epbf::EbpfHandler>,
     ) -> Self {
         let signature = Arc::new(Signature::new(password));
         let crypto = Arc::new(RwLock::new(None));
 
         Self {
-            data_handler: Arc::new(DataFrameHandler::new(storage)),
+            data_handler: Arc::new(DataFrameHandler::new(
+                storage,
+                #[cfg(target_os = "linux")]
+                ebpf_handler,
+            )),
             shutdown_tx,
             address: address.to_owned(),
             cluster,

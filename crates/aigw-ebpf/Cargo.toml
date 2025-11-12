@@ -1,16 +1,15 @@
 [package]
+edition.workspace = true
 name = "aigw-ebpf"
 version = "0.1.0"
-edition.workspace = true
 
 [dependencies]
-aigw-common = { path = "../aigw-common" }
-
-aya-ebpf = { workspace = true }
-aya-log-ebpf = { workspace = true }
+aya-ebpf = {workspace = true}
+aya-log-ebpf = {workspace = true}
+network-types = {version = "0.1"}
 
 [build-dependencies]
-which = { workspace = true }
+which = {workspace = true}
 
 [[bin]]
 name = "aigw"
