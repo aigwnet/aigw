@@ -40,7 +40,6 @@ watch(
 )
 
 const httpVersionOptions = ref([
-    { label: '-', value: '' },
     { label: 'HTTP/1.1', value: 'H1' },
     { label: 'HTTP/2', value: 'H2' },
     { label: 'HTTP/2 Over HTTP/1.1', value: 'H2H1' },
