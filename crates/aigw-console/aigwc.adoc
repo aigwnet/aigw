@@ -1,4 +1,4 @@
-aigwc(1)
+= aigwc(1)
 :doctype: manpage
 
 == Name
