@@ -306,7 +306,7 @@ fn main() -> anyhow::Result<()> {
     {
         Ok(_) => {
             Command::new("gzip")
-                .args(&["aigw.1"])
+                .args(&["-f", "aigw.1"])
                 .current_dir(&Path::new(&out_dir))
                 .status()
                 .unwrap();

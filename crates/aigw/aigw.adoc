@@ -1,5 +1,9 @@
 aigw(1)
-===========
+:doctype: manpage
+
+== Name
+aigw - Lite AI Gateway
+
 
 == Name
 aigw - Lite AI Gateway

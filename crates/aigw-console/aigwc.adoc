@@ -1,5 +1,5 @@
 aigwc(1)
-===========
+:doctype: manpage
 
 == Name
 aigwc - AI Gateway Console
