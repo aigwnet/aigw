@@ -35,7 +35,7 @@ tokio = {version = "1", features = ["full"]}
 tracing = {version = "0.1"}
 tracing-appender = {version = "0.2"}
 tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "time"]}
-which = {version = "6", default-features = false}
+which = {version = "8", default-features = false}
 
 [profile.release.package.aigw-ebpf]
 codegen-units = 1
