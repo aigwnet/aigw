@@ -56,9 +56,13 @@
     "name": "集群名称",
     "key": "集群密钥",
     "enable": "启用集群",
-    "defaultSiteEnable": "启用默认站点",
+    "enableDefaultSite": "启用默认站点",
     "description": "集群描述",
-    "deleteSuccess": "删除集群成功！"
+    "deleteSuccess": "删除集群成功！",
+    "secLayer4": "网络4层防护",
+    "secLayer4Wihte": "开启IP白名单",
+    "secLayer4Block": "开启IP黑名单",
+    "secLayer4Disable": "禁用"
   },
   "site": {
     "title": "站点管理",

@@ -1,48 +1,17 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import { useRouter } from 'vue-router';
-import { ref } from 'vue';
 import { $t } from '#/locales';
-
+import { watch } from 'vue';
 import { confirm, Page } from '@vben/common-ui';
 
 import { message, Button } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { getSiteTableApi, deleteSiteApi, getAllClustersApi } from '#/api';
-import { useVbenForm } from '#/adapter/form';
+import { getSiteTableApi, deleteSiteApi } from '#/api';
+import { clusterStore } from '#/store';
 
-
-const isClusterLoaded = ref(false);
-const clusterRef = ref<string | null>(null);
-
-const [ClusterForm, _formApi] = useVbenForm({
-  schema: [
-    {
-      component: 'ApiSelect',
-      componentProps: {
-        afterFetch: (data: { name: string; }[]) => {
-          const options = data.map(item => ({ label: item.name, value: item.name }));
-          if (options.length > 0 && !clusterRef.value) {
-            clusterRef.value = options[0]!.value;
-          }
-          isClusterLoaded.value = true;
-          return options;
-        },
-        api: getAllClustersApi,
-        onChange: (value: string, _prevValue: string) => {
-          clusterRef.value = value;
-          gridApi.reload();
-        },
-        autoSelect: 'first',
-      },
-      fieldName: 'cluster',
-      label: '',
-
-    },
-  ],
-  showDefaultActions: false,
-});
+let clusterAccess = clusterStore();
 
 interface RowType {
   name: string;
@@ -56,9 +25,9 @@ interface RowType {
 const gridOptions: VxeGridProps<RowType> = {
   columns: [
     { title: 'No', type: 'seq', width: 50 },
-    { field: 'name', title: $t('page.site.name'),align:"left", width: 160 },
-    { field: 'alt_names', align:"left", title: $t('page.site.alternativeNames') },
-    { field: 'root_dir', align:"left", title: $t('page.site.rootDir') },
+    { field: 'name', title: $t('page.site.name'), align: "left", width: 160 },
+    { field: 'alt_names', align: "left", title: $t('page.site.alternativeNames') },
+    { field: 'root_dir', align: "left", title: $t('page.site.rootDir') },
     { field: 'tls_on', cellRender: { name: 'CellTag' }, title: $t('page.site.tlsOn') },
     { slots: { default: 'tls_cert_date' }, title: $t('page.site.tlsCertDate') },
     { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
@@ -68,7 +37,7 @@ const gridOptions: VxeGridProps<RowType> = {
   proxyConfig: {
     ajax: {
       query: async ({ page, sort }) => {
-        var cluster = clusterRef.value;
+        var cluster = clusterAccess.current!;
         let data = await getSiteTableApi(cluster, {
           page: page.currentPage,
           page_size: page.pageSize,
@@ -135,6 +104,18 @@ const onDelete = async (row: RowType) => {
 
 };
 
+watch(
+  () => clusterAccess.current,
+  (newCluster, oldCluster) => {
+    if (newCluster !== oldCluster) {
+      // 可选：避免首次加载时重复触发
+      if (oldCluster !== undefined || newCluster !== null) {
+        gridApi?.reload(); 
+      }
+    }
+  }
+);
+
 </script>
 
 <template>
@@ -146,11 +127,8 @@ const onDelete = async (row: RowType) => {
         </p>
       </div>
     </template>
-    <template #extra>
-      <ClusterForm class="mb-2" />
-    </template>
 
-    <div v-if="isClusterLoaded">
+    <div v-if="clusterAccess.current">
       <Grid :table-title="$t('page.site.list')">
         <template #toolbar-tools>
           <Button class="mr-2" type="primary" @click="onAdd()">

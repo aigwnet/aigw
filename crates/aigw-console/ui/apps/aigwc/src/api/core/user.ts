@@ -5,7 +5,7 @@ import { requestClient } from '#/api/request';
 
 
 interface ExtUserInfo extends UserInfo {
-  email: string
+  email: string,
 }
 
 export type { ExtUserInfo };

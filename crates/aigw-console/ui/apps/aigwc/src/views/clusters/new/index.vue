@@ -7,6 +7,12 @@ import { addClusterApi } from '#/api';
 
 import { useVbenForm, z } from '#/adapter/form';
 
+const LAYER4_OPTIONS = [
+    { label: $t('page.cluster.secLayer4Wihte'), value: '1' },
+    { label: $t('page.cluster.secLayer4Block'), value: '2' },
+    { label: $t('page.cluster.secLayer4Disable'), value: '3' },
+];
+
 const [Form, formApi] = useVbenForm({
     handleSubmit: onSubmit,
     schema: [
@@ -37,8 +43,20 @@ const [Form, formApi] = useVbenForm({
         {
             component: 'Switch',
             defaultValue: false,
-            fieldName: 'default_site_enable',
-            label: $t('page.cluster.defaultSiteEnable'),
+            fieldName: 'enable_default_site',
+            label: $t('page.cluster.enableDefaultSite'),
+        },
+        {
+            component: 'RadioGroup',
+            componentProps: {
+                options: LAYER4_OPTIONS,
+                optionType: 'button',
+                buttonStyle: 'solid',
+                size: 'default',
+            },
+            defaultValue: '3',
+            fieldName: 'namelist',
+            label: $t('page.cluster.secLayer4'),
         },
         {
             component: 'Input',
@@ -63,7 +81,13 @@ async function handleAsyncSubmit(values: Record<string, any>) {
 
     try {
 
-        await addClusterApi(values);
+        const processedValues = {
+            ...values,
+            enable_white_list: values.namelist == "1",
+            enable_block_list: values.namelist == "2",
+        };
+
+        await addClusterApi(processedValues);
         formApi.resetForm();
         message.success({
             content: `Add cluster successfully!`,

@@ -12,7 +12,9 @@ export const overridesPreferences = defineOverridesPreferences({
     defaultHomePath: "/dashboard/traffic"
 
   },
-
+  widget: {
+    notification: false,
+  },
   logo: {
     source: "/logo.png",
   },

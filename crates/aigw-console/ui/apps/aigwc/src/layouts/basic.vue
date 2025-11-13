@@ -2,7 +2,7 @@
 import type { NotificationItem } from '@vben/layouts';
 
 import { computed, ref, watch } from 'vue';
-
+import Cluster from '#/components/Cluster.vue';
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
 import { useWatermark } from '@vben/hooks';
 import {
@@ -55,6 +55,7 @@ function handleNoticeClear() {
 function handleMakeAll() {
   notifications.value.forEach((item) => (item.isRead = true));
 }
+
 watch(
   () => preferences.app.watermark,
   async (enable) => {
@@ -74,6 +75,7 @@ watch(
 
 <template>
   <BasicLayout @clear-preferences-and-logout="handleLogout">
+    
     <template #user-dropdown>
       <UserDropdown :avatar :menus :text="userStore.userInfo?.name" :description="userStore.userInfo?.email"
         tag-text="Pro" @logout="handleLogout" />
@@ -89,6 +91,9 @@ watch(
     </template>
     <template #lock-screen>
       <LockScreen :avatar @to-login="handleLogout" />
+    </template>
+    <template #header-right-140-cluster>
+      <Cluster />
     </template>
   </BasicLayout>
 </template>

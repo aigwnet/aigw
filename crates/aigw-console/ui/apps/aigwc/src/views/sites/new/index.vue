@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { message, Card } from 'ant-design-vue';
-import { h, ref, markRaw } from 'vue';
+import { h, ref, markRaw, watch } from 'vue';
 import { Page, Loading } from '@vben/common-ui';
 import { $t } from '#/locales';
 import { addSiteApi, getAllClustersApi } from '#/api';
@@ -9,6 +9,9 @@ import DynamicLocation from '#/components/DynamicLocation.vue';
 const RawDynamicLocation = markRaw(DynamicLocation);
 
 import { useVbenForm, z } from '#/adapter/form';
+import { clusterStore } from '#/store';
+
+let clusterAccess = clusterStore();
 
 const [Form, formApi] = useVbenForm({
   handleSubmit: onSubmit,
@@ -27,6 +30,7 @@ const [Form, formApi] = useVbenForm({
       },
       fieldName: 'cluster',
       label: $t('page.cluster.name'),
+      defaultValue: clusterAccess.current || undefined,
     },
     {
       component: 'Input',
@@ -258,6 +262,19 @@ function onSubmit(values: Record<string, any>) {
   });
 
 }
+
+
+watch(
+  () => clusterAccess.current,
+  (newCluster, oldCluster) => {
+    if (newCluster !== oldCluster) {
+      if (oldCluster !== undefined || newCluster !== null) {
+        formApi.setFieldValue("cluster", newCluster);
+      }
+    }
+  }
+);
+
 </script>
 
 <template>

@@ -56,9 +56,13 @@
     "name": "Name",
     "key": "Key",
     "enable": "Enable Cluster",
-    "defaultSiteEnable": "Enable Default Site",
+    "enableDefaultSite": "Enable Default Site",
     "description": "Description",
-    "deleteSuccess": "Delete cluster successfully!"
+    "deleteSuccess": "Delete cluster successfully!",
+    "secLayer4": "Layer 4 Network Protection",
+    "secLayer4Wihte": "Enable IP Whitelist",
+    "secLayer4Block": "Enable IP Blocklist",
+    "secLayer4Disable": "Disable"
   },
   "site": {
     "title": "Manage Sites",
