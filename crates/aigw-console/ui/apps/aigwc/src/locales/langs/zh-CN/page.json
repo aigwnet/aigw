@@ -112,5 +112,15 @@
     "password": "新密码",
     "passwordUpdateInvalid": "新旧密码相同，无需更新！",
     "updateTip": "更新用户信息成功！"
+  },
+  "security": {
+    "title": "安全防护",
+    "cluster": {
+      "list": "集群名单",
+      "ipWhiteList": "IP白名单",
+      "ipBlockList": "IP黑名单"
+    },
+    "startTime": "起始时间",
+    "endTime": "结束时间"
   }
 }

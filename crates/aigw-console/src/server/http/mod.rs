@@ -15,18 +15,14 @@ use tracing::info;
 use crate::{
     AigwConsoleConfig, DatabaseClient,
     server::http::{
-        analytics::HttpApiAnalytics,
-        auth::{Auth, AuthHandler},
-        cluster::HttpApiCluster,
-        server::HttpApiServer,
-        site::HttpApiSite,
-        user::User,
+        analytics::HttpApiAnalytics, auth::{Auth, AuthHandler}, cluster::HttpApiCluster, security::HttpApiSecurity, server::HttpApiServer, site::HttpApiSite, user::User
     },
 };
 
 mod analytics;
 mod auth;
 mod cluster;
+mod security;
 mod server;
 mod site;
 mod user;
@@ -139,6 +135,10 @@ pub async fn run(
         .route(
             "/api/v1/analytics/traffic/{cluster}/ext",
             get(HttpApiAnalytics::analytics_traffic_ext).layer(auth_layer.clone()),
+        )
+        .route(
+            "/api/v1/security/ip/{cluster_name}/{type}",
+            get(HttpApiSecurity::query_cluster_ip_list).layer(auth_layer.clone()),
         )
         .with_state(api_context)
         .fallback_service(ServeDir::new(config.server.ui.as_ref().unwrap()))

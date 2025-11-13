@@ -112,5 +112,15 @@
     "password": "New Password",
     "passwordUpdateInvalid": "The new password is the same as the old one, no update needed!",
     "updateTip": "Update user profile successfully!"
+  },
+  "security": {
+    "title": "Security Protection",
+    "cluster": {
+      "list": "Cluster IP List",
+      "ipWhiteList": "IP Whitelist",
+      "ipBlockList": "IP Blocklist"
+    },
+    "startTime": "Start Time",
+    "endTime": "End Time"
   }
 }

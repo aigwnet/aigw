@@ -6,3 +6,4 @@ export * from './types';
 export * from './cluster';
 export * from './server';
 export * from './analytics';
+export * from './security';
