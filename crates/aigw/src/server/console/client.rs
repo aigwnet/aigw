@@ -77,7 +77,7 @@ impl ConsoleClient {
                 }
             };
 
-            if socket_addrs.len() == 0 {
+            if socket_addrs.is_empty() {
                 eprintln!("Failed to resolve address {}", addr);
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                 continue;
@@ -254,10 +254,10 @@ impl ConsoleClient {
         crypto: Arc<RwLock<Option<CryptoCore>>>,
     ) {
         // 如果本地没有任何同步点数据，建立连接的时候会去拉取全量，心跳包可以延迟发送，带全量数据拉取完整。
-        if let Ok(log_points) = storage.load_log_points().await {
-            if log_points.is_empty() {
-                tokio::time::sleep(Duration::from_secs(30)).await;
-            }
+        if let Ok(log_points) = storage.load_log_points().await
+            && log_points.is_empty()
+        {
+            tokio::time::sleep(Duration::from_secs(30)).await;
         }
 
         let mut interval =
@@ -300,7 +300,7 @@ impl ConsoleClient {
 
                 map.insert("http_code", http_code);
                 map.insert("http_source", http_source);
-                map.insert("http_country", http_country.into());
+                map.insert("http_country", http_country);
                 let ext_info = serde_json::to_string(&map).map_or("{}".to_string(), |s| s);
 
                 let statistics =
@@ -348,8 +348,8 @@ impl ConsoleClient {
                 }
                 Ok(_n) => {
                     let crypto = &*crypto.read().await;
-                    if let Some(crypto) = crypto {
-                        if let Err(e) = ConsoleClient::handle(
+                    if let Some(crypto) = crypto
+                        && let Err(e) = ConsoleClient::handle(
                             &sender,
                             &data_handler,
                             data_type,
@@ -357,9 +357,8 @@ impl ConsoleClient {
                             crypto,
                         )
                         .await
-                        {
-                            error!("Handle data error, {:?}", e);
-                        }
+                    {
+                        error!("Handle data error, {:?}", e);
                     }
 
                     buffer.clear();

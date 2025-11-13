@@ -268,33 +268,33 @@ async fn do_save_cluster_minute(
     task: &Task,
     end_time: chrono::DateTime<chrono::Utc>,
 ) -> anyhow::Result<()> {
-    if let Some(item) = monitor_item {
-        if monitor_size > 0 {
-            TbAnalyticsMonitorCluster::insert(
-                tx,
-                &TbAnalyticsMonitorCluster {
-                    id: None,
-                    cluster_name: Some(cluster_name.clone()),
-                    cpu: Some(item.cpu / monitor_size as f64),
-                    cpu_current_process: Some(item.cpu_current_process / monitor_size as f64),
-                    cpu_load_one: Some(item.cpu_load_one / monitor_size as f64),
-                    cpu_load_five: Some(item.cpu_load_five / monitor_size as f64),
-                    cpu_load_fifteen: Some(item.cpu_load_fifteen / monitor_size as f64),
-                    mem: Some(item.mem / monitor_size as f64),
-                    swap: Some(item.swap / monitor_size as f64),
-                    disk: Some(item.disk / monitor_size as f64),
-                    io_read: Some(item.io_read / monitor_size as u64),
-                    io_written: Some(item.io_written / monitor_size as u64),
-                    net_send: Some(item.net_send / monitor_size as u64),
-                    net_received: Some(item.net_received / monitor_size as u64),
-                    rt: Some(item.rt / monitor_size as u64),
-                    error: Some(item.error),
-                    gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
-                    gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
-                },
-            )
-            .await?;
-        }
+    if let Some(item) = monitor_item
+        && monitor_size > 0
+    {
+        TbAnalyticsMonitorCluster::insert(
+            tx,
+            &TbAnalyticsMonitorCluster {
+                id: None,
+                cluster_name: Some(cluster_name.clone()),
+                cpu: Some(item.cpu / monitor_size as f64),
+                cpu_current_process: Some(item.cpu_current_process / monitor_size as f64),
+                cpu_load_one: Some(item.cpu_load_one / monitor_size as f64),
+                cpu_load_five: Some(item.cpu_load_five / monitor_size as f64),
+                cpu_load_fifteen: Some(item.cpu_load_fifteen / monitor_size as f64),
+                mem: Some(item.mem / monitor_size as f64),
+                swap: Some(item.swap / monitor_size as f64),
+                disk: Some(item.disk / monitor_size as f64),
+                io_read: Some(item.io_read / monitor_size as u64),
+                io_written: Some(item.io_written / monitor_size as u64),
+                net_send: Some(item.net_send / monitor_size as u64),
+                net_received: Some(item.net_received / monitor_size as u64),
+                rt: Some(item.rt / monitor_size as u64),
+                error: Some(item.error),
+                gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
+                gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
+            },
+        )
+        .await?;
     }
 
     if let Some(item) = traffic_item {
@@ -331,33 +331,33 @@ async fn do_save_cluster_hour(
     if monitor_size == 0 {
         return Ok(());
     }
-    if let Some(item) = monitor_item {
-        if monitor_size > 0 {
-            TbAnalyticsMonitorClusterHour::insert(
-                tx,
-                &TbAnalyticsMonitorClusterHour {
-                    id: None,
-                    cluster_name: Some(cluster_name.clone()),
-                    cpu: Some(item.cpu / monitor_size as f64),
-                    cpu_current_process: Some(item.cpu_current_process / monitor_size as f64),
-                    cpu_load_one: Some(item.cpu_load_one / monitor_size as f64),
-                    cpu_load_five: Some(item.cpu_load_five / monitor_size as f64),
-                    cpu_load_fifteen: Some(item.cpu_load_fifteen / monitor_size as f64),
-                    mem: Some(item.mem / monitor_size as f64),
-                    swap: Some(item.swap / monitor_size as f64),
-                    disk: Some(item.disk / monitor_size as f64),
-                    io_read: Some(item.io_read / monitor_size as u64),
-                    io_written: Some(item.io_written / monitor_size as u64),
-                    net_send: Some(item.net_send / monitor_size as u64),
-                    net_received: Some(item.net_received / monitor_size as u64),
-                    rt: Some(item.rt / monitor_size as u64),
-                    error: Some(item.error),
-                    gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
-                    gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
-                },
-            )
-            .await?;
-        }
+    if let Some(item) = monitor_item
+        && monitor_size > 0
+    {
+        TbAnalyticsMonitorClusterHour::insert(
+            tx,
+            &TbAnalyticsMonitorClusterHour {
+                id: None,
+                cluster_name: Some(cluster_name.clone()),
+                cpu: Some(item.cpu / monitor_size as f64),
+                cpu_current_process: Some(item.cpu_current_process / monitor_size as f64),
+                cpu_load_one: Some(item.cpu_load_one / monitor_size as f64),
+                cpu_load_five: Some(item.cpu_load_five / monitor_size as f64),
+                cpu_load_fifteen: Some(item.cpu_load_fifteen / monitor_size as f64),
+                mem: Some(item.mem / monitor_size as f64),
+                swap: Some(item.swap / monitor_size as f64),
+                disk: Some(item.disk / monitor_size as f64),
+                io_read: Some(item.io_read / monitor_size as u64),
+                io_written: Some(item.io_written / monitor_size as u64),
+                net_send: Some(item.net_send / monitor_size as u64),
+                net_received: Some(item.net_received / monitor_size as u64),
+                rt: Some(item.rt / monitor_size as u64),
+                error: Some(item.error),
+                gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
+                gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
+            },
+        )
+        .await?;
     }
 
     if let Some(item) = traffic_item {

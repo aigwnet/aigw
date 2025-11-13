@@ -77,21 +77,21 @@ pub async fn find_ip_cidr_by_page(
 }
 
 fn convert_tb_cluster_ip_cidr(tb_cluster_ip_cidr: TbClusterIpCidr) -> ClusterIpCidr {
-    let start_time = tb_cluster_ip_cidr.start_time.as_ref().map_or(None, |s| {
+    let start_time = tb_cluster_ip_cidr.start_time.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string()
         })
     });
-    let end_time = tb_cluster_ip_cidr.end_time.as_ref().map_or(None, |s| {
+    let end_time = tb_cluster_ip_cidr.end_time.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string()
         })
     });
-    let gmt_modified = tb_cluster_ip_cidr.gmt_modified.as_ref().map_or(None, |s| {
+    let gmt_modified = tb_cluster_ip_cidr.gmt_modified.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d %H:%M:%S")

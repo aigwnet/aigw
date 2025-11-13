@@ -7,7 +7,7 @@ fn main() {
 
     // install packages
     match Command::new("pnpm")
-        .args(&["install"])
+        .args(["install"])
         .current_dir("./ui")
         .status()
     {
@@ -19,7 +19,7 @@ fn main() {
 
     // build ui
     match Command::new("pnpm")
-        .args(&["run", "build"])
+        .args(["run", "build"])
         .current_dir("./ui/")
         .status()
     {
@@ -42,14 +42,14 @@ fn main() {
     fs::create_dir_all(&out_dir).unwrap();
     fs::copy("aigwc.adoc", Path::new(&out_dir).join("aigwc.adoc")).unwrap();
     match Command::new("asciidoctor")
-        .args(&["-b", "manpage", "aigwc.adoc"])
-        .current_dir(&Path::new(&out_dir))
+        .args(["-b", "manpage", "aigwc.adoc"])
+        .current_dir(Path::new(&out_dir))
         .status()
     {
         Ok(_) => {
             Command::new("gzip")
-                .args(&["aigwc.1"])
-                .current_dir(&Path::new(&out_dir))
+                .args(["aigwc.1"])
+                .current_dir(Path::new(&out_dir))
                 .status()
                 .unwrap();
             fs::copy(

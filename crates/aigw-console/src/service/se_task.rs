@@ -12,7 +12,7 @@ pub(crate) struct Task {
 
 pub async fn find_task(rb: &rbatis::RBatis, name: &str, r#type: u32) -> anyhow::Result<Task> {
     // 根据任务名称、类型读取任务，获取最后的任务时间，如果没有获取到记录，以分钟级聚合任务为例，最后的任务时间为当前时间前一分钟，并插入记录。
-    if let Some(tb_task) = TbTask::select_by_name_and_type(rb, &name, r#type).await? {
+    if let Some(tb_task) = TbTask::select_by_name_and_type(rb, name, r#type).await? {
         return Ok(convert_tb_task(tb_task));
     }
 

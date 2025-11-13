@@ -229,21 +229,6 @@ impl Challenge {
         }
     }
 
-    /// The encoded key authorization is the token that the DNS01
-    /// challenge should be serving for the ACME server to inspect.
-    // pub fn key_authorization_encoded(&self) -> Result<Option<String>, Error> {
-    //     let key_authorization = self.key_authorization()?;
-
-    //     if let Some(key_authorization) = key_authorization {
-    //         Ok(Some(b64(&hash(
-    //             MessageDigest::sha256(),
-    //             &key_authorization.into_bytes(),
-    //         )?)))
-    //     } else {
-    //         Ok(None)
-    //     }
-    // }
-
     /// Initiate validation of the challenge by the ACME server.
     ///
     /// Before calling this method, you should have set up your challenge token

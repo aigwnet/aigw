@@ -88,7 +88,7 @@ pub async fn find_all(rb: &RBatis) -> anyhow::Result<Vec<Cluster>> {
     let clusters = TbCluster::select_all(rb)
         .await?
         .iter()
-        .map(|cluster| convert_tb_cluster(cluster))
+        .map(convert_tb_cluster)
         .collect();
 
     Ok(clusters)
@@ -113,7 +113,7 @@ pub async fn find_cluster_by_page(
 }
 
 fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
-    let gmt_modified = cluster.gmt_modified.as_ref().map_or(None, |s| {
+    let gmt_modified = cluster.gmt_modified.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d %H:%M:%S")

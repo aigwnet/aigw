@@ -280,7 +280,7 @@ impl ProxyHttp for AigwProxy {
         let site = self
             .storage
             .find_site(host)
-            .map_or(self.storage.find_default_tls_site(), |s| Some(s));
+            .map_or(self.storage.find_default_tls_site(),Some);
 
         let Some(site) = site else {
             let (mut header, body) = error_page::generate_error(StatusCode::NOT_FOUND);
@@ -611,15 +611,15 @@ impl ProxyHttp for AigwProxy {
             let _ = upstream_response.insert_header("X-Cache-Status", cache_status);
         }
         let code = upstream_response.status.as_u16();
-        if code >= 100 && code < 200 {
+        if (100..200).contains(&code) {
             self.storage.http_code_1xx();
-        } else if code >= 200 && code < 300 {
+        } else if (200..300).contains(&code) {
             self.storage.http_code_2xx();
-        } else if code >= 300 && code < 400 {
+        } else if (300..400).contains(&code) {
             self.storage.http_code_3xx();
-        } else if code >= 400 && code < 500 {
+        } else if (400..500).contains(&code) {
             self.storage.http_code_4xx();
-        } else if code >= 500 && code < 5600 {
+        } else if (500..600).contains(&code) {
             self.storage.http_code_5xx();
         }
 
@@ -693,7 +693,7 @@ impl ProxyHttp for AigwProxy {
     where
         Self::CTX: Send + Sync,
     {
-        if let Some(_) = e {
+        if e.is_some() {
             self.storage.error();
         }
         // Record rt
@@ -718,7 +718,7 @@ impl ProxyHttp for AigwProxy {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("");
         let path = match session.req_header().uri.query() {
-            Some(q) => session.req_header().uri.path().to_string() + "?" + &q,
+            Some(q) => session.req_header().uri.path().to_string() + "?" + q,
             None => session.req_header().uri.path().to_string(),
         };
         info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,

@@ -171,15 +171,15 @@ pub async fn token_validate(
     token: &str,
 ) -> anyhow::Result<(bool, Option<String>, Option<String>)> {
     let session = TbSession::select_by_token(rb, token).await?;
-    if let Some(mut session) = session {
-        if let Some(gmt_modified) = session.gmt_modified {
-            if gmt_modified.add(Duration::from_secs(1800)) > DateTime::utc() {
-                session.gmt_modified = Some(DateTime::utc());
-                TbSession::update_by_token(rb, &session, token).await?;
-                return Ok((true, session.user, session.email));
-            }
-        }
+    if let Some(mut session) = session
+        && let Some(gmt_modified) = session.gmt_modified
+        && gmt_modified.add(Duration::from_secs(1800)) > DateTime::utc()
+    {
+        session.gmt_modified = Some(DateTime::utc());
+        TbSession::update_by_token(rb, &session, token).await?;
+        return Ok((true, session.user, session.email));
     }
+
     Ok((false, None, None))
 }
 

@@ -188,7 +188,7 @@ pub fn generate_error(code: StatusCode) -> (ResponseHeader, Bytes) {
     let length = body.len();
     let mut resp = ResponseHeader::build(code, Some(3)).unwrap();
     resp.insert_header(header::SERVER, SERVER).unwrap();
-    resp.insert_header(header::CONTENT_LENGTH, &length.to_string())
+    resp.insert_header(header::CONTENT_LENGTH, length.to_string())
         .unwrap();
     resp.insert_header(header::CACHE_CONTROL, "private, no-store")
         .unwrap();

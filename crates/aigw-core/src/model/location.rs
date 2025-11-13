@@ -29,13 +29,14 @@ impl TryFrom<&str> for HttpVersion {
     }
 }
 
-impl ToString for HttpVersion {
-    fn to_string(&self) -> String {
-        match self {
-            HttpVersion::H1 => "H1".to_string(),
-            HttpVersion::H2 => "H2".to_string(),
-            HttpVersion::H2H1 => "H2H1".to_string(),
-        }
+impl Display for HttpVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            HttpVersion::H1 => "H1",
+            HttpVersion::H2 => "H2",
+            HttpVersion::H2H1 => "H2H1",
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -147,10 +148,10 @@ pub fn new_rewrite(rewrite: Option<&str>) -> anyhow::Result<Option<(Regex, Strin
 
 /// Get the content length from http request header.
 fn get_content_length(header: &RequestHeader) -> Option<usize> {
-    if let Some(content_length) = header.headers.get(http::header::CONTENT_LENGTH) {
-        if let Ok(size) = content_length.to_str().unwrap_or_default().parse::<usize>() {
-            return Some(size);
-        }
+    if let Some(content_length) = header.headers.get(http::header::CONTENT_LENGTH)
+        && let Ok(size) = content_length.to_str().unwrap_or_default().parse::<usize>()
+    {
+        return Some(size);
     }
     None
 }
@@ -475,13 +476,10 @@ pub fn find_matched_location(
 ) -> Option<(Arc<ProxyLocation>, Vec<(String, String)>)> {
     // Stage 1: Exact match (=) — highest priority
     for location in locations {
-        match &*location.path {
-            PathSelector::EqualPath(_, EqualPath { value }) => {
-                if value == path {
-                    return Some((location.clone(), vec![]));
-                }
-            }
-            _ => {}
+        if let PathSelector::EqualPath(_, EqualPath { value }) = &*location.path
+            && value == path
+        {
+            return Some((location.clone(), vec![]));
         }
     }
 

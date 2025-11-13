@@ -66,40 +66,40 @@ pub async fn send_all_sites_to_aigw(
 
     loop {
         let mut connection = connection.lock().await;
-        if let Some(cluster) = &connection.cluster {
-            if let Some(crypto) = &connection.crypto {
-                let r = find_site_by_page(rb, &page_request, cluster).await;
-                match r {
-                    Ok(page) => {
-                        if page.items.is_empty() {
-                            break;
-                        }
+        if let Some(cluster) = &connection.cluster
+            && let Some(crypto) = &connection.crypto
+        {
+            let r = find_site_by_page(rb, &page_request, cluster).await;
+            match r {
+                Ok(page) => {
+                    if page.items.is_empty() {
+                        break;
+                    }
 
-                        let mut logs = vec![];
-                        for item in page.items {
-                            let json = serde_json::to_string_pretty(&item)?;
-                            logs.push(ChangeLog {
-                                log_id: item.id.unwrap(),
-                                log_type: LogType::Site,
-                                log_action: LogAction::Add,
-                                data_id: item.id.unwrap(),
-                                data: json.into_bytes(),
-                            });
-                        }
-                        let log_point = logs.last().map(|last| LogPoint {
-                            log_id: last.log_id,
+                    let mut logs = vec![];
+                    for item in page.items {
+                        let json = serde_json::to_string_pretty(&item)?;
+                        logs.push(ChangeLog {
+                            log_id: item.id.unwrap(),
                             log_type: LogType::Site,
+                            log_action: LogAction::Add,
+                            data_id: item.id.unwrap(),
+                            data: json.into_bytes(),
                         });
-                        let data: DataFrame = DataFrame { logs, log_point };
-                        build_data(&mut buffer, data, crypto)?;
-                        connection.write(&buffer).await?;
+                    }
+                    let log_point = logs.last().map(|last| LogPoint {
+                        log_id: last.log_id,
+                        log_type: LogType::Site,
+                    });
+                    let data: DataFrame = DataFrame { logs, log_point };
+                    build_data(&mut buffer, data, crypto)?;
+                    connection.write(&buffer).await?;
 
-                        page_no += 1;
-                        page_request = page_request.set_page_no(page_no);
-                    }
-                    Err(e) => {
-                        error!("Query error. {:?}", e);
-                    }
+                    page_no += 1;
+                    page_request = page_request.set_page_no(page_no);
+                }
+                Err(e) => {
+                    error!("Query error. {:?}", e);
                 }
             }
         }
@@ -129,46 +129,46 @@ pub async fn send_change_logs_to_aigw(
         page_request = page_request.set_page_size(20);
         loop {
             let mut connection = connection.lock().await;
-            if let Some(cluster) = &connection.cluster {
-                if let Some(crypto) = &connection.crypto {
-                    let r = TbChangeLog::select_by_type(
-                        rb,
-                        &page_request,
-                        cluster,
-                        log_type.code(),
-                        log_id,
-                    )
-                    .await;
-                    match r {
-                        Ok(page) => {
-                            if page.records.is_empty() {
-                                break;
-                            }
+            if let Some(cluster) = &connection.cluster
+                && let Some(crypto) = &connection.crypto
+            {
+                let r = TbChangeLog::select_by_type(
+                    rb,
+                    &page_request,
+                    cluster,
+                    log_type.code(),
+                    log_id,
+                )
+                .await;
+                match r {
+                    Ok(page) => {
+                        if page.records.is_empty() {
+                            break;
+                        }
 
-                            let mut logs = vec![];
-                            for item in page.records {
-                                logs.push(ChangeLog {
-                                    log_id: item.id.unwrap(),
-                                    log_type,
-                                    log_action: item.log_action.unwrap().try_into()?,
-                                    data_id: item.data_id.unwrap(),
-                                    data: item.data.map_or(vec![], |data| data.into_bytes()),
-                                });
-                            }
-                            let log_point = logs.last().map(|last| LogPoint {
-                                log_id: last.log_id,
+                        let mut logs = vec![];
+                        for item in page.records {
+                            logs.push(ChangeLog {
+                                log_id: item.id.unwrap(),
                                 log_type,
+                                log_action: item.log_action.unwrap().try_into()?,
+                                data_id: item.data_id.unwrap(),
+                                data: item.data.map_or(vec![], |data| data.into_bytes()),
                             });
-                            let data: DataFrame = DataFrame { logs, log_point };
-                            build_data(&mut buffer, data, crypto)?;
-                            connection.write(&buffer).await?;
+                        }
+                        let log_point = logs.last().map(|last| LogPoint {
+                            log_id: last.log_id,
+                            log_type,
+                        });
+                        let data: DataFrame = DataFrame { logs, log_point };
+                        build_data(&mut buffer, data, crypto)?;
+                        connection.write(&buffer).await?;
 
-                            page_no += 1;
-                            page_request = page_request.set_page_no(page_no);
-                        }
-                        Err(e) => {
-                            error!("Query error. {:?}", e);
-                        }
+                        page_no += 1;
+                        page_request = page_request.set_page_no(page_no);
+                    }
+                    Err(e) => {
+                        error!("Query error. {:?}", e);
                     }
                 }
             }

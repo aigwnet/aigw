@@ -62,14 +62,14 @@ pub async fn find_server_by_page(
 }
 
 fn convert_tb_server(server: &TbServer) -> Server {
-    let gmt_create = server.gmt_create.as_ref().map_or(None, |s| {
+    let gmt_create = server.gmt_create.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string()
         })
     });
-    let gmt_modified = server.gmt_modified.as_ref().map_or(None, |s| {
+    let gmt_modified = server.gmt_modified.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d %H:%M:%S")
@@ -77,7 +77,7 @@ fn convert_tb_server(server: &TbServer) -> Server {
         })
     });
     Server {
-        id: server.id.clone(),
+        id: server.id,
         cluster_name: server
             .cluster_name
             .clone()

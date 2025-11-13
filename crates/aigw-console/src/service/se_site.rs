@@ -96,7 +96,7 @@ pub async fn update_cert(
     // update site
     TbSite::update_by_name(rb, &tb_site, name).await?;
 
-    let (id, site) = find_site(rb, &name).await?;
+    let (id, site) = find_site(rb, name).await?;
     let s = serde_json::to_string_pretty(&site)?;
     let change_log = do_build_change_log(
         rb,
@@ -126,7 +126,7 @@ pub async fn find_site(
 }
 
 pub async fn build_change_log_delete_site(rb: &RBatis, name: &str) -> anyhow::Result<ChangeLog> {
-    let (id, site) = find_site(rb, &name).await?;
+    let (id, site) = find_site(rb, name).await?;
     let s = serde_json::to_string_pretty(&site)?;
     let tx = rb.acquire_begin().await?;
 
@@ -158,11 +158,11 @@ pub async fn build_change_log_delete_site(rb: &RBatis, name: &str) -> anyhow::Re
     {
         Ok(item) => {
             tx.commit().await?;
-            return Ok(item);
+            Ok(item)
         }
         Err(e) => {
             tx.rollback().await?;
-            return Err(e);
+            Err(e)
         }
     }
 }
@@ -178,14 +178,14 @@ async fn convert_tb_site(
     let tls_cert = tb_site
         .tls_cert
         .and_then(|item| DynamicCert::try_from(item.as_bytes()).ok());
-    let tls_cert_start_date = tb_site.tls_cert_start_date.as_ref().map_or(None, |s| {
+    let tls_cert_start_date = tb_site.tls_cert_start_date.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d")
                 .to_string()
         })
     });
-    let tls_cert_end_date = tb_site.tls_cert_end_date.as_ref().map_or(None, |s| {
+    let tls_cert_end_date = tb_site.tls_cert_end_date.as_ref().and_then(|s| {
         chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
             t.with_timezone(&chrono::Local)
                 .format("%Y-%m-%d")
@@ -220,12 +220,12 @@ async fn convert_tb_site(
         locations: vec![],
     };
 
-    if let Some(names) = tb_site.alt_names {
-        if !names.is_empty() {
-            let names = names.split(",").collect::<Vec<&str>>();
-            for name in names {
-                site.alt_names.push(name.to_owned());
-            }
+    if let Some(names) = tb_site.alt_names
+        && !names.is_empty()
+    {
+        let names = names.split(",").collect::<Vec<&str>>();
+        for name in names {
+            site.alt_names.push(name.to_owned());
         }
     }
     let site_id = tb_site.id.ok_or(anyhow::anyhow!("Id is null"))?;
@@ -245,7 +245,7 @@ async fn convert_tb_site(
         let p_location = ProxyLocation {
             id: Some(location_id),
             path: Arc::new(new_path_selector(&location.location.unwrap())?),
-            proxy: if location.proxy == 1 { true } else { false },
+            proxy: location.proxy == 1,
             protocol: location.protocol.unwrap().as_str().try_into()?,
             lb,
             upstream: backends_array,
@@ -259,7 +259,7 @@ async fn convert_tb_site(
             http_version: location
                 .http_version
                 .as_ref()
-                .map_or(None, |s| HttpVersion::try_from(s.as_str()).ok()),
+                .and_then(|s| HttpVersion::try_from(s.as_str()).ok()),
             proxy_add_headers: location.add_headers.and_then(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
@@ -275,11 +275,7 @@ async fn convert_tb_site(
                 }
             }),
             root_dir: location.root_dir.map(|item| item.into()),
-            auto_index: if location.auto_index == 1 {
-                true
-            } else {
-                false
-            },
+            auto_index: location.auto_index == 1,
         };
 
         site.locations.push(Arc::new(p_location));
@@ -359,7 +355,7 @@ async fn do_add_new_site(
         .as_u64()
         .ok_or(anyhow::anyhow!("Last insert id is null."))?;
     for location in &site.locations {
-        let tb_location = convert_location(site_id, &location, &now);
+        let tb_location = convert_location(site_id, location, &now);
         let r = TbLocation::insert(rb, &tb_location).await?;
         let id = r.last_insert_id.as_u64();
         if let Some(location_id) = id {
@@ -502,24 +498,24 @@ async fn do_modify_site(
             let host = b.host.clone().ok_or(anyhow::anyhow!("Host is empty"))?;
             let port = b.port.ok_or(anyhow::anyhow!("Host is empty"))? as u16;
             let item = &(host, port);
-            if !to_be_add.contains(&item) {
+            if !to_be_add.contains(item) {
                 to_be_delete.push(b.id);
             } else {
-                to_be_add.remove(&item);
+                to_be_add.remove(item);
             }
         }
-        for id in to_be_delete {
-            if let Some(id) = id {
-                TbBackend::delete_by_id(rb, id).await?;
-            }
+
+        for id in to_be_delete.into_iter().flatten() {
+            TbBackend::delete_by_id(rb, id).await?;
         }
+
         for (host, port) in to_be_add {
             add_backend(rb, location_id, &host, port, &now).await?;
         }
     }
     // add location
     for location in to_be_added {
-        let tb_location = convert_location(site_id, &location, &now);
+        let tb_location = convert_location(site_id, location, &now);
         let r = TbLocation::insert(rb, &tb_location).await?;
         let id = r.last_insert_id.as_u64();
         if let Some(location_id) = id {

@@ -165,10 +165,10 @@ impl AigwCtx {
     /// Returns: Option<u64> representing milliseconds, or None if time exceeds 1 hour
     #[inline]
     pub fn get_upstream_response_time(&self) -> Option<u64> {
-        if let Some(value) = self.upstream_response_time {
-            if value < ONE_HOUR_MS {
-                return Some(value);
-            }
+        if let Some(value) = self.upstream_response_time
+            && value < ONE_HOUR_MS
+        {
+            return Some(value);
         }
         None
     }
@@ -179,10 +179,10 @@ impl AigwCtx {
     /// Returns: Option<u64> representing milliseconds, or None if time exceeds 1 hour
     #[inline]
     pub fn get_upstream_connect_time(&self) -> Option<u64> {
-        if let Some(value) = self.upstream_connect_time {
-            if value < ONE_HOUR_MS {
-                return Some(value);
-            }
+        if let Some(value) = self.upstream_connect_time
+            && value < ONE_HOUR_MS
+        {
+            return Some(value);
         }
         None
     }
@@ -193,10 +193,10 @@ impl AigwCtx {
     /// Returns: Option<u64> representing milliseconds, or None if time exceeds 1 hour
     #[inline]
     pub fn get_upstream_processing_time(&self) -> Option<u64> {
-        if let Some(value) = self.upstream_processing_time {
-            if value < ONE_HOUR_MS {
-                return Some(value);
-            }
+        if let Some(value) = self.upstream_processing_time
+            && value < ONE_HOUR_MS
+        {
+            return Some(value);
         }
         None
     }

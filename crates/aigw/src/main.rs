@@ -6,7 +6,6 @@ mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
 mod logger;
-
 use server::{AigwConfig, ServerOpt, Storage};
 
 use crate::server::GeoLite;

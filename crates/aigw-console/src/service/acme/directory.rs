@@ -34,10 +34,7 @@ impl DirectoryBuilder {
     /// If no http client is specified, a default client will be created using
     /// the webpki trust roots.
     pub async fn build(&mut self) -> Result<Arc<Directory>, Error> {
-        let http_client = self
-            .http_client
-            .clone()
-            .unwrap_or_else(reqwest::Client::new);
+        let http_client = self.http_client.clone().unwrap_or_default();
 
         let resp = http_client.get(&self.url).send().await?;
 
@@ -109,7 +106,7 @@ impl Directory {
         account_id: &Option<String>,
     ) -> anyhow::Result<reqwest::Response> {
         let nonce = self.get_nonce().await?;
-        let body = jws(url, nonce, &payload, pkey, account_id.clone())?;
+        let body = jws(url, nonce, payload, pkey, account_id.clone())?;
         let resp = self
             .http_client
             .post(url)
@@ -139,7 +136,7 @@ impl Directory {
             attempt += 1;
 
             let resp = self
-                .authenticated_request_raw(url, &payload, &pkey, &account_id)
+                .authenticated_request_raw(url, payload, pkey, account_id)
                 .await?;
 
             let headers = resp.headers().clone();

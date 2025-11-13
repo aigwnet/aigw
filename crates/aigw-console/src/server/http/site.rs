@@ -59,7 +59,7 @@ impl HttpApiSite {
         alt_names: Vec<String>,
         email: Option<String>,
     ) -> anyhow::Result<()> {
-        let email = email.map_or(Err(anyhow!("User not found")), |u| Ok(u))?;
+        let email = email.map_or(Err(anyhow!("User not found")), Ok)?;
 
         let mut domains = vec![name.as_str()];
         for s in &alt_names {
@@ -142,7 +142,7 @@ impl HttpApiSite {
         alt_names: Vec<String>,
         email: Option<String>,
     ) -> anyhow::Result<()> {
-        let email = email.map_or(Err(anyhow!("User not found")), |u| Ok(u))?;
+        let email = email.map_or(Err(anyhow!("User not found")), Ok)?;
 
         let mut domains = vec![name.as_str()];
         for s in &alt_names {

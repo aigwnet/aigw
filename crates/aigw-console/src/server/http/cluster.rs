@@ -72,7 +72,7 @@ impl HttpApiCluster {
         Path(name): Path<String>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<bool> {
-        let _ = delete_cluster(&context.database_client.rb, name.as_str())
+        delete_cluster(&context.database_client.rb, name.as_str())
             .await
             .map_err(ApiError::from)?;
         Ok(ApiData(Some(true)))

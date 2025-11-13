@@ -170,7 +170,7 @@ fn gen_csr(pkey: &PKey<Private>, domains: Vec<String>) -> Result<X509Req, Error>
     stack.push(san_extension)?;
     builder.add_extensions(&stack)?;
 
-    builder.set_pubkey(&pkey)?;
+    builder.set_pubkey(pkey)?;
     builder.sign(pkey, MessageDigest::sha256())?;
 
     Ok(builder.build())

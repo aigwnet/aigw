@@ -51,7 +51,7 @@ impl TlsAccept for DynamicTlsAccept {
             let site = self
                 .storage
                 .find_site(sni)
-                .map_or(self.storage.find_default_tls_site(), |s| Some(s));
+                .map_or(self.storage.find_default_tls_site(), Some);
             if let Some(site) = site {
                 if let Err(e) = self.set_dynamic_cert(&site, ssl) {
                     error!("Add cert error, {:?}", e);

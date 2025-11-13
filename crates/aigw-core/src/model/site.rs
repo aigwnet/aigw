@@ -206,7 +206,7 @@ where
             if s.is_empty() {
                 serializer.serialize_str("")
             } else {
-                serializer.serialize_str(&BASE64_STANDARD.encode(&s))
+                serializer.serialize_str(&BASE64_STANDARD.encode(s))
             }
         }
         None => serializer.serialize_str(""),

@@ -49,7 +49,7 @@ pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<EbpfHandler> {
 
     let program: &mut Xdp = ebpf.program_mut("aigw").unwrap().try_into()?;
     program.load()?;
-    program.attach(&iface, XdpFlags::default())
+    program.attach(iface, XdpFlags::default())
         .context("failed to attach the XDP program with default flags - try changing XdpFlags::default() to XdpFlags::SKB_MODE")?;
 
     Ok(EbpfHandler {

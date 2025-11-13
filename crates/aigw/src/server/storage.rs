@@ -101,7 +101,7 @@ impl Storage {
 
     pub fn find_default_tls_site(&self) -> Option<Arc<Site>> {
         if self.cluster().enable_default_site {
-            (&**self.default_tls_site.load()).clone()
+            (**self.default_tls_site.load()).clone()
         } else {
             None
         }
@@ -168,10 +168,8 @@ impl Storage {
             }
 
             // set default site
-            if self.default_tls_site.load().is_none() {
-                if s.tls_on {
-                    self.default_tls_site.store(Arc::new(Some(s.clone())));
-                }
+            if self.default_tls_site.load().is_none() && s.tls_on {
+                self.default_tls_site.store(Arc::new(Some(s.clone())));
             }
             if s.rate_limit > 0 {
                 rates.insert(s.name.clone(), rate_limit.clone());
@@ -198,10 +196,8 @@ impl Storage {
             }
         }
 
-        if self.default_tls_site.load().is_none() {
-            if site.tls_on {
-                self.default_tls_site.store(Arc::new(Some(site.clone())));
-            }
+        if self.default_tls_site.load().is_none() && site.tls_on {
+            self.default_tls_site.store(Arc::new(Some(site.clone())));
         }
         if site.rate_limit > 0 {
             rates.insert(site.name.clone(), rate_limit.clone());
@@ -222,13 +218,13 @@ impl Storage {
         sites.remove(&site.name);
         rates.remove(&site.name);
 
-        if let Some(default_site) = &**self.default_tls_site.load() {
-            if default_site.name.eq(&site.name) {
-                for (_, site) in &sites {
-                    if site.tls_on {
-                        self.default_tls_site.store(Arc::new(Some(site.clone())));
-                        break;
-                    }
+        if let Some(default_site) = &**self.default_tls_site.load()
+            && default_site.name.eq(&site.name)
+        {
+            for site in sites.values() {
+                if site.tls_on {
+                    self.default_tls_site.store(Arc::new(Some(site.clone())));
+                    break;
                 }
             }
         }

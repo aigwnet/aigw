@@ -248,14 +248,14 @@ fn main() -> anyhow::Result<()> {
     fs::create_dir_all(&out_dir).unwrap();
     fs::copy("aigw.adoc", Path::new(&out_dir).join("aigw.adoc")).unwrap();
     match Command::new("asciidoctor")
-        .args(&["-b", "manpage", "aigw.adoc"])
-        .current_dir(&Path::new(&out_dir))
+        .args(["-b", "manpage", "aigw.adoc"])
+        .current_dir(Path::new(&out_dir))
         .status()
     {
         Ok(_) => {
             Command::new("gzip")
-                .args(&["-f", "aigw.1"])
-                .current_dir(&Path::new(&out_dir))
+                .args(["-f", "aigw.1"])
+                .current_dir(Path::new(&out_dir))
                 .status()
                 .unwrap();
             fs::copy(Path::new(&out_dir).join("aigw.1.gz"), "target/aigw.1.gz").unwrap();

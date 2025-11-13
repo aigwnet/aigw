@@ -210,12 +210,11 @@ fn parse_encoding(encoding: &str) -> Option<(&str, u16)> {
     let algorithm = params.next()?.trim();
     let mut quality = 1000;
     for param in params {
-        if let Some((name, value)) = param.split_once('=') {
-            if name.trim() == "q" {
-                if let Ok(value) = f64::from_str(value.trim()) {
-                    quality = (value * 1000.0) as u16;
-                }
-            }
+        if let Some((name, value)) = param.split_once('=')
+            && name.trim() == "q"
+            && let Ok(value) = f64::from_str(value.trim())
+        {
+            quality = (value * 1000.0) as u16;
         }
     }
     Some((algorithm, quality))
@@ -565,15 +564,13 @@ fn extract_range(session: &Session, meta: &Metadata) -> Option<Range> {
     if let Some(value) = headers
         .get(header::IF_RANGE)
         .and_then(|value| value.to_str().ok())
+        && value != meta.etag
+        && meta
+            .modified
+            .as_ref()
+            .is_some_and(|modified| modified == value)
     {
-        if value != meta.etag
-            && meta
-                .modified
-                .as_ref()
-                .is_some_and(|modified| modified == value)
-        {
-            return None;
-        }
+        return None;
     }
 
     let value = headers.get(header::RANGE)?;
@@ -742,26 +739,26 @@ async fn handle_file(
     debug!("translated into file path {path:?}");
 
     if canonicalize_uri && !not_found {
-        if let Some(mut canonical) = path_to_uri(&path, root) {
-            if canonical != uri.path() {
-                if let Some(query) = uri.query() {
-                    canonical.push('?');
-                    canonical.push_str(query);
-                }
-
-                if let Some(prefix) = uri
-                    .path()
-                    .strip_suffix(uri.path())
-                    .filter(|p| !p.is_empty())
-                {
-                    // A prefix has been removed from the original URI, insert it for the
-                    // redirect.
-                    canonical.insert_str(0, prefix);
-                }
-                debug!("redirecting to canonical URI: {canonical}");
-                redirect_response(session, StatusCode::PERMANENT_REDIRECT, &canonical).await?;
-                return Ok(());
+        if let Some(mut canonical) = path_to_uri(&path, root)
+            && canonical != uri.path()
+        {
+            if let Some(query) = uri.query() {
+                canonical.push('?');
+                canonical.push_str(query);
             }
+
+            if let Some(prefix) = uri
+                .path()
+                .strip_suffix(uri.path())
+                .filter(|p| !p.is_empty())
+            {
+                // A prefix has been removed from the original URI, insert it for the
+                // redirect.
+                canonical.insert_str(0, prefix);
+            }
+            debug!("redirecting to canonical URI: {canonical}");
+            redirect_response(session, StatusCode::PERMANENT_REDIRECT, &canonical).await?;
+            return Ok(());
         }
     }
 

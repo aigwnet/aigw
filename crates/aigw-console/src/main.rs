@@ -22,10 +22,10 @@ fn main() -> anyhow::Result<()> {
     if args.daemon {
         let mut daemonize = daemonize::Daemonize::new();
         if let Some(user) = &args.user {
-            daemonize = daemonize.user(&user as &str);
+            daemonize = daemonize.user(user as &str);
         }
         if let Some(group) = &args.group {
-            daemonize = daemonize.group(&group as &str);
+            daemonize = daemonize.group(group as &str);
         }
         if let Some(pid_file) = &args.pid_file {
             daemonize = daemonize.pid_file(pid_file).chown_pid_file(true);

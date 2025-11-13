@@ -57,7 +57,7 @@ pub async fn apply_cert(
     domains: &[&str],
 ) -> anyhow::Result<Certificate> {
     info!("Start to apply cert: {}, {:?}", email, domains);
-    if domains.len() < 1 {
+    if domains.is_empty() {
         return Err(anyhow!("Domain is blank."));
     }
 
@@ -123,8 +123,7 @@ pub async fn apply_cert(
             host: auth.identifier.value.clone(),
             token: challenge.token.clone().unwrap(),
             proof: challenge.key_authorization()?.clone().unwrap(),
-        })?
-        .into();
+        })?;
         let change_log = do_build_change_log(
             rb,
             cluster.clone(),

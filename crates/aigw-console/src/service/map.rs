@@ -414,7 +414,7 @@ where
     pub fn position(&self, pos: usize) -> Option<(&K, &V)> {
         let mut next = self.head;
         for _ in 0..pos {
-            next = next.map(|node| unsafe { (*node).next }).flatten();
+            next = next.and_then(|node| unsafe { (*node).next });
         }
         next.map(|ptr| unsafe { (&(*ptr).key, &(*ptr).value) })
     }
@@ -423,7 +423,7 @@ where
     pub fn position_mut(&mut self, pos: usize) -> Option<(&mut K, &mut V)> {
         let mut next = self.head;
         for _ in 0..pos {
-            next = next.map(|node| unsafe { (*node).next }).flatten();
+            next = next.and_then(|node| unsafe { (*node).next });
         }
         next.map(|ptr| unsafe { (&mut (*ptr).key, &mut (*ptr).value) })
     }

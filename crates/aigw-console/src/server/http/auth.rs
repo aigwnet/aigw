@@ -47,11 +47,7 @@ impl AuthHandler {
     }
 
     pub async fn validate(&self, token: &str) -> (bool, Option<String>, Option<String>) {
-        if let Ok(r) = token_validate(&self.database_client.rb, token).await {
-            r
-        } else {
-            (false, None, None)
-        }
+        (token_validate(&self.database_client.rb, token).await).unwrap_or_default()
     }
 }
 
@@ -65,13 +61,13 @@ where
     type Rejection = (StatusCode, &'static str);
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        if let Some(ip) = parts.headers.get("x-forwarded-for") {
-            if let Ok(ip) = ip.to_str() {
-                for part in ip.split(',') {
-                    let ip_str = part.trim();
-                    if let Ok(ip) = IpAddr::from_str(ip_str) {
-                        return Ok(ExtractIp(Some(ip)));
-                    }
+        if let Some(ip) = parts.headers.get("x-forwarded-for")
+            && let Ok(ip) = ip.to_str()
+        {
+            for part in ip.split(',') {
+                let ip_str = part.trim();
+                if let Ok(ip) = IpAddr::from_str(ip_str) {
+                    return Ok(ExtractIp(Some(ip)));
                 }
             }
         }
@@ -92,12 +88,12 @@ where
         let user = parts
             .headers
             .get("x-user-name")
-            .map_or(None, |user| user.to_str().ok())
+            .and_then(|user| user.to_str().ok())
             .map(|s| s.to_string());
         let email = parts
             .headers
             .get("x-user-email")
-            .map_or(None, |user| user.to_str().ok())
+            .and_then(|email| email.to_str().ok())
             .map(|s| s.to_string());
         Ok(ExtractUser(user, email))
     }
@@ -135,11 +131,11 @@ impl Auth {
             token.as_str(),
         )
         .await;
-        if let Ok((r, reset)) = r {
-            if r {
-                let token = Token { token, reset };
-                return Ok(ApiData(Some(token)));
-            }
+        if let Ok((r, reset)) = r
+            && r
+        {
+            let token = Token { token, reset };
+            return Ok(ApiData(Some(token)));
         }
         Err(ApiError::BasicError(anyhow!(
             "The username or password is incorrect. Please try again."

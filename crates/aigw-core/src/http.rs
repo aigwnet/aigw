@@ -36,16 +36,16 @@ pub fn convert_header(value: &HashMap<String, String>) -> anyhow::Result<Option<
     let name = value.get("name");
     let value = value.get("value");
 
-    if let Some(k) = name {
-        if let Some(v) = value {
-            if k.trim().is_empty() || v.trim().is_empty() {
-                return Ok(None);
-            }
-            return Ok(Some((
-                HeaderName::from_str(k.trim())?,
-                HeaderValue::from_str(v.trim())?,
-            )));
+    if let Some(k) = name
+        && let Some(v) = value
+    {
+        if k.trim().is_empty() || v.trim().is_empty() {
+            return Ok(None);
         }
+        return Ok(Some((
+            HeaderName::from_str(k.trim())?,
+            HeaderValue::from_str(v.trim())?,
+        )));
     }
     Ok(None)
 }
