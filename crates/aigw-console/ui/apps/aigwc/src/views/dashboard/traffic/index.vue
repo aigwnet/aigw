@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import {
     Page, AnalysisChartCard, AnalysisChartsTabs
 } from '@vben/common-ui';
 import { $t } from '#/locales';
-import { getAllClustersApi, getAnalyticsTraffic, getAnalyticsTrafficExt, type AnalyticsApi } from '#/api';
-import { useVbenForm } from '#/adapter/form';
+import { getAnalyticsTraffic, getAnalyticsTrafficExt, type AnalyticsApi } from '#/api';
 import type { TabOption } from '@vben/types';
+import { clusterStore } from '#/store';
+
 import TrafficWorldMap from './trraffic-world-map.vue';
 import TrafficLine from './traffic-line.vue';
 import TrafficBar from './traffic-bar.vue';
@@ -16,7 +17,7 @@ import TrafficSource from './traffic-source.vue';
 const isTrafficLoaded = ref(false);
 const isTrafficExtLoaded = ref(false);
 
-const clusterRef = ref<string | null>(null);
+let clusterAccess = clusterStore();
 
 const analyticsTraffic = ref<AnalyticsApi.AnalyticsTraffic>();
 const analyticsTrafficExt = ref<AnalyticsApi.ExtInfo>();
@@ -33,35 +34,21 @@ async function loadAnalyticsTrafficExt(cluster: string) {
     analyticsTrafficExt.value = data;
 };
 
-const [ClusterForm, _formApi] = useVbenForm({
-    schema: [
-        {
-            component: 'ApiSelect',
-            componentProps: {
-                afterFetch: (data: { name: string; }[]) => {
-                    const options = data.map(item => ({ label: item.name, value: item.name }));
-                    if (options.length > 0 && !clusterRef.value) {
-                        clusterRef.value = options[0]!.value;
-                        loadAnalyticsTraffic(clusterRef.value);
-                        loadAnalyticsTrafficExt(clusterRef.value);
-                    }
-                    return options;
-                },
-                api: getAllClustersApi,
-                onChange: (value: string, _prevValue: string) => {
-                    clusterRef.value = value;
-                    loadAnalyticsTraffic(value);
-                    loadAnalyticsTrafficExt(value);
-                },
-                autoSelect: 'first',
-            },
-            fieldName: 'cluster',
-            label: '',
+loadAnalyticsTraffic(clusterAccess.current!);
+loadAnalyticsTrafficExt(clusterAccess.current!);
 
-        },
-    ],
-    showDefaultActions: false,
-});
+
+watch(
+    () => clusterAccess.current,
+    (newCluster, oldCluster) => {
+        if (newCluster !== oldCluster) {
+            if (oldCluster !== undefined || newCluster !== null) {
+                loadAnalyticsTraffic(clusterAccess.current!);
+                loadAnalyticsTrafficExt(clusterAccess.current!);
+            }
+        }
+    }
+);
 
 const chartTabs: TabOption[] = [
     {
@@ -82,7 +69,8 @@ const chartTabs: TabOption[] = [
 
 <template>
 
-    <Page auto-content-height content-class="flex flex-col gap-4" :title="$t('page.dashboard.traffic')">
+    <Page auto-content-height content-class="flex flex-col gap-4"
+        :title="$t('page.cluster.title') + ' (' + clusterAccess.current + ') ' + $t('page.dashboard.traffic')">
         <template #description>
             <div class="text-muted-foreground">
                 <p>

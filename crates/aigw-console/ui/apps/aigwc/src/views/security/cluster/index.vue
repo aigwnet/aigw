@@ -35,7 +35,7 @@ const gridOptions: VxeTableGridOptions<RowType> = {
         { title: 'No', type: 'seq', width: 50 },
         { slots: { default: 'ip' }, title: "IP", align: "left", width: 320 },
         { field: 'cluster_name', align: "left", title: $t('page.cluster.name') },
-        { field: 'start_time', title: $t('page.security.startTime')},
+        { field: 'start_time', title: $t('page.security.startTime') },
         { field: 'end_time', title: $t('page.security.endTime') },
         { field: 'gmt_modified', sortable: true, title: $t('page.modifiedTime') },
         { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
@@ -114,7 +114,9 @@ watch(
     () => clusterAccess.current,
     (newCluster, oldCluster) => {
         if (newCluster !== oldCluster) {
-            gridApi?.reload();
+            if (oldCluster !== undefined || newCluster !== null) {
+                gridApi?.reload();
+            }
         }
     }
 );
