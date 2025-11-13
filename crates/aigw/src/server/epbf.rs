@@ -4,7 +4,7 @@ use aigw_core::{IpDeleteList, IpUpdateList};
 use anyhow::Context as _;
 use aya::{
     Ebpf,
-    maps::{LpmTrie, lpm_trie::Key},
+    maps::{HashMap, LpmTrie, lpm_trie::Key},
     programs::{Xdp, XdpFlags},
 };
 use tracing::{debug, warn};
@@ -62,153 +62,171 @@ pub struct EbpfHandler {
 }
 
 impl EbpfHandler {
-    pub fn handle_update(&self, ip_list: IpUpdateList) -> anyhow::Result<()> {
-        let mut ebpf = self
-            .ebpf
-            .lock()
-            .map_err(|_e| anyhow::anyhow!("ebpf get lock error."))?;
-
-        if ip_list.item_type == 1 {
-            let mut ipv4 = vec![];
-            let mut ipv6 = vec![];
-            for item in ip_list.data {
-                let ip_addr: IpAddr = item.data.parse()?;
-                match ip_addr {
-                    IpAddr::V4(ipv4_addr) => {
-                        ipv4.push((item.prefix_len, ipv4_addr));
-                    }
-                    IpAddr::V6(ipv6_addr) => {
-                        ipv6.push((item.prefix_len, ipv6_addr));
-                    }
-                }
+    fn parse_ip_entries(
+        &self,
+        items: Vec<(u32, String)>,
+    ) -> anyhow::Result<(
+        Vec<(u32, std::net::Ipv4Addr)>,
+        Vec<(u32, std::net::Ipv6Addr)>,
+    )> {
+        let mut ipv4 = vec![];
+        let mut ipv6 = vec![];
+        for (prefix_len, item) in items {
+            let ip_addr: IpAddr = item.parse()?;
+            match ip_addr {
+                IpAddr::V4(addr) => ipv4.push((prefix_len, addr)),
+                IpAddr::V6(addr) => ipv6.push((prefix_len, addr)),
             }
+        }
+        Ok((ipv4, ipv6))
+    }
 
-            {
-                let mut white_ipv4_map: LpmTrie<_, [u8; 4], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("WHITELIST_IPV4_CIDR").unwrap())?;
-                for (prefix_len, ipv4_addr) in ipv4 {
-                    let key = Key::new(prefix_len, ipv4_addr.octets());
-                    white_ipv4_map.insert(&key, 1, 0)?;
-                }
+    fn update_maps(
+        &self,
+        ebpf: &mut Ebpf,
+        ipv4_entries: &[(u32, std::net::Ipv4Addr)],
+        ipv6_entries: &[(u32, std::net::Ipv6Addr)],
+        ipv4_map_name: &str,
+        ipv6_map_name: &str,
+    ) -> anyhow::Result<()> {
+        if !ipv4_entries.is_empty() {
+            let mut map: LpmTrie<_, [u8; 4], u32> =
+                LpmTrie::try_from(ebpf.map_mut(ipv4_map_name).unwrap())?;
+            for &(prefix_len, addr) in ipv4_entries {
+                let key = Key::new(prefix_len, addr.octets());
+                map.insert(&key, 1, 0)?;
             }
+        }
 
-            {
-                let mut white_ipv6_map: LpmTrie<_, [u8; 16], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("WHITELIST_IPV6_CIDR").unwrap())?;
-                for (prefix_len, ipv6_addr) in ipv6 {
-                    let key = Key::new(prefix_len, ipv6_addr.octets());
-                    white_ipv6_map.insert(&key, 1, 0)?;
-                }
-            }
-        } else if ip_list.item_type == 2 {
-            let mut ipv4 = vec![];
-            let mut ipv6 = vec![];
-            for item in ip_list.data {
-                let ip_addr: IpAddr = item.data.parse()?;
-                match ip_addr {
-                    IpAddr::V4(ipv4_addr) => {
-                        ipv4.push((item.prefix_len, ipv4_addr));
-                    }
-                    IpAddr::V6(ipv6_addr) => {
-                        ipv6.push((item.prefix_len, ipv6_addr));
-                    }
-                }
-            }
-
-            {
-                let mut block_ipv4_map: LpmTrie<_, [u8; 4], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("BLOCKLIST_IPV4_CIDR").unwrap())?;
-                for (prefix_len, ipv4_addr) in ipv4 {
-                    let key = Key::new(prefix_len, ipv4_addr.octets());
-                    block_ipv4_map.insert(&key, 1, 0)?;
-                }
-            }
-
-            {
-                let mut block_ipv6_map: LpmTrie<_, [u8; 16], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("BLOCKLIST_IPV6_CIDR").unwrap())?;
-                for (prefix_len, ipv6_addr) in ipv6 {
-                    let key = Key::new(prefix_len, ipv6_addr.octets());
-                    block_ipv6_map.insert(&key, 1, 0)?;
-                }
+        if !ipv6_entries.is_empty() {
+            let mut map: LpmTrie<_, [u8; 16], u32> =
+                LpmTrie::try_from(ebpf.map_mut(ipv6_map_name).unwrap())?;
+            for &(prefix_len, addr) in ipv6_entries {
+                let key = Key::new(prefix_len, addr.octets());
+                map.insert(&key, 1, 0)?;
             }
         }
 
         Ok(())
     }
 
+    fn delete_maps(
+        &self,
+        ebpf: &mut Ebpf,
+        ipv4_entries: &[(u32, std::net::Ipv4Addr)],
+        ipv6_entries: &[(u32, std::net::Ipv6Addr)],
+        ipv4_map_name: &str,
+        ipv6_map_name: &str,
+    ) -> anyhow::Result<()> {
+        if !ipv4_entries.is_empty() {
+            let mut map: LpmTrie<_, [u8; 4], u32> =
+                LpmTrie::try_from(ebpf.map_mut(ipv4_map_name).unwrap())?;
+            for &(prefix_len, addr) in ipv4_entries {
+                let key = Key::new(prefix_len, addr.octets());
+                map.remove(&key)?;
+            }
+        }
+
+        if !ipv6_entries.is_empty() {
+            let mut map: LpmTrie<_, [u8; 16], u32> =
+                LpmTrie::try_from(ebpf.map_mut(ipv6_map_name).unwrap())?;
+            for &(prefix_len, addr) in ipv6_entries {
+                let key = Key::new(prefix_len, addr.octets());
+                map.remove(&key)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn handle_update(&self, ip_list: IpUpdateList) -> anyhow::Result<()> {
+        let mut ebpf = self
+            .ebpf
+            .lock()
+            .map_err(|_| anyhow::anyhow!("ebpf get lock error."))?;
+
+        let ip_data = ip_list
+            .data
+            .iter()
+            .map(|i| (i.prefix_len, i.data.clone()))
+            .collect();
+
+        let (ipv4, ipv6) = self.parse_ip_entries(ip_data)?;
+
+        match ip_list.item_type {
+            1 => self.update_maps(
+                &mut ebpf,
+                &ipv4,
+                &ipv6,
+                "WHITELIST_IPV4_CIDR",
+                "WHITELIST_IPV6_CIDR",
+            ),
+            2 => self.update_maps(
+                &mut ebpf,
+                &ipv4,
+                &ipv6,
+                "BLOCKLIST_IPV4_CIDR",
+                "BLOCKLIST_IPV6_CIDR",
+            ),
+            _ => Ok(()), // ignore unsupported item types
+        }
+    }
+
     pub fn handle_delete(&self, ip_list: IpDeleteList) -> anyhow::Result<()> {
         let mut ebpf = self
             .ebpf
             .lock()
-            .map_err(|_e| anyhow::anyhow!("ebpf get lock error."))?;
+            .map_err(|_| anyhow::anyhow!("ebpf get lock error."))?;
 
-        if ip_list.item_type == 1 {
-            let mut ipv4 = vec![];
-            let mut ipv6 = vec![];
-            for item in ip_list.data {
-                let ip_addr: IpAddr = item.data.parse()?;
-                match ip_addr {
-                    IpAddr::V4(ipv4_addr) => {
-                        ipv4.push((item.prefix_len, ipv4_addr));
-                    }
-                    IpAddr::V6(ipv6_addr) => {
-                        ipv6.push((item.prefix_len, ipv6_addr));
-                    }
-                }
-            }
+        let ip_data = ip_list
+            .data
+            .iter()
+            .map(|i| (i.prefix_len, i.data.clone()))
+            .collect();
 
-            {
-                let mut white_ipv4_map: LpmTrie<_, [u8; 4], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("WHITELIST_IPV4_CIDR").unwrap())?;
-                for (prefix_len, ipv4_addr) in ipv4 {
-                    let key = Key::new(prefix_len, ipv4_addr.octets());
-                    white_ipv4_map.remove(&key)?;
-                }
-            }
+        let (ipv4, ipv6) = self.parse_ip_entries(ip_data)?;
+        match ip_list.item_type {
+            1 => self.delete_maps(
+                &mut ebpf,
+                &ipv4,
+                &ipv6,
+                "WHITELIST_IPV4_CIDR",
+                "WHITELIST_IPV6_CIDR",
+            ),
+            2 => self.delete_maps(
+                &mut ebpf,
+                &ipv4,
+                &ipv6,
+                "BLOCKLIST_IPV4_CIDR",
+                "BLOCKLIST_IPV6_CIDR",
+            ),
+            _ => Ok(()),
+        }
+    }
 
-            {
-                let mut white_ipv6_map: LpmTrie<_, [u8; 16], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("WHITELIST_IPV6_CIDR").unwrap())?;
-                for (prefix_len, ipv6_addr) in ipv6 {
-                    let key = Key::new(prefix_len, ipv6_addr.octets());
-                    white_ipv6_map.remove(&key)?;
-                }
-            }
-        } else if ip_list.item_type == 2 {
-            let mut ipv4 = vec![];
-            let mut ipv6 = vec![];
-            for item in ip_list.data {
-                let ip_addr: IpAddr = item.data.parse()?;
-                match ip_addr {
-                    IpAddr::V4(ipv4_addr) => {
-                        ipv4.push((item.prefix_len, ipv4_addr));
-                    }
-                    IpAddr::V6(ipv6_addr) => {
-                        ipv6.push((item.prefix_len, ipv6_addr));
-                    }
-                }
-            }
+    pub fn handle_switch(
+        &self,
+        enable_white_list: bool,
+        enable_block_list: bool,
+    ) -> anyhow::Result<()> {
+        //
+        let mut ebpf = self
+            .ebpf
+            .lock()
+            .map_err(|_| anyhow::anyhow!("ebpf get lock error."))?;
 
-            {
-                let mut block_ipv4_map: LpmTrie<_, [u8; 4], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("BLOCKLIST_IPV4_CIDR").unwrap())?;
-                for (prefix_len, ipv4_addr) in ipv4 {
-                    let key = Key::new(prefix_len, ipv4_addr.octets());
-                    block_ipv4_map.remove(&key)?;
-                }
-            }
-
-            {
-                let mut block_ipv6_map: LpmTrie<_, [u8; 16], u32> =
-                    LpmTrie::try_from(ebpf.map_mut("BLOCKLIST_IPV6_CIDR").unwrap())?;
-                for (prefix_len, ipv6_addr) in ipv6 {
-                    let key = Key::new(prefix_len, ipv6_addr.octets());
-                    block_ipv6_map.remove(&key)?;
-                }
-            }
+        let mut map: HashMap<_, u32, u32> = HashMap::try_from(ebpf.map_mut("SWITCH").unwrap())?;
+        if enable_white_list {
+            map.insert(1, 1, 0)?;
+        } else {
+            map.remove(&1)?;
         }
 
+        if enable_block_list {
+            map.insert(2, 1, 0)?;
+        } else {
+            map.remove(&2)?;
+        }
         Ok(())
     }
 }

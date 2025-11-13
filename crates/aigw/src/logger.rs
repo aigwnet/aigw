@@ -33,6 +33,8 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
             "error".to_string()
         } else if meta.target() == "access" {
             "access".to_string()
+        } else if meta.target() == "console" {
+            "console".to_string()
         } else {
             "default".to_string()
         };

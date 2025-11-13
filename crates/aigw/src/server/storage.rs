@@ -72,7 +72,9 @@ impl Storage {
                 name: cluster,
                 security_key: "".to_string(),
                 enable: false,
-                default_site_enable: false,
+                enable_default_site: false,
+                enable_white_list: false,
+                enable_block_list: false,
                 description: None,
                 gmt_modified: None,
             })),
@@ -98,7 +100,7 @@ impl Storage {
     }
 
     pub fn find_default_tls_site(&self) -> Option<Arc<Site>> {
-        if self.cluster().default_site_enable {
+        if self.cluster().enable_default_site {
             (&**self.default_tls_site.load()).clone()
         } else {
             None

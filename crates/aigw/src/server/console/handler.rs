@@ -39,7 +39,13 @@ impl DataFrameHandler {
 
                     let cluster_str = serde_json::to_string(&cluster)?;
                     fs::write(path, cluster_str)?;
-                    info!("{:?} cluster: {:?}", change_log.log_action, cluster.name);
+                    info!(target: "console", "{:?} cluster: {:?}", change_log.log_action, cluster.name);
+
+                    #[cfg(target_os = "linux")]
+                    {
+                        self.ebpf_handler
+                            .handle_switch(cluster.enable_white_list, cluster.enable_block_list)?;
+                    }
                     self.storage.store_cluster(Arc::new(cluster));
                 }
                 LogType::Site => match change_log.log_action {
@@ -52,7 +58,7 @@ impl DataFrameHandler {
                         }
                         path.push(site.name.clone() + ".json");
                         fs::write(path, serde_json::to_string_pretty(&site)?)?;
-                        info!("{:?} site: {:?}", change_log.log_action, site.name);
+                        info!(target: "console", "{:?} site: {:?}", change_log.log_action, site.name);
                         self.storage.add_site(Arc::new(site));
                     }
                     LogAction::Delete => {
@@ -60,7 +66,7 @@ impl DataFrameHandler {
                         let mut path = self.storage.data_dir.clone();
                         path.push("site");
                         path.push(site.name.clone() + ".json");
-                        info!("Remove site: {:?}", site.name);
+                        info!(target: "console", "Remove site: {:?}", site.name);
                         let _ = fs::remove_file(path);
                         self.storage.remove_site(&site);
                     }
@@ -69,14 +75,14 @@ impl DataFrameHandler {
                     let acme_token: AcmeToken = serde_json::from_slice(&change_log.data)?;
                     match change_log.log_action {
                         LogAction::Add | LogAction::Update => {
-                            info!(
+                            info!(target: "console",
                                 "Add acme token: {},{},{}",
                                 acme_token.host, acme_token.token, acme_token.proof
                             );
                             self.storage.add_token(acme_token);
                         }
                         LogAction::Delete => {
-                            info!(
+                            info!(target: "console",
                                 "Remove acme token: {},{}",
                                 acme_token.host, acme_token.token
                             );
