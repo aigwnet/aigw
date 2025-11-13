@@ -19,7 +19,15 @@ pub struct TbCluster {
         serialize_with = "serialize_bool_to_i8"
     )]
     pub enable_default_site: bool,
+    #[serde(
+        deserialize_with = "from_i8_to_bool",
+        serialize_with = "serialize_bool_to_i8"
+    )]
     pub enable_white_list: bool,
+    #[serde(
+        deserialize_with = "from_i8_to_bool",
+        serialize_with = "serialize_bool_to_i8"
+    )]
     pub enable_block_list: bool,
     pub description: Option<String>,
     pub gmt_create: Option<DateTime>,
