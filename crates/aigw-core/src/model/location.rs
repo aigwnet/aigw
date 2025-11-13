@@ -505,7 +505,7 @@ pub fn find_matched_location(
             PathSelector::PrefixPath(_, PrefixPath { value }) => {
                 if path.starts_with(value) {
                     let len = value.len();
-                    if best_prefix.as_ref().map_or(true, |&(_, l)| len > l) {
+                    if best_prefix.as_ref().is_none_or(|&(_, l)| len > l) {
                         best_prefix = Some((location, len));
                     }
                 }

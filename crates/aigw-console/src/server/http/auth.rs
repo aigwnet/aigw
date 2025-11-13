@@ -158,22 +158,19 @@ impl Auth {
         mut req: Request,
         next: axum::middleware::Next,
     ) -> Result<impl IntoResponse, ApiError> {
-        if let Some(authorization) = req.headers().get("authorization") {
-            if let Ok(authorization) = authorization.to_str() {
-                if let Some(token_str) = authorization.strip_prefix("Bearer ") {
-                    let (r, user, email) = auth.validate(token_str).await;
-                    if r {
-                        let user =
-                            HeaderValue::from_str(user.map_or("".to_string(), |u| u).as_str())
-                                .map_err(|e| ApiError::BasicError(anyhow!(e)))?;
-                        let email =
-                            HeaderValue::from_str(email.map_or("".to_string(), |u| u).as_str())
-                                .map_err(|e| ApiError::BasicError(anyhow!(e)))?;
-                        req.headers_mut().append("x-user-name", user);
-                        req.headers_mut().append("x-user-email", email);
-                        return Ok(next.run(req).await);
-                    }
-                }
+        if let Some(authorization) = req.headers().get("authorization")
+            && let Ok(authorization) = authorization.to_str()
+            && let Some(token_str) = authorization.strip_prefix("Bearer ")
+        {
+            let (r, user, email) = auth.validate(token_str).await;
+            if r {
+                let user = HeaderValue::from_str(user.map_or("".to_string(), |u| u).as_str())
+                    .map_err(|e| ApiError::BasicError(anyhow!(e)))?;
+                let email = HeaderValue::from_str(email.map_or("".to_string(), |u| u).as_str())
+                    .map_err(|e| ApiError::BasicError(anyhow!(e)))?;
+                req.headers_mut().append("x-user-name", user);
+                req.headers_mut().append("x-user-email", email);
+                return Ok(next.run(req).await);
             }
         }
         Err(ApiError::AuthenticationError)

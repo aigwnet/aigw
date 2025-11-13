@@ -238,10 +238,11 @@ fn find_matches(requested: &str, supported: &[CompressionAlgorithm]) -> Vec<Comp
                 }
             }
             break;
-        } else if let Some(algorithm) = CompressionAlgorithm::from_name(algorithm) {
-            if supported.contains(&algorithm) && !result.contains(&algorithm) {
-                result.push(algorithm);
-            }
+        } else if let Some(algorithm) = CompressionAlgorithm::from_name(algorithm)
+            && supported.contains(&algorithm)
+            && !result.contains(&algorithm)
+        {
+            result.push(algorithm);
         }
     }
     result
@@ -738,28 +739,28 @@ async fn handle_file(
 
     debug!("translated into file path {path:?}");
 
-    if canonicalize_uri && !not_found {
-        if let Some(mut canonical) = path_to_uri(&path, root)
-            && canonical != uri.path()
-        {
-            if let Some(query) = uri.query() {
-                canonical.push('?');
-                canonical.push_str(query);
-            }
-
-            if let Some(prefix) = uri
-                .path()
-                .strip_suffix(uri.path())
-                .filter(|p| !p.is_empty())
-            {
-                // A prefix has been removed from the original URI, insert it for the
-                // redirect.
-                canonical.insert_str(0, prefix);
-            }
-            debug!("redirecting to canonical URI: {canonical}");
-            redirect_response(session, StatusCode::PERMANENT_REDIRECT, &canonical).await?;
-            return Ok(());
+    if canonicalize_uri
+        && !not_found
+        && let Some(mut canonical) = path_to_uri(&path, root)
+        && canonical != uri.path()
+    {
+        if let Some(query) = uri.query() {
+            canonical.push('?');
+            canonical.push_str(query);
         }
+
+        if let Some(prefix) = uri
+            .path()
+            .strip_suffix(uri.path())
+            .filter(|p| !p.is_empty())
+        {
+            // A prefix has been removed from the original URI, insert it for the
+            // redirect.
+            canonical.insert_str(0, prefix);
+        }
+        debug!("redirecting to canonical URI: {canonical}");
+        redirect_response(session, StatusCode::PERMANENT_REDIRECT, &canonical).await?;
+        return Ok(());
     }
 
     if path.is_dir() {

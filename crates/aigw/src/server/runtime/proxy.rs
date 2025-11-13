@@ -249,7 +249,7 @@ impl ProxyHttp for AigwProxy {
         ctx.http_upgrade = header
             .headers
             .get(UPGRADE)
-            .map_or(None, |v| v.to_str().map_or(None, |s| Some(s.to_owned())));
+            .and_then(|v| v.to_str().map_or(None, |s| Some(s.to_owned())));
         // 统计user-agent
         let user_agent = header
             .headers
@@ -280,7 +280,7 @@ impl ProxyHttp for AigwProxy {
         let site = self
             .storage
             .find_site(host)
-            .map_or(self.storage.find_default_tls_site(),Some);
+            .map_or(self.storage.find_default_tls_site(), Some);
 
         let Some(site) = site else {
             let (mut header, body) = error_page::generate_error(StatusCode::NOT_FOUND);
@@ -451,55 +451,48 @@ impl ProxyHttp for AigwProxy {
         session: &mut Session,
         ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
-        if let Some((_, location)) = &ctx.location {
-            if let Some(client_ip) = &ctx.client_ip {
-                if let Some(b) = location.lb.select(client_ip.as_bytes(), 5) {
-                    let sni = {
-                        if location.sni.is_empty() || location.sni.eq("$host") {
-                            get_host(session.req_header()).map_or("", |h| h).to_owned()
-                        } else {
-                            location.sni.clone()
-                        }
-                    };
-                    let mut peer =
-                        HttpPeer::new(b.addr, location.protocol == BanckedProtocol::Https, sni);
-
-                    peer.options.connection_timeout =
-                        Some(Duration::from_secs(location.connection_timeout.into()));
-                    peer.options.write_timeout =
-                        Some(Duration::from_secs(location.write_timeout.into()));
-                    peer.options.read_timeout =
-                        Some(Duration::from_secs(location.read_timeout.into()));
-                    peer.options.idle_timeout =
-                        Some(Duration::from_secs(location.idle_timeout.into()));
-                    peer.options.tcp_keepalive = Some(TcpKeepalive {
-                        idle: Duration::from_secs(location.idle_timeout.into()),
-                        interval: Duration::from_secs(5),
-                        count: 5,
-                        #[cfg(target_os = "linux")]
-                        user_timeout: Duration::from_millis(30000),
-                    });
-                    peer.options.verify_hostname = true;
-
-                    if let Some(http_version) = &location.http_version {
-                        match http_version {
-                            aigw_core::HttpVersion::H1 => peer.options.alpn = ALPN::H1,
-                            aigw_core::HttpVersion::H2 => peer.options.alpn = ALPN::H2,
-                            aigw_core::HttpVersion::H2H1 => peer.options.alpn = ALPN::H2H1,
-                        }
-                    } else {
-                        if session.is_upgrade_req() {
-                            peer.options.alpn = ALPN::H1;
-                        } else {
-                            peer.options.alpn = ALPN::H2H1;
-                        }
-                    }
-
-                    debug!("peer: {:?}", &peer);
-
-                    return Ok(Box::new(peer));
+        if let Some((_, location)) = &ctx.location
+            && let Some(client_ip) = &ctx.client_ip
+            && let Some(b) = location.lb.select(client_ip.as_bytes(), 5)
+        {
+            let sni = {
+                if location.sni.is_empty() || location.sni.eq("$host") {
+                    get_host(session.req_header()).map_or("", |h| h).to_owned()
+                } else {
+                    location.sni.clone()
                 }
+            };
+            let mut peer = HttpPeer::new(b.addr, location.protocol == BanckedProtocol::Https, sni);
+
+            peer.options.connection_timeout =
+                Some(Duration::from_secs(location.connection_timeout.into()));
+            peer.options.write_timeout = Some(Duration::from_secs(location.write_timeout.into()));
+            peer.options.read_timeout = Some(Duration::from_secs(location.read_timeout.into()));
+            peer.options.idle_timeout = Some(Duration::from_secs(location.idle_timeout.into()));
+            peer.options.tcp_keepalive = Some(TcpKeepalive {
+                idle: Duration::from_secs(location.idle_timeout.into()),
+                interval: Duration::from_secs(5),
+                count: 5,
+                #[cfg(target_os = "linux")]
+                user_timeout: Duration::from_millis(30000),
+            });
+            peer.options.verify_hostname = true;
+
+            if let Some(http_version) = &location.http_version {
+                match http_version {
+                    aigw_core::HttpVersion::H1 => peer.options.alpn = ALPN::H1,
+                    aigw_core::HttpVersion::H2 => peer.options.alpn = ALPN::H2,
+                    aigw_core::HttpVersion::H2H1 => peer.options.alpn = ALPN::H2H1,
+                }
+            } else if session.is_upgrade_req() {
+                peer.options.alpn = ALPN::H1;
+            } else {
+                peer.options.alpn = ALPN::H2H1;
             }
+
+            debug!("peer: {:?}", &peer);
+
+            return Ok(Box::new(peer));
         };
         Err(Error::new(ErrorType::new("Host not found.")))
     }

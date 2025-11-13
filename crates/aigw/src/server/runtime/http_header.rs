@@ -34,10 +34,10 @@ pub fn get_host(header: &RequestHeader) -> Option<&str> {
     if let Some(host) = header.uri.host() {
         return Some(host);
     }
-    if let Some(host) = header.headers.get(http::header::HOST) {
-        if let Ok(value) = host.to_str().map(|host| host.split(':').next()) {
-            return value;
-        }
+    if let Some(host) = header.headers.get(http::header::HOST)
+        && let Ok(value) = host.to_str().map(|host| host.split(':').next())
+    {
+        return value;
     }
     None
 }

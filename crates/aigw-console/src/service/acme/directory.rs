@@ -147,11 +147,12 @@ impl Directory {
 
             let err: ServerError = resp.json().await?;
 
-            if let Some(typ) = err.r#type.clone() {
-                if &typ == "urn:ietf:params:acme:error:badNonce" && attempt <= 3 {
-                    debug!(target:"certificate", "{} bad nonce, retrying", attempt);
-                    continue;
-                }
+            if let Some(typ) = err.r#type.clone()
+                && &typ == "urn:ietf:params:acme:error:badNonce"
+                && attempt <= 3
+            {
+                debug!(target:"certificate", "{} bad nonce, retrying", attempt);
+                continue;
             }
 
             return Ok((Err(err), headers));
