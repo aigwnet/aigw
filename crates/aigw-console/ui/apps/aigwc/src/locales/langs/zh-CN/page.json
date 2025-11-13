@@ -58,6 +58,8 @@
     "enable": "启用集群",
     "enableDefaultSite": "启用默认站点",
     "description": "集群描述",
+    "addSuccess": "添加集群成功！",
+    "updateSuccess": "更新集群成功！",
     "deleteSuccess": "删除集群成功！",
     "secLayer4": "网络4层防护",
     "secLayer4Wihte": "开启IP白名单",
@@ -118,7 +120,12 @@
     "cluster": {
       "list": "集群名单",
       "ipWhiteList": "IP白名单",
-      "ipBlockList": "IP黑名单"
+      "ipBlockList": "IP黑名单",
+      "listType": "名单类型",
+      "newIp": "添加IP名单",
+      "editIp": "修改IP名单",
+      "addSuccess": "添加IP名单成功！",
+      "deleteSuccess": "删除IP名单成功！"
     },
     "startTime": "起始时间",
     "endTime": "结束时间"

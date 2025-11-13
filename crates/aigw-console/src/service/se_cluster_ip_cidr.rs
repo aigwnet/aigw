@@ -1,7 +1,11 @@
-use rbatis::{IPageRequest, RBatis};
+use aigw_core::{ChangeLog, IpUpdate, IpUpdateList, LogAction, LogType};
+use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
-use crate::{service::Page, storage::tb_cluster_ip_cidr::TbClusterIpCidr};
+use crate::{
+    service::{Page, do_build_change_log},
+    storage::tb_cluster_ip_cidr::TbClusterIpCidr,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct ClusterIpCidr {
@@ -13,6 +17,48 @@ pub struct ClusterIpCidr {
     pub start_time: Option<String>,
     pub end_time: Option<String>,
     pub gmt_modified: Option<String>,
+}
+
+pub async fn add_new_cluster_ip(rb: &RBatis, ip: &ClusterIpCidr) -> anyhow::Result<ChangeLog> {
+    let now = DateTime::utc();
+    TbClusterIpCidr::insert(
+        rb,
+        &TbClusterIpCidr {
+            id: None,
+            cluster_name: Some(ip.cluster_name.clone()),
+            ip: Some(ip.ip.clone()),
+            prefix_len: Some(ip.prefix_len),
+            r#type: Some(ip.r#type),
+            start_time: None,
+            end_time: None,
+            gmt_create: Some(now.clone()),
+            gmt_modified: Some(now),
+        },
+    )
+    .await?;
+
+    let data = IpUpdateList {
+        item_type: ip.r#type.into(),
+        data: vec![IpUpdate {
+            start_time: 0,
+            end_time: 0,
+            prefix_len: ip.prefix_len,
+            data: ip.ip.clone(),
+        }],
+    };
+
+    let s = serde_json::to_string_pretty(&data)?;
+    let change_log = do_build_change_log(
+        rb,
+        ip.cluster_name.clone(),
+        LogType::IpLayer4,
+        LogAction::Add,
+        0,
+        0,
+        Some(s),
+    )
+    .await?;
+    Ok(change_log)
 }
 
 pub async fn find_ip_cidr_by_page(

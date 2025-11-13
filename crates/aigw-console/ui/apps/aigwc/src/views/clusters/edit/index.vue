@@ -110,7 +110,7 @@ async function handleAsyncSubmit(values: Record<string, any>) {
         submitting.value = true;
         await updateClusterApi(index.value, processedValues);
         message.success({
-            content: `Upadte cluster successfully!`,
+            content: $t('page.cluster.updateSuccess'),
         });
     } catch {
 

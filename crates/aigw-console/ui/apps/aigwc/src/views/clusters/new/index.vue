@@ -90,7 +90,7 @@ async function handleAsyncSubmit(values: Record<string, any>) {
         await addClusterApi(processedValues);
         formApi.resetForm();
         message.success({
-            content: `Add cluster successfully!`,
+            content: $t('page.cluster.addSuccess'),
         });
     } catch {
 

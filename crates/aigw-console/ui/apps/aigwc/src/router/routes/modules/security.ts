@@ -20,6 +20,29 @@ const routes: RouteRecordRaw[] = [
           icon: 'lucide:server',
           title: $t('page.security.cluster.list'),
         },
+      }, 
+      {
+        name: 'Cluster IP Add',
+        path: '/security/cluster/ip/add',
+        component: () => import('#/views/security/cluster/new_ip.vue'),
+        meta: {
+          activePath: '/security/cluster',
+          hideInMenu: true,
+          maxNumOfOpenTab: 1,
+          title: $t('page.security.cluster.newIp'),
+        },
+      },
+      {
+        name: 'Cluster IP Edit',
+        path: '/security/cluster/ip/edit//:id',
+        component: () =>
+          import('#/views/security/cluster/edit_ip.vue'),
+        meta: {
+          activePath: '/security/cluster',
+          hideInMenu: true,
+          maxNumOfOpenTab: 1,
+          title: $t('page.security.cluster.editIp'),
+        },
       },
     ],
   },

@@ -16,6 +16,7 @@ pub use model::location::find_matched_location;
 pub use model::location::new_path_selector;
 pub use model::location::new_rewrite;
 pub use model::namelist::IpDeleteList;
+pub use model::namelist::IpUpdate;
 pub use model::namelist::IpUpdateList;
 pub use model::site::DynamicCert;
 pub use model::site::Site;

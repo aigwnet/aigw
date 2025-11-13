@@ -58,6 +58,8 @@
     "enable": "Enable Cluster",
     "enableDefaultSite": "Enable Default Site",
     "description": "Description",
+    "addSuccess": "Add cluster successfully!",
+    "updateSuccess": "Update cluster successfully!",
     "deleteSuccess": "Delete cluster successfully!",
     "secLayer4": "Layer 4 Network Protection",
     "secLayer4Wihte": "Enable IP Whitelist",
@@ -118,7 +120,12 @@
     "cluster": {
       "list": "Cluster IP List",
       "ipWhiteList": "IP Whitelist",
-      "ipBlockList": "IP Blocklist"
+      "ipBlockList": "IP Blocklist",
+      "listType": "IP List Type",
+      "newIp": "Add New IP List",
+      "editIp": "Edit IP",
+      "addSuccess": "Add IP List successfully!",
+      "deleteSuccess": "Delete IP List successfully!"
     },
     "startTime": "Start Time",
     "endTime": "End Time"

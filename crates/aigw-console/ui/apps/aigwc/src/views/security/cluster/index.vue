@@ -80,11 +80,11 @@ const [Grid, gridApi] = useVbenVxeGrid({
 const router = useRouter();
 
 const onAdd = () => {
-    router.push('/sites/clusters/add');
+    router.push('/security/cluster/ip/add?type=' + activeKey.value);
 };
 
 const onEdit = (row: RowType) => {
-    router.push('/sites/clusters/edit/' + row.id);
+    router.push('/security/cluster/ip/edit/' + row.id);
 };
 
 const onDelete = async (row: RowType) => {
