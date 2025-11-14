@@ -40,7 +40,7 @@ pub fn run(
 
     #[cfg(target_os = "linux")]
     let ebpf_handler = Arc::new({
-        let rt = tokio::runtime::Builder::new_current_thread().build()?;
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
         rt.block_on(async { epbf::run(config.basic().iface(), args.ebpf.as_ref()) })
     }?);
 
