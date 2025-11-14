@@ -16,16 +16,17 @@ pub unsafe extern "C" fn msg_callback(
     ssl: *mut SSL,
     _arg: *mut ::std::os::raw::c_void,
 ) {
+    info!(target: "default", "TLS msg_callback");
     if is_write == 1 && content_type == SSL3_RT_HANDSHAKE {
         let msg: &[u8] = unsafe { std::slice::from_raw_parts(buf as *const u8, len) };
 
-        if len >= 4 && msg[0] == SSL3_MT_CLIENT_HELLO as u8 {
-            info!("Received CLIENT_HELLO");
-            if let Some(data) = ja4(msg) {
-                info!("ja4: {}", &data);
-                let boxed = Box::new(data);
-                let _ = unsafe { SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _) };
-            }
+        if len >= 4
+            && msg[0] == SSL3_MT_CLIENT_HELLO as u8
+            && let Some(data) = ja4(msg)
+        {
+            info!("ja4: {}", &data);
+            let boxed = Box::new(data);
+            let _ = unsafe { SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _) };
         }
     }
 }
