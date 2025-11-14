@@ -25,7 +25,7 @@ use pingora_core::{
         grpc_web::{GrpcWeb, GrpcWebBridge},
     },
     prelude::HttpPeer,
-    protocols::{ALPN, Digest, TcpKeepalive, TimingDigest},
+    protocols::{ALPN, Digest, TcpKeepalive, TimingDigest}
 };
 use pingora_http::{RequestHeader, ResponseHeader};
 use pingora_proxy::{FailToProxy, ProxyHttp, Session};
@@ -38,15 +38,10 @@ use crate::{
     server::{
         acme::Http01Handler,
         runtime::{
-            GeoLite, error_page,
-            file::StaticFilesHandler,
-            get_hostname,
-            http_header::{
+            GeoLite, error_page, file::StaticFilesHandler, get_hostname, http_header::{
                 HTTP_HEADER_NAME_X_REQUEST_ID, convert_header_value, get_client_ip, get_host,
                 get_remote_addr,
-            },
-            new_internal_error,
-            user_agent::{UserAgentType, classify_user_agent},
+            }, new_internal_error, user_agent::{UserAgentType, classify_user_agent}
         },
         storage::Storage,
     },

@@ -3,6 +3,7 @@ mod conf;
 mod context;
 mod error_page;
 mod file;
+mod fingerprint;
 mod geo_lite;
 mod http_header;
 mod opt;
@@ -12,6 +13,7 @@ mod util;
 
 pub(crate) use cert::DynamicTlsAccept;
 pub(crate) use conf::AigwConfig;
+pub(crate) use fingerprint::msg_callback;
 pub(crate) use geo_lite::GeoLite;
 pub(crate) use opt::ServerOpt;
 pub(crate) use proxy::AigwProxy;

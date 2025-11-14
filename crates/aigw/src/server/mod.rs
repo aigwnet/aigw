@@ -12,7 +12,7 @@ use pingora_core::{
     apps::HttpServerOptions,
     listeners::tls::TlsSettings,
     server::{Server, configuration::ServerConf},
-    tls::ssl::SslVersion,
+    tls::{ssl::SslVersion, ssl_sys::SSL_CTX_set_msg_callback},
 };
 use pingora_limits::rate::Rate;
 use pingora_proxy::http_proxy_service_with_name;
@@ -23,7 +23,7 @@ pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::server::console::AigwConsoleService;
+use crate::server::{console::AigwConsoleService, runtime::msg_callback};
 pub struct RateLimit {
     pub(crate) max_request: isize,
     pub(crate) rate: Rate,
@@ -95,6 +95,10 @@ pub fn run(
     let proxy = AigwProxy::new(config.clone(), storage.clone(), geo_lite);
     let dynamic_cert = DynamicTlsAccept::new(storage);
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
+
+    unsafe {
+        SSL_CTX_set_msg_callback(tls_settings.as_ptr(), Some(msg_callback));
+    }
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
     tls_settings.set_min_proto_version(Some(SslVersion::TLS1_2))?;
     // TLS 1.2 requires setting cipher suites

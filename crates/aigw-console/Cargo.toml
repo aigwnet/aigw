@@ -1,9 +1,9 @@
 [package]
 authors = ["aigwnet@gmail.com"]
 description = "Lite AI Gateway Console"
+edition.workspace = true
 name = "aigw-console"
 version = "0.1.0"
-edition.workspace = true
 
 [dependencies]
 aigw-core = {path = "../aigw-core"}
@@ -21,7 +21,7 @@ hex = {version = "0.4"}
 http = {version = "0.2"}
 lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
-md5 = {version = "0.8"}
+md5 = {workspace = true}
 once_cell = {workspace = true}
 pingora-load-balancing = {workspace = true}
 rbatis = {version = "4.6"}
