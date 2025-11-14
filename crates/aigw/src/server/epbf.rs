@@ -49,9 +49,9 @@ pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<EbpfHandler> {
 
     let program: &mut Xdp = ebpf.program_mut("aigw").unwrap().try_into()?;
     program.load()?;
-    if let Err(e) = programs.attach(iface, XdpFlags::default()) {
+    if let Err(e) = program.attach(iface, XdpFlags::default()) {
         eprintln!("Native XDP attach failed ({}), falling back to SKB mode", e);
-        programs.attach(iface, XdpFlags::SKB_MODE)?;
+        program.attach(iface, XdpFlags::SKB_MODE)?;
     }
 
     Ok(EbpfHandler {
