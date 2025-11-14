@@ -59,7 +59,7 @@ impl HttpApiSite {
         alt_names: Vec<String>,
         email: Option<String>,
     ) -> anyhow::Result<()> {
-        let email = email.map_or(Err(anyhow!("User not found")), Ok)?;
+        let email = email.ok_or(anyhow!("User not found"))?;
 
         let mut domains = vec![name.as_str()];
         for s in &alt_names {
@@ -95,15 +95,19 @@ impl HttpApiSite {
             .map_err(ApiError::from)?;
         let _ = context.sender.send(change_log).await;
 
-        let update_cert = !old_site
-            .alt_names
-            .clone()
-            .sort()
-            .eq(&site.alt_names.clone().sort())
-            || old_site.tls_cert.map_or(true, |cert| {
+        let alt_names_eq = {
+            let mut a = old_site.alt_names.clone();
+            let mut b = site.alt_names.clone();
+            a.sort();
+            b.sort();
+            a == b
+        };
+
+        let update_cert = !alt_names_eq
+            || old_site.tls_cert.is_none_or(|cert| {
                 asn1time_to_datetime(cert.cert.not_before())
                     .ok()
-                    .map_or(true, |d| {
+                    .is_none_or(|d| {
                         debug!(
                             "{} {} {}",
                             chrono::Utc::now().timestamp(),
@@ -142,7 +146,7 @@ impl HttpApiSite {
         alt_names: Vec<String>,
         email: Option<String>,
     ) -> anyhow::Result<()> {
-        let email = email.map_or(Err(anyhow!("User not found")), Ok)?;
+        let email = email.ok_or(anyhow!("User not found"))?;
 
         let mut domains = vec![name.as_str()];
         for s in &alt_names {

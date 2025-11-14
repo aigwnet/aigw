@@ -84,7 +84,7 @@ impl Directory {
     pub(crate) async fn get_nonce(&self) -> anyhow::Result<String> {
         let maybe_nonce = {
             let mut guard = self.nonce.lock().unwrap();
-            std::mem::replace(&mut *guard, None)
+            (*guard).take()
         };
 
         if let Some(nonce) = maybe_nonce {

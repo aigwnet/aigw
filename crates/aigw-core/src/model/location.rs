@@ -10,6 +10,8 @@ use tracing::error;
 
 use crate::{HttpHeader, http::convert_headers, util::regex::RegexCapture};
 
+pub type MatchedLocation = (Arc<ProxyLocation>, Vec<(String, String)>);
+
 pub enum HttpVersion {
     H1,
     H2,
@@ -473,7 +475,7 @@ where
 pub fn find_matched_location(
     locations: &[Arc<ProxyLocation>],
     path: &str,
-) -> Option<(Arc<ProxyLocation>, Vec<(String, String)>)> {
+) -> Option<MatchedLocation> {
     // Stage 1: Exact match (=) — highest priority
     for location in locations {
         if let PathSelector::EqualPath(_, EqualPath { value }) = &*location.path

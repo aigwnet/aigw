@@ -166,20 +166,18 @@ where
 
     #[inline]
     pub fn pop_front_node(&mut self) -> Option<Box<Node<K, V>>> {
-        self.head
-            .map(|node| unsafe {
-                self.head = (*node).next;
+        self.head.and_then(|node| unsafe {
+            self.head = (*node).next;
 
-                match self.head {
-                    None => self.tail = None,
-                    Some(head) => (*head).prev = None,
-                }
+            match self.head {
+                None => self.tail = None,
+                Some(head) => (*head).prev = None,
+            }
 
-                self.hash_map
-                    .remove(&KeyPtr { k: &(*node).key })
-                    .map(|node| Box::from_raw(node))
-            })
-            .flatten()
+            self.hash_map
+                .remove(&KeyPtr { k: &(*node).key })
+                .map(|node| Box::from_raw(node))
+        })
     }
 
     #[inline]
@@ -251,20 +249,18 @@ where
 
     #[inline]
     pub fn pop_back_node(&mut self) -> Option<Box<Node<K, V>>> {
-        self.tail
-            .map(|node| unsafe {
-                self.tail = (*node).prev;
+        self.tail.and_then(|node| unsafe {
+            self.tail = (*node).prev;
 
-                match self.tail {
-                    None => self.head = None,
-                    Some(tail) => (*tail).next = None,
-                }
+            match self.tail {
+                None => self.head = None,
+                Some(tail) => (*tail).next = None,
+            }
 
-                self.hash_map
-                    .remove(&KeyPtr { k: &(*node).key })
-                    .map(|node| Box::from_raw(node))
-            })
-            .flatten()
+            self.hash_map
+                .remove(&KeyPtr { k: &(*node).key })
+                .map(|node| Box::from_raw(node))
+        })
     }
 
     #[inline]
@@ -289,10 +285,10 @@ where
     }
 
     #[inline]
-    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.hash_map
             .get(Qey::from_ref(key))
@@ -300,10 +296,10 @@ where
     }
 
     #[inline]
-    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.hash_map
             .get_mut(Qey::from_ref(key))
@@ -311,10 +307,10 @@ where
     }
 
     #[inline]
-    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)>
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.hash_map.remove(Qey::from_ref(key)).map(|node| unsafe {
             self.remove_node(node);
@@ -326,15 +322,15 @@ where
     #[inline]
     fn remove_node(&mut self, node: *mut Node<K, V>) {
         unsafe {
-            if let Some(head) = self.head {
-                if head == node {
-                    self.head = (*head).next
-                }
+            if let Some(head) = self.head
+                && head == node
+            {
+                self.head = (*head).next
             }
-            if let Some(tail) = self.tail {
-                if tail == node {
-                    self.tail = (*tail).prev
-                }
+            if let Some(tail) = self.tail
+                && tail == node
+            {
+                self.tail = (*tail).prev
             }
             if let Some(next) = (*node).next {
                 (*next).prev = (*node).prev
@@ -346,14 +342,14 @@ where
     }
 
     #[inline]
-    pub fn move_to_front<Q: ?Sized>(&mut self, key: &Q) -> Option<(&K, &V)>
+    pub fn move_to_front<Q>(&mut self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.hash_map
             .get(Qey::from_ref(key))
-            .map(|node| *node)
+            .copied()
             .map(|node| unsafe {
                 self.remove_node(node);
                 self.push_front_node(node);
@@ -362,14 +358,14 @@ where
     }
 
     #[inline]
-    pub fn move_to_back<Q: ?Sized>(&mut self, key: &Q) -> Option<(&K, &V)>
+    pub fn move_to_back<Q>(&mut self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.hash_map
             .get(Qey::from_ref(key))
-            .map(|node| *node)
+            .copied()
             .map(|node| unsafe {
                 self.remove_node(node);
                 self.push_back_node(node);
@@ -378,10 +374,10 @@ where
     }
 
     #[inline]
-    pub fn take<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)>
+    pub fn take<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.remove(key)
     }
@@ -397,10 +393,10 @@ where
     }
 
     #[inline]
-    pub fn contains<Q: ?Sized>(&self, key: &Q) -> bool
+    pub fn contains<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.hash_map.contains_key(Qey::from_ref(key))
     }
