@@ -1,3 +1,4 @@
+use crate::ssl::error::ErrorStack;
 use serde::Deserialize;
 
 #[derive(Debug, thiserror::Error)]
@@ -30,8 +31,8 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-impl From<boring::error::ErrorStack> for Error {
-    fn from(err: boring::error::ErrorStack) -> Self {
+impl From<ErrorStack> for Error {
+    fn from(err: ErrorStack) -> Self {
         Self::Other(Box::new(err))
     }
 }

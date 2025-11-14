@@ -3,12 +3,12 @@ use std::{
     sync::Arc,
 };
 
+use crate::ssl::asn1::Asn1TimeRef;
 use aigw_core::{
     ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
     convert_headers, convert_headers_to_string, new_path_selector, new_rewrite,
 };
 use anyhow::anyhow;
-use boring::asn1::Asn1TimeRef;
 use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use tracing::error;

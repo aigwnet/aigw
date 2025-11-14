@@ -12,7 +12,7 @@ use pingora_core::{
     apps::HttpServerOptions,
     listeners::tls::TlsSettings,
     server::{Server, configuration::ServerConf},
-    tls::{ssl::SslVersion, ssl_sys::SSL_CTX_set_msg_callback},
+    tls::{ssl::SslVersion, ssl_sys::SSL_CTX_set_client_hello_cb},
 };
 use pingora_limits::rate::Rate;
 use pingora_proxy::http_proxy_service_with_name;
@@ -23,7 +23,7 @@ pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::server::{console::AigwConsoleService, runtime::msg_callback};
+use crate::server::{console::AigwConsoleService, runtime::client_hello_cb};
 pub struct RateLimit {
     pub(crate) max_request: isize,
     pub(crate) rate: Rate,
@@ -40,7 +40,9 @@ pub fn run(
 
     #[cfg(target_os = "linux")]
     let ebpf_handler = Arc::new({
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
         rt.block_on(async { epbf::run(config.basic().iface(), args.ebpf.as_ref()) })
     }?);
 
@@ -97,7 +99,11 @@ pub fn run(
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
 
     unsafe {
-        SSL_CTX_set_msg_callback(tls_settings.as_ptr(), Some(msg_callback));
+        SSL_CTX_set_client_hello_cb(
+            tls_settings.as_ptr(),
+            Some(client_hello_cb),
+            std::ptr::null_mut(),
+        );
     }
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
     tls_settings.set_min_proto_version(Some(SslVersion::TLS1_2))?;

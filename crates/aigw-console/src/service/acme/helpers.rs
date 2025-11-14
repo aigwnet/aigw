@@ -1,9 +1,9 @@
-use base64::Engine;
-use base64::prelude::BASE64_URL_SAFE_NO_PAD;
-use boring::{
+use crate::ssl::{
     pkey::{PKey, Private},
     rsa::Rsa,
 };
+use base64::Engine;
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use serde::{Deserialize, Serialize};
 
 use crate::service::acme::error::Error;

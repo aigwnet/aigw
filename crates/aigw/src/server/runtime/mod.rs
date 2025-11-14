@@ -13,7 +13,7 @@ mod util;
 
 pub(crate) use cert::DynamicTlsAccept;
 pub(crate) use conf::AigwConfig;
-pub(crate) use fingerprint::msg_callback;
+pub(crate) use fingerprint::client_hello_cb;
 pub(crate) use geo_lite::GeoLite;
 pub(crate) use opt::ServerOpt;
 pub(crate) use proxy::AigwProxy;

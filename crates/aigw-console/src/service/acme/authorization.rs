@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use boring::hash::{MessageDigest, hash};
+use crate::ssl::hash::{MessageDigest, hash};
 use serde::Deserialize;
 use serde_json::json;
 use tracing::debug;

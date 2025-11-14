@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
+use crate::ssl::pkey::{PKey, Private};
 use base64::{Engine, prelude::BASE64_STANDARD};
-use boring::pkey::{PKey, Private};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::debug;

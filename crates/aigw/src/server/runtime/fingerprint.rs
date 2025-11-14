@@ -1,34 +1,73 @@
-use pingora_core::tls::ssl_sys::{
-    SSL, SSL_get_ex_new_index, SSL_set_ex_data, SSL3_MT_CLIENT_HELLO, SSL3_RT_HANDSHAKE,
+use foreign_types::ForeignTypeRef;
+use pingora_core::tls::{
+    ssl::SslRef,
+    ssl_sys::{SSL, SSL_client_hello_get0_ext, SSL_client_hello_get0_legacy_version, SSL_get_ex_new_index, SSL_set_ex_data},
 };
+use core::slice;
+use std::{fmt::format, os::raw::c_int, ptr::slice_from_raw_parts};
 use tracing::info;
 
 pub static JA4_INDEX: once_cell::sync::Lazy<i32> = once_cell::sync::Lazy::new(|| unsafe {
-    SSL_get_ex_new_index(0, std::ptr::null_mut(), std::ptr::null_mut(), None, None)
+    SSL_get_ex_new_index(0, std::ptr::null_mut(), None, None, None)
 });
 
-pub unsafe extern "C" fn msg_callback(
-    is_write: ::std::os::raw::c_int,
-    _version: ::std::os::raw::c_int,
-    content_type: ::std::os::raw::c_int,
-    buf: *const ::std::os::raw::c_void,
-    len: usize,
+pub unsafe extern "C" fn client_hello_cb(
     ssl: *mut SSL,
+    al: *mut c_int,
     _arg: *mut ::std::os::raw::c_void,
-) {
-    info!(target: "default", "TLS msg_callback");
-    if is_write == 1 && content_type == SSL3_RT_HANDSHAKE {
-        let msg: &[u8] = unsafe { std::slice::from_raw_parts(buf as *const u8, len) };
+) -> c_int {
+    info!(target: "default", "TLS client hello callback");
+    let ssl_ref = SslRef::from_ptr(ssl);
+    let version = unsafe {
+        SSL_client_hello_get0_legacy_version(ssl) as c_int
+    };
+    let ciphers = match ssl_ref.client_hello_ciphers() {
+        Some(bytes) => bytes
+            .chunks_exact(2)
+            .map(|c| u16::from_be_bytes([c[0], c[1]]))
+            .filter(|id| !is_grease(id))
+            .map(|id| id.to_string())
+            .collect::<Vec<_>>()
+            .join("-"),
+        None => String::new(),
+    };
 
-        if len >= 4
-            && msg[0] == SSL3_MT_CLIENT_HELLO as u8
-            && let Some(data) = ja4(msg)
-        {
-            info!("ja4: {}", &data);
-            let boxed = Box::new(data);
-            let _ = unsafe { SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _) };
-        }
+    // 1. TLS Version read form supported_version
+    let mut ver_str_cf = format!("{}",version);
+    let mut sv_ptr = std::ptr::null();
+    let mut sv_len =0;
+    if SSL_client_hello_get0_ext(ssl, 43, &mut sv_ptr, &mut sv_len) ==1 && !sv_ptr.is_null() && sv_len>=3 {
+        let data = slice::from_raw_parts(sv_ptr, sv_len);
+        let prefered = u16::from_be_bytes([data[1],data[2]]);
+        ver_str_cf = match prefered {
+            0x0304=>"TLS1.3".to_string(),
+            0x0303=>"TLS1.2".to_string(),
+            0x0302=>"TLS1.1".to_string(),
+            0x0301=>"TLS1.0".to_string(),
+            _=>format!("0x{:04x}", prefered),
+        };
     }
+
+    let mut extensions = String::new();
+    let mut extensions_sorted = String::new();
+    let mut ext_ptr = std::ptr::null_mut();
+    let mut ext_len = 0;
+
+
+
+    // if is_write == 0 && content_type == SSL3_RT_HANDSHAKE {
+    //     let msg: &[u8] = unsafe { std::slice::from_raw_parts(buf as *const u8, len) };
+
+    //     if len >= 4
+    //         && msg[0] == SSL3_MT_CLIENT_HELLO as u8
+    //         && let Some(data) = ja4(msg)
+    //     {
+    //         info!("ja4: {}", &data);
+    //         let boxed = Box::new(data);
+    //         let _ = unsafe { SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _) };
+    //     }
+    // }
+    1
 }
 
 /// Handshake Layer:

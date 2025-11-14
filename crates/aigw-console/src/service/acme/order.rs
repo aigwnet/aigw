@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use boring::{
+use crate::ssl::{
     hash::MessageDigest,
     pkey::{PKey, Private},
     stack::Stack,

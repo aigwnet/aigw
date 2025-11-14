@@ -12,7 +12,6 @@ arc-swap = {workspace = true}
 async-trait = {version = "0.1"}
 axum = {version = "0.8"}
 base64 = {workspace = true}
-boring = {version = "4"}
 bytes = {version = "1"}
 chrono = {version = "0.4"}
 clap = {workspace = true}
@@ -23,6 +22,7 @@ lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
 md5 = {workspace = true}
 once_cell = {workspace = true}
+openssl = {version = "0.10"}
 pingora-load-balancing = {workspace = true}
 rbatis = {version = "4.6"}
 rbdc-mysql = {version = "4.5"}

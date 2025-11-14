@@ -1,4 +1,4 @@
-use boring::{
+use crate::ssl::{
     hash::MessageDigest,
     pkey::{PKey, Private},
     sign::Signer,
