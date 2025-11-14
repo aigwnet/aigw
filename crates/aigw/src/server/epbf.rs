@@ -1,7 +1,6 @@
 use std::{net::IpAddr, sync::Mutex};
 
 use aigw_core::{IpDeleteList, IpUpdateList};
-use anyhow::Context as _;
 use aya::{
     Ebpf,
     maps::{HashMap, LpmTrie, lpm_trie::Key},
