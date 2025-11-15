@@ -16,7 +16,7 @@ bytes = {version = "1"}
 chrono = {version = "0.4"}
 clap = {workspace = true}
 daemonize = {workspace = true}
-hex = {version = "0.4"}
+hex = {workspace = true}
 http = {version = "0.2"}
 lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
@@ -32,7 +32,7 @@ regex = {version = "1"}
 reqwest = {version = "0.12", default-features = false, features = ["rustls-tls", "json"]}
 serde = {workspace = true}
 serde_json = {workspace = true}
-sha = {version = "1"}
+sha = {workspace = true}
 thiserror = {version = "2"}
 time = {workspace = true}
 tokio = {version = "1", features = ["full"]}

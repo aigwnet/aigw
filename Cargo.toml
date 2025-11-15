@@ -18,6 +18,7 @@ base64 = {version = "0.22"}
 cargo_metadata = {version = "0.23", default-features = false}
 clap = {version = "4", features = ["derive", "std"]}
 daemonize = {version = "0.5"}
+hex = {version = "0.4"}
 lazy_static = {version = "1"}
 libc = {version = "0.2"}
 md5 = {version = "0.8"}
@@ -31,6 +32,7 @@ pingora-load-balancing = {version = "0.6"}
 pingora-proxy = {version = "0.6"}
 serde = {version = "1", features = ["derive"]}
 serde_json = {version = "1"}
+sha = {version = "1"}
 time = {version = "0.3", features = ["formatting", "macros", "local-offset"]}
 tokio = {version = "1", features = ["full"]}
 tracing = {version = "0.1"}
@@ -41,3 +43,9 @@ which = {version = "6", default-features = false}
 [profile.release.package.aigw-ebpf]
 codegen-units = 1
 debug = 2
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

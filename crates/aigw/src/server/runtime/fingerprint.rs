@@ -1,10 +1,14 @@
-use foreign_types::ForeignTypeRef;
-use pingora_core::tls::{
-    ssl::SslRef,
-    ssl_sys::{SSL, SSL_client_hello_get0_ext, SSL_client_hello_get0_legacy_version, SSL_get_ex_new_index, SSL_set_ex_data},
-};
 use core::slice;
-use std::{fmt::format, os::raw::c_int, ptr::slice_from_raw_parts};
+use pingora_core::tls::ssl_sys::{
+    OPENSSL_free, SSL, SSL_client_hello_get0_ciphers, SSL_client_hello_get0_ext,
+    SSL_client_hello_get0_legacy_version, SSL_client_hello_get1_extensions_present,
+    SSL_get_ex_new_index,
+};
+use sha::{
+    sha256,
+    utils::{Digest, DigestExt},
+};
+use std::os::raw::c_int;
 use tracing::info;
 
 pub static JA4_INDEX: once_cell::sync::Lazy<i32> = once_cell::sync::Lazy::new(|| unsafe {
@@ -13,246 +17,415 @@ pub static JA4_INDEX: once_cell::sync::Lazy<i32> = once_cell::sync::Lazy::new(||
 
 pub unsafe extern "C" fn client_hello_cb(
     ssl: *mut SSL,
-    al: *mut c_int,
+    _al: *mut c_int,
     _arg: *mut ::std::os::raw::c_void,
 ) -> c_int {
-    info!(target: "default", "TLS client hello callback");
-    let ssl_ref = SslRef::from_ptr(ssl);
-    let version = unsafe {
-        SSL_client_hello_get0_legacy_version(ssl) as c_int
-    };
-    let ciphers = match ssl_ref.client_hello_ciphers() {
-        Some(bytes) => bytes
-            .chunks_exact(2)
-            .map(|c| u16::from_be_bytes([c[0], c[1]]))
-            .filter(|id| !is_grease(id))
-            .map(|id| id.to_string())
-            .collect::<Vec<_>>()
-            .join("-"),
-        None => String::new(),
-    };
-
-    // 1. TLS Version read form supported_version
-    let mut ver_str_cf = format!("{}",version);
-    let mut sv_ptr = std::ptr::null();
-    let mut sv_len =0;
-    if SSL_client_hello_get0_ext(ssl, 43, &mut sv_ptr, &mut sv_len) ==1 && !sv_ptr.is_null() && sv_len>=3 {
-        let data = slice::from_raw_parts(sv_ptr, sv_len);
-        let prefered = u16::from_be_bytes([data[1],data[2]]);
-        ver_str_cf = match prefered {
-            0x0304=>"TLS1.3".to_string(),
-            0x0303=>"TLS1.2".to_string(),
-            0x0302=>"TLS1.1".to_string(),
-            0x0301=>"TLS1.0".to_string(),
-            _=>format!("0x{:04x}", prefered),
-        };
+    unsafe {
+        let (ja4, ja4_str) = ja4(ssl);
+        info!(target: "test", "ja4_str: {} ===> {}", &ja4, &ja4_str);
     }
 
-    let mut extensions = String::new();
-    let mut extensions_sorted = String::new();
-    let mut ext_ptr = std::ptr::null_mut();
-    let mut ext_len = 0;
-
-
-
-    // if is_write == 0 && content_type == SSL3_RT_HANDSHAKE {
-    //     let msg: &[u8] = unsafe { std::slice::from_raw_parts(buf as *const u8, len) };
-
-    //     if len >= 4
-    //         && msg[0] == SSL3_MT_CLIENT_HELLO as u8
-    //         && let Some(data) = ja4(msg)
-    //     {
-    //         info!("ja4: {}", &data);
-    //         let boxed = Box::new(data);
-    //         let _ = unsafe { SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _) };
-    //     }
-    // }
     1
 }
 
-/// Handshake Layer:
-/// - handshake_type (1 byte): 0x01 = ClientHello
-/// - length (3 bytes): big-endian
-///  - legacy_version (2 bytes)
-/// - random (32 bytes)
-/// - session_id_len (1 byte)
-/// - session_id (var)
-/// - cipher_suites_len (2 bytes)
-/// - cipher_suites (var)
-/// - compression_methods_len (1 byte)
-/// - compression_methods (var)
-/// - extensions_len (2 bytes)
-/// - extensions (var)
-fn ja4(msg: &[u8]) -> Option<String> {
-    let len = msg.len();
-    // Parse handshake length (3 bytes, big-endian)
-    let hs_len = ((msg[1] as usize) << 16) | ((msg[2] as usize) << 8) | (msg[3] as usize);
-    if len != (hs_len + 4) {
-        return None;
-    }
-    let body = &msg[4..4 + hs_len];
-    if body.len() < 2 + 32 + 1 {
-        return None;
-    }
+///
+/// https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4.md
+///
+/// (QUIC=”q”, DTLS="d", or TLS over TCP=”t”)
+/// (2 character TLS version)
+/// (SNI=”d” or no SNI=”i”)
+/// (2 character count of ciphers)
+/// (2 character count of extensions)
+/// (first and last characters of first ALPN extension value)
+/// _
+/// (sha256 hash of the list of cipher hex codes sorted in hex order, truncated to 12 characters)
+/// _
+/// (sha256 hash of (the list of extension hex codes sorted in hex order)_(the list of signature algorithms), truncated to 12 characters)
+///
+/// The end result is a fingerprint that looks like:
+/// t13d1516h2_8daaf6152771_b186095e22b6
+unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
+    unsafe {
+        let mut fingerprint = String::from("t");
+        let mut fingerprint_origin = String::from("");
 
-    // legacy_version
-    let legacy_version = u16::from_be_bytes([body[0], body[1]]);
-    let proto = match legacy_version {
-        0x0304 => "13",
-        0x0303 => "12",
-        0x0302 => "11",
-        0x0301 => "10",
-        _ => "00",
-    };
-    let mut offset = 2 + 32; // skip version + random
-    let session_id_len = body[offset] as usize;
-    offset += 1;
-    if offset + session_id_len > body.len() {
-        return None;
+        let version = get_version(ssl);
+        info!(target: "test", "TLS Version: 0x{:04x}", version);
+
+        fingerprint += match version {
+            0x0304 => "13",
+            0x0303 => "12",
+            0x0302 => "11",
+            0x0301 => "10",
+            0x0300 => "s2",
+            0x0002 => "s1",
+            0xfeff => "d1",
+            0xfefd => "d2",
+            0xfefc => "d3",
+            _ => "00",
+        };
+        // has_sni ? 'd' : 'i';
+        let has_sni = has_sni(ssl);
+        fingerprint += if has_sni { "d" } else { "i" };
+
+        let (mut ciphers_len, ciphers, ciphers_hash) = get_ciphers(ssl);
+        ciphers_len = 99.min(ciphers_len);
+        let (extensions_len, extensions, extensions_hash) = get_extensions_hash(ssl);
+
+        let alpn_list = get_alpn(ssl);
+        // A “00” here denotes the lack of ALPN.
+        let alpn = alpn_list.get(0).map_or("00", |s| s);
+
+        fingerprint += &format!("{:02}", ciphers_len);
+        fingerprint += &format!("{:02}", extensions_len);
+
+        fingerprint_origin = fingerprint.clone() + alpn + "_" + &ciphers + "_" + &extensions;
+        fingerprint = fingerprint + alpn + "_" + &ciphers_hash + "_" + &extensions_hash;
+
+        //info!(target: "test", "Ciphers: {}, Ciphers Hash: {}", &ciphers, &ciphers_hash);
+        //info!(target: "test", "Extensions: {}, Extensions Hash:  {}", &extensions, extensions_hash);
+
+        return (fingerprint, fingerprint_origin);
     }
-    offset += session_id_len;
+}
 
-    // Cipher suites
-    if offset + 2 > body.len() {
-        return None;
-    }
-    let cipher_suites_len = u16::from_be_bytes([body[offset], body[offset + 1]]) as usize;
-    offset += 2;
-    if cipher_suites_len % 2 != 0 || offset + cipher_suites_len > body.len() {
-        return None;
-    }
+/// In TLS 1.3, for compatibility with middleboxes, the legacy_version field in the ClientHello
+/// is fixed to 0x0303 (which corresponds to TLS 1.2), even if the client supports TLS 1.3.
+/// The actual negotiated version is communicated via the supported_versions extension.
+/// Thus, legacy_version no longer reflects the true protocol version the client intends to use.
+unsafe fn get_version(ssl: *mut SSL) -> u16 {
+    unsafe {
+        let legacy_version = SSL_client_hello_get0_legacy_version(ssl) as u16;
+        // Check for the supported_versions extension (0x002b) in the ClientHello
+        let mut supported_versions_ext = std::ptr::null();
+        let mut supported_versions_ext_len = 0;
+        let mut highest_supported_tls_client_version = 0;
 
-    let mut ciphers: Vec<u16> = Vec::new();
-    let mut i = 0;
-    while i < cipher_suites_len {
-        let cipher = u16::from_be_bytes([body[offset + i], body[offset + i + 1]]);
-        if !is_grease(cipher) {
-            ciphers.push(cipher);
-        }
-        i += 2;
-    }
-    offset += cipher_suites_len;
+        if SSL_client_hello_get0_ext(
+            ssl,
+            0x002b,
+            &mut supported_versions_ext,
+            &mut supported_versions_ext_len,
+        ) == 1
+        {
+            if supported_versions_ext.is_null() || supported_versions_ext_len < 3 {
+                return legacy_version;
+            }
+            // Example: [10, 106, 106, 3, 4, 3, 3, 3, 2, 3, 1]
+            let data = slice::from_raw_parts(supported_versions_ext, supported_versions_ext_len);
+            // info!(target: "test", "Read supported_versions: {:?}", data);
+            let list_len = data[0] as usize;
+            if (list_len + 1) as usize > supported_versions_ext_len {
+                return legacy_version;
+            }
+            let supported_versions = &data[1..];
 
-    // Compression methods
-    if offset >= body.len() {
-        return None;
-    }
-    let compression_len = body[offset] as usize;
-    offset += 1 + compression_len;
-    if offset >= body.len() {
-        return None;
-    }
-
-    // Extensions
-    if offset + 2 > body.len() {
-        return None;
-    }
-    let extensions_len = u16::from_be_bytes([body[offset], body[offset + 1]]) as usize;
-    offset += 2;
-    if offset + extensions_len > body.len() {
-        return None;
-    }
-
-    let mut extensions: Vec<u16> = Vec::new();
-    let mut has_sni = false;
-    let mut alpn = String::from("00");
-    let mut ext_cursor = offset;
-    let ext_end = offset + extensions_len;
-
-    while ext_cursor < ext_end {
-        if ext_cursor + 4 > ext_end {
-            break;
-        }
-        let ext_type = u16::from_be_bytes([body[ext_cursor], body[ext_cursor + 1]]);
-        let ext_data_len =
-            u16::from_be_bytes([body[ext_cursor + 2], body[ext_cursor + 3]]) as usize;
-        ext_cursor += 4;
-        if ext_cursor + ext_data_len > ext_end {
-            break;
-        }
-
-        // Only collect non-GREASE, non-padding extensions for extension list
-        if ext_type != 0x0015 && !is_grease(ext_type) {
-            extensions.push(ext_type);
-        }
-
-        // Check for SNI (type 0)
-        if ext_type == 0x0000 {
-            has_sni = true;
-        }
-
-        // Parse ALPN (type 16)
-        if ext_type == 0x0010 && alpn == "00" {
-            let alpn_data = &body[ext_cursor..ext_cursor + ext_data_len];
-            if alpn_data.len() >= 2 {
-                let list_len = u16::from_be_bytes([alpn_data[0], alpn_data[1]]) as usize;
-                if list_len == alpn_data.len() - 2 && list_len > 0 {
-                    let first_proto_len = alpn_data[2] as usize;
-                    if first_proto_len > 0 && 3 + first_proto_len <= alpn_data.len() {
-                        let proto = &alpn_data[3..3 + first_proto_len];
-                        if let Ok(s) = std::str::from_utf8(proto) {
-                            alpn = s.to_lowercase();
-                        }
-                    }
+            let mut i = 0;
+            while i + 1 < list_len && i + 1 < supported_versions.len() {
+                let version =
+                    u16::from_be_bytes([supported_versions[i], supported_versions[i + 1]]);
+                if !is_grease(version) && version > highest_supported_tls_client_version {
+                    highest_supported_tls_client_version = version;
                 }
+                i += 2;
             }
         }
 
-        ext_cursor += ext_data_len;
-    }
-
-    // Truncate ALPN to 2 chars, or use "00"
-    let alpn_label = if alpn == "00" {
-        "00".to_string()
-    } else {
-        if alpn.len() >= 2 {
-            alpn[..2].to_string()
+        let version = if highest_supported_tls_client_version > 0 {
+            highest_supported_tls_client_version
         } else {
-            format!("{:<2}", alpn).replace(' ', "0")
+            legacy_version
+        };
+
+        version
+    }
+}
+
+unsafe fn has_sni(ssl: *mut SSL) -> bool {
+    // Determine if SNI is present or not
+    unsafe {
+        let mut sni = std::ptr::null();
+        let mut sni_len = 0;
+
+        if SSL_client_hello_get0_ext(ssl, 0x0000, &mut sni, &mut sni_len) == 1 {
+            if sni.is_null() || sni_len < 5 {
+                return false;
+            }
+
+            let data = slice::from_raw_parts(sni, sni_len);
+
+            let list_len = u16::from_be_bytes([data[0], data[1]]) as usize;
+            if list_len == 0 || list_len + 2 != sni_len {
+                return false;
+            }
+            let name_type = data[2];
+            if name_type != 0 {
+                return false;
+            }
+            let name_len = u16::from_be_bytes([data[3], data[4]]) as usize;
+            if name_len > 0 {
+                let _name = &data[5..];
+                return true;
+            }
+        }
+        false
+    }
+}
+
+///
+/// The first and last alphanumeric characters of the ALPN (Application-Layer Protocol Negotiation) first value.
+/// List of possible ALPN Values (scroll down): https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
+///
+/// In the above example, the first ALPN value is h2 so the first and last characters to use in the fingerprint are “h2”.
+/// If the first ALPN listed was http/1.1 then the first and last characters to use in the fingerprint would be “h1”.
+///
+/// In Wireshark this field is located under tls.handshake.extensions_alpn_str
+///
+/// If there is no ALPN extension, no ALPN values, or the first ALPN value is empty, then we print "00" as the value in the fingerprint.
+/// If the first ALPN value is only a single character, then that character is treated as both the first and last character.
+///
+/// If the first or last byte of the first ALPN is non-alphanumeric (meaning not 0x30-0x39, 0x41-0x5A, or 0x61-0x7A),
+/// then we print the first and last characters of the hex representation of the first ALPN instead. For example:
+///
+/// 0xAB would be printed as "ab"
+/// 0xAB 0xCD would be printed as "ad"
+/// 0x30 0xAB would be printed as "3b"
+/// 0x30 0x31 0xAB 0xCD would be printed as "3d"
+/// 0x30 0xAB 0xCD 0x31 would be printed as "01"
+///
+///
+///
+unsafe fn get_alpn(ssl: *mut SSL) -> Vec<String> {
+    let mut protocols = Vec::new();
+    unsafe {
+        let mut alpn_data = std::ptr::null();
+        let mut alpn_len = 0;
+
+        if SSL_client_hello_get0_ext(ssl, 0x0010, &mut alpn_data, &mut alpn_len) == 1
+            && !alpn_data.is_null()
+            && alpn_len >= 2
+        {
+            let alpn_len = alpn_len as usize;
+            // Example: [0, 12, 2, 104, 50, 8, 104, 116, 116, 112, 47, 49, 46, 49]
+            let data = slice::from_raw_parts(alpn_data, alpn_len);
+            let list_len = u16::from_be_bytes([data[0], data[1]]) as usize;
+            if list_len == 0 || list_len + 2 != alpn_len {
+                return protocols;
+            }
+            let payload = &data[2..];
+
+            let mut offset = 0;
+            while offset < payload.len() {
+                let name_len = payload[offset] as usize;
+                offset += 1;
+
+                if offset + name_len > payload.len() {
+                    break;
+                }
+                let name = &payload[offset..offset + name_len];
+
+                // Check if first and last bytes are alphanumeric
+                let first_byte = name[0];
+                let last_byte = name[name.len() - 1];
+
+                if is_alphanumeric(first_byte) && is_alphanumeric(last_byte) {
+                    // Alphanumeric path
+                    if name.len() == 1 {
+                        // Single char: repeat it
+                        let c = first_byte as char;
+                        protocols.push(format!("{}{}", c, c));
+                    } else {
+                        let first_char = first_byte as char;
+                        let last_char = last_byte as char;
+                        protocols.push(format!("{}{}", first_char, last_char));
+                    }
+                } else {
+                    // Non-alphanumeric: use hex representation of the raw bytes
+                    let hex_str: String = name.iter().map(|b| format!("{:02x}", b)).collect();
+                    // Take first and last character of the hex string
+                    let first_hex_char = hex_str.chars().next().unwrap_or('0');
+                    let last_hex_char = hex_str.chars().last().unwrap_or('0');
+                    protocols.push(format!("{}{}", first_hex_char, last_hex_char));
+                }
+
+                offset += name_len;
+            }
+
+            // info!(target: "test", "ALPN: {:?}", protocols);
+        }
+    }
+    //
+    return protocols;
+}
+
+///
+/// Extract and format cipher suites from ClientHello for JA4.
+///
+/// Number of Ciphers:
+///
+/// 2 character number of cipher suites, so if there’s 6 cipher suites in the hello packet,
+/// then the value should be “06”. If there’s > 99, which there should never be, then output “99”.
+/// Remember, ignore GREASE values. They don’t count. Do, however, count other non-cipher values
+/// such as SCSV (0x00FF, 0x5600) and Experimental/Reserved values (0xFE00-0xFEFF).
+///
+/// Cipher hash:
+/// A 12 character truncated sha256 hash of the list of ciphers sorted in hex order, first 12 characters.
+/// The list is created using the 4 character hex values of the ciphers, lower case, comma delimited,
+/// ignoring GREASE yet still including other non-cipher values such as SCSV (0x00FF, 0x5600) and Experimental/Reserved values (0xFE00-0xFEFF).
+/// Example:
+///
+/// 1301,1302,1303,c02b,c02f,c02c,c030,cca9,cca8,c013,c014,009c,009d,002f,0035
+/// Is sorted to:
+///
+/// 002f,0035,009c,009d,1301,1302,1303,c013,c014,c02b,c02c,c02f,c030,cca8,cca9 = 8daaf6152771
+/// If there are no ciphers in the sorted cipher list, then the value of JA4_b is set to 000000000000
+/// We do this rather than running a sha256 hash of nothing as this makes it clear to the user when a field has no values.
+///
+///
+unsafe fn get_ciphers(ssl: *mut SSL) -> (u8, String, String) {
+    unsafe {
+        let mut ptr = std::ptr::null();
+        let len = SSL_client_hello_get0_ciphers(ssl, &mut ptr);
+        if len > 0 && len % 2 == 0 {
+            let data = slice::from_raw_parts(ptr, len);
+
+            let mut ciphers = data
+                .chunks_exact(2)
+                .map(|c| u16::from_be_bytes([c[0], c[1]]))
+                .filter(|i| !is_grease(*i))
+                .map(|c| format!("{:04x}", c)) // lowercase hex, 4 digits
+                .collect::<Vec<_>>();
+
+            ciphers.sort_unstable();
+            let ciphers_len = ciphers.len();
+
+            let ciphers = ciphers.join(",");
+            let ciphers_hash = hash12(&ciphers);
+
+            return (ciphers_len as u8, ciphers, ciphers_hash);
+        }
+        (0, "".to_string(), "000000000000".to_string())
+    }
+}
+
+///
+///
+/// Number of Extensions:
+/// Same as counting ciphers. Ignore GREASE. Include SNI and ALPN.
+///
+/// Extension hash:
+/// A 12 character truncated sha256 hash of the list of extensions, sorted by hex value,
+/// followed by the list of signature algorithms, in the order that they appear (not sorted).
+///
+/// The extension list is created using the 4 character hex values of the extensions, lower case,
+/// comma delimited, sorted (not in the order they appear). Ignore the SNI extension (0000) and the ALPN extension (0010)
+/// as we’ve already captured them in the a section of the fingerprint.
+/// These values are omitted so that the same application would have the same c section of the fingerprint
+/// regardless of if it were going to a domain, IP, or changing ALPNs.
+///
+/// For example:
+///
+/// 001b,0000,0033,0010,4469,0017,002d,000d,0005,0023,0012,002b,ff01,000b,000a,0015
+/// Is sorted to:
+///
+/// 0005,000a,000b,000d,0012,0015,0017,001b,0023,002b,002d,0033,4469,ff01
+/// (notice 0000 and 0010 is removed)
+///
+/// The signature algorithm hex values are then added to the end of the list in the order that they appear
+/// (not sorted) with an underscore delimiting the two lists.
+/// For example the signature algorithms:
+///
+/// 0403,0804,0401,0503,0805,0501,0806,0601
+/// Are added to the end of the previous string to create:
+///
+/// 0005,000a,000b,000d,0012,0015,0017,001b,0023,002b,002d,0033,4469,ff01_0403,0804,0401,0503,0805,0501,0806,0601
+/// Hashed to:
+///
+/// e5627efa2ab19723084c1033a96c694a45826ab5a460d2d3fd5ffcfe97161c95
+/// Truncated to first 12 characters:
+///
+/// e5627efa2ab1
+/// If there are no signature algorithms in the hello packet, then the string ends without an underscore and is hashed.
+/// For example:
+///
+/// 0005,000a,000b,000d,0012,0015,0017,001b,0023,002b,002d,0033,4469,ff01 = 6d807ffa2a79
+/// If there are no extensions in the sorted extensions list, then the value of JA4_c is set to 000000000000
+/// We do this rather than running a sha256 hash of nothing as this makes it clear to the user when a field has no values.
+///
+unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
+    let (mut extensions_len, extensions) = unsafe {
+        let mut ext_ptr = std::ptr::null_mut();
+        let mut ext_len = 0;
+        if SSL_client_hello_get1_extensions_present(ssl, &mut ext_ptr, &mut ext_len) == 1 {
+            if ext_ptr.is_null() {
+                (0, "".to_string())
+            } else {
+                let exts: Vec<u16> = slice::from_raw_parts(ext_ptr, ext_len)
+                    .iter()
+                    .map(|i| *i as u16)
+                    .filter(|i| !is_grease(*i))
+                    .collect();
+
+                info!(target: "test", "EXT origin: {:?}", exts.iter().map(|c| format!("{:04x}", c)).collect::<Vec<_>>());
+
+                let len = exts.len();
+
+                let mut exts_ignored = exts
+                    .iter()
+                    .copied()
+                    .filter(|i| !is_ignore(*i))
+                    .map(|c| format!("{:04x}", c))
+                    .collect::<Vec<_>>();
+                exts_ignored.sort_unstable();
+
+                info!(target: "test", "EXT filterd: {:?}", &exts_ignored);
+
+                OPENSSL_free(ext_ptr as *mut _);
+
+                (len as u8, exts_ignored.join(","))
+            }
+        } else {
+            (0, "".to_string())
         }
     };
+    extensions_len = 99.min(extensions_len);
 
-    // Build extension and cipher strings for hashing
-    ciphers.sort_unstable();
-    extensions.sort_unstable();
+    // SignatureScheme signature_algorithms<2..2^16-2>;
+    let signature_algorithms = unsafe {
+        let mut sa_data = std::ptr::null();
+        let mut sa_len = 0;
 
-    let cipher_str: String = ciphers
-        .iter()
-        .map(|c| format!("{:04x}", c))
-        .collect::<Vec<_>>()
-        .join(",");
+        if SSL_client_hello_get0_ext(ssl, 0x000d, &mut sa_data, &mut sa_len) == 1
+            && !sa_data.is_null()
+            && sa_len >= 2
+        {
+            let data = slice::from_raw_parts(sa_data, sa_len);
 
-    let ext_str: String = extensions
-        .iter()
-        .map(|e| e.to_string())
-        .collect::<Vec<_>>()
-        .join(",");
+            let list_len = u16::from_be_bytes([data[0], data[1]]) as usize;
+            if list_len == 0 || list_len % 2 != 0 || list_len + 2 != sa_len {
+                "".to_string()
+            } else {
+                let data = &data[2..];
+                data.chunks_exact(2)
+                    .map(|c| u16::from_be_bytes([c[0], c[1]]))
+                    .map(|c| format!("{:04x}", c)) // lowercase hex, 4 digits
+                    .collect::<Vec<_>>()
+                    .join(",")
+            }
+        } else {
+            "".to_string()
+        }
+    };
+    info!(target: "test", "EXT signature_algorithms: {:?}", &signature_algorithms);
 
-    // JA4 hash input: cipher_str, ext_str, alpn_value (original, not truncated)
-    let alpn_for_hash = if alpn == "00" { "" } else { &alpn };
-    let hash_input = format!("{},{},{}", cipher_str, ext_str, alpn_for_hash);
+    let extensions = if extensions.is_empty() || signature_algorithms.is_empty() {
+        extensions
+    } else {
+        extensions + "_" + &signature_algorithms
+    };
 
-    let digest = md5::compute(hash_input.as_bytes());
-    let hash_hex: String = digest.iter().map(|b| format!("{:x}", b)).collect();
-    let hash_part = &hash_hex[..12];
-
-    // Determine SNI char
-    let sni_char = if has_sni { 'd' } else { 'i' };
-
-    // Final JA4: d13050a_h2_abc123def456
-    let cipher_count = std::cmp::min(ciphers.len(), 99);
-    let ext_count = std::cmp::min(extensions.len(), 99);
-
-    let ja4: String = format!(
-        "{}{}{:02}{:02}{}_{:12}",
-        sni_char,
-        &proto[0..1], // '1' from "13"
-        cipher_count,
-        ext_count,
-        alpn_label,
-        hash_part
-    );
-    Some(ja4)
+    let extensions_hash = hash12(&extensions);
+    (extensions_len, extensions, extensions_hash)
 }
 
 #[inline]
@@ -262,4 +435,29 @@ fn is_grease(val: u16) -> bool {
         | 0xaaaa | 0xbaba | 0xcaca | 0xdada | 0xeaea | 0xfafa => true,
         _ => false,
     }
+}
+
+fn is_ignore(val: u16) -> bool {
+    match val {
+        // ALPN IGNORE
+        // SNI IGNORE
+        0x0010 | 0x0000 => true,
+        _ => false,
+    }
+}
+
+fn hash12(s: impl AsRef<str>) -> String {
+    let s = s.as_ref();
+    if s.is_empty() {
+        "000000000000".to_owned()
+    } else {
+        let mut sha = sha256::Sha256::default();
+        sha.digest(s.as_bytes());
+        let sha256 = hex::encode(sha.to_bytes());
+        sha256[..12].into()
+    }
+}
+
+fn is_alphanumeric(b: u8) -> bool {
+    matches!(b, b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z')
 }

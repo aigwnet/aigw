@@ -12,5 +12,5 @@ network-types = {version = "0.1"}
 which = {workspace = true}
 
 [[bin]]
-name = "aigw"
+name = "aigwe"
 path = "src/main.rs"

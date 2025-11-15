@@ -30,27 +30,28 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
 
     fn make_writer_for(&'a self, meta: &tracing::Metadata<'_>) -> Self::Writer {
         let key = if *meta.level() == Level::ERROR {
-            "error".to_string()
-        } else if meta.target() == "access" {
-            "access".to_string()
-        } else if meta.target() == "console" {
-            "console".to_string()
+            "error"
         } else {
-            "default".to_string()
+            match meta.target() {
+                "access" => "access",
+                "test" => "test",
+                "console" => "console",
+                _ => "default",
+            }
         };
 
         let mut cache = WRITER_CACHE.lock().unwrap();
-        if !cache.contains_key(&key) {
+        if !cache.contains_key(key) {
             fs::create_dir_all(&self.log_dir).ok();
             let file_appender =
                 tracing_appender::rolling::daily(&self.log_dir, format!("{}.log", key));
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
-            cache.insert(key.clone(), non_blocking);
+            cache.insert(key.to_owned(), non_blocking);
             GUARD_CACHE.lock().unwrap().push(guard);
         }
 
-        Box::new(cache.get(&key).unwrap().clone())
+        Box::new(cache.get(key).unwrap().clone())
     }
 
     fn make_writer(&'a self) -> Self::Writer {
@@ -71,10 +72,7 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
 }
 
 pub fn init_logger(log_dir: &str) {
-    let filter = EnvFilter::from_default_env()
-        .add_directive("access=info".parse().unwrap())
-        .add_directive(LevelFilter::INFO.into());
-
+    let filter = EnvFilter::from_default_env().add_directive(LevelFilter::INFO.into());
     let timer = fmt::time::OffsetTime::new(
         time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC),
         TIME_FORMAT,
