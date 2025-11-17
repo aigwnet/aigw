@@ -6,19 +6,13 @@ mod runtime;
 mod shutdown;
 mod storage;
 
-use std::{ffi::c_uint, sync::Arc};
+use std::sync::Arc;
 
 use pingora_core::{
     apps::HttpServerOptions,
     listeners::tls::TlsSettings,
     server::{Server, configuration::ServerConf},
-    tls::{
-        ssl::SslVersion,
-        ssl_sys::{
-            SSL_CTX_add_custom_ext, SSL_CTX_set_client_hello_cb, SSL_EXT_CLIENT_HELLO,
-            SSL_EXT_TLS1_3_CERTIFICATE,
-        },
-    },
+    tls::{ssl::SslVersion, ssl_sys::SSL_CTX_set_client_hello_cb},
 };
 use pingora_limits::rate::Rate;
 use pingora_proxy::http_proxy_service_with_name;
@@ -29,10 +23,7 @@ pub(crate) use storage::Storage;
 use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::server::{
-    console::AigwConsoleService,
-    runtime::{client_hello_cb, custom_extension_parse_cb},
-};
+use crate::server::{console::AigwConsoleService, runtime::client_hello_cb};
 pub struct RateLimit {
     pub(crate) max_request: isize,
     pub(crate) rate: Rate,
@@ -111,18 +102,6 @@ pub fn run(
         SSL_CTX_set_client_hello_cb(
             tls_settings.as_ptr(),
             Some(client_hello_cb),
-            std::ptr::null_mut(),
-        );
-
-        // esni
-        SSL_CTX_add_custom_ext(
-            tls_settings.as_ptr(),
-            0xfe0d,
-            (SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_CERTIFICATE) as c_uint,
-            None,
-            None,
-            std::ptr::null_mut(),
-            Some(custom_extension_parse_cb),
             std::ptr::null_mut(),
         );
     }
