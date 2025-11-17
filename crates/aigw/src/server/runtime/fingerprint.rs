@@ -1,14 +1,18 @@
 use core::slice;
+use libc::size_t;
 use pingora_core::tls::ssl_sys::{
     OPENSSL_free, SSL, SSL_client_hello_get0_ciphers, SSL_client_hello_get0_ext,
     SSL_client_hello_get0_legacy_version, SSL_client_hello_get1_extensions_present,
-    SSL_get_ex_new_index,
+    SSL_get_ex_new_index, X509,
 };
 use sha::{
     sha256,
     utils::{Digest, DigestExt},
 };
-use std::os::raw::c_int;
+use std::{
+    ffi::{c_uchar, c_uint},
+    os::raw::{c_int, c_void},
+};
 use tracing::info;
 
 pub static JA4_INDEX: once_cell::sync::Lazy<i32> = once_cell::sync::Lazy::new(|| unsafe {
@@ -25,6 +29,24 @@ pub unsafe extern "C" fn client_hello_cb(
         info!(target: "test", "ja4_str: {} ===> {}", &ja4, &ja4_str);
     }
 
+    1
+}
+
+pub unsafe extern "C" fn custom_extension_parse_cb(
+    _ssl: *mut SSL,
+    _ext_type: c_uint,
+    _context: c_uint,
+    input: *const c_uchar,
+    inlen: size_t,
+    _x: *mut X509,
+    _chainidx: size_t,
+    _al: *mut c_int,
+    _parse_arg: *mut c_void,
+) -> c_int {
+    if inlen > 0 {
+        let slice = unsafe { std::slice::from_raw_parts(input, inlen) };
+        info!(target: "test", "Received custom extension: {:?}", std::str::from_utf8(slice).unwrap_or("<invalid>"));
+    }
     1
 }
 
