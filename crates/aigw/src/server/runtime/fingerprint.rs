@@ -47,7 +47,6 @@ pub unsafe extern "C" fn client_hello_cb(
 unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
     unsafe {
         let mut fingerprint = String::from("t");
-        let mut fingerprint_origin = String::from("");
 
         let version = get_version(ssl);
         info!(target: "test", "TLS Version: 0x{:04x}", version);
@@ -79,7 +78,7 @@ unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
         fingerprint += &format!("{:02}", ciphers_len);
         fingerprint += &format!("{:02}", extensions_len);
 
-        fingerprint_origin = fingerprint.clone() + alpn + "_" + &ciphers + "_" + &extensions;
+        let fingerprint_origin = fingerprint.clone() + alpn + "_" + &ciphers + "_" + &extensions;
         fingerprint = fingerprint + alpn + "_" + &ciphers_hash + "_" + &extensions_hash;
 
         //info!(target: "test", "Ciphers: {}, Ciphers Hash: {}", &ciphers, &ciphers_hash);
