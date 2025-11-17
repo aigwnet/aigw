@@ -13,5 +13,5 @@ export async function getClusterIpTableApi(cluster: string | null, type: string,
 }
 
 export async function addClusterIpApi(params: Object) {
-    return requestClient.post<BasicResult>('/security/ip/', params);
+    return requestClient.post<BasicResult>('/security/ip', params);
 }

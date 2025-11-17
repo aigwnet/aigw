@@ -16,11 +16,12 @@ const ipRule = z.string().regex(ipRegex, { message: 'Please enter a valid IPv4 o
 
 
 const LAYER4_OPTIONS = [
-    { label: $t('page.security.cluster.ipWhiteList'), value: '1' },
-    { label: $t('page.security.cluster.ipBlockList'), value: '2' },
+    { label: $t('page.security.cluster.ipWhiteList'), value: 1 },
+    { label: $t('page.security.cluster.ipBlockList'), value: 2 },
 ];
 const route = useRoute();
-const defaultType = route.query.type || "1";
+const defaultType = Number(route.query.type) || 1;
+console.log(defaultType)
 
 const [Form, formApi] = useVbenForm({
     handleSubmit: onSubmit,
