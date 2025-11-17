@@ -25,7 +25,7 @@ pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<EbpfHandler> {
     } else {
         aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
             env!("OUT_DIR"),
-            "/aigw"
+            "/aigwe"
         )))?
     };
     match aya_log::EbpfLogger::init(&mut ebpf) {
