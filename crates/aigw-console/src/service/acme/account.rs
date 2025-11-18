@@ -52,9 +52,6 @@ struct AccountResponse {
 #[derive(Debug)]
 pub struct AccountBuilder {
     directory: Arc<Directory>,
-
-    private_key: Option<TlsPrivateKey>,
-
     contact: Option<Vec<String>>,
     terms_of_service_agreed: Option<bool>,
     only_return_existing: Option<bool>,
@@ -68,7 +65,6 @@ impl AccountBuilder {
     pub fn new(directory: Arc<Directory>) -> Self {
         AccountBuilder {
             directory,
-            private_key: None,
             contact: None,
             terms_of_service_agreed: None,
             only_return_existing: None,
@@ -103,11 +99,7 @@ impl AccountBuilder {
     /// a key is generated, it can be retrieved from the created [`Account`]
     /// through the [`Account::private_key`] method.
     pub async fn build(&mut self) -> anyhow::Result<Arc<Account>> {
-        let private_key = if let Some(private_key) = self.private_key.clone() {
-            private_key
-        } else {
-            gen_rsa_private_key(4096)?
-        };
+        let private_key = gen_rsa_private_key()?;
 
         let url = self.directory.new_account_url.clone();
 
@@ -164,11 +156,11 @@ mod tests {
     #[tokio::test]
     async fn test_account() -> anyhow::Result<()> {
         let dir =
-            DirectoryBuilder::new("https://acme-v02.api.letsencrypt.org/directory".to_string())
+            DirectoryBuilder::new("https://acme-staging-v02.api.letsencrypt.org/directory".to_string())
                 .build()
                 .await?;
 
-        let contact = "mailto:lijunbox@126.com".to_string();
+        let contact = "mailto:test123@126.com".to_string();
 
         // Create an ACME account to use for the order. For production
         // purposes, you should keep the account (and private key), so

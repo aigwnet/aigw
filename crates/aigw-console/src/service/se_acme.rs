@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use crate::{
     service::{
-        Account, AccountBuilder, AuthorizationStatus, Certificate, ChallengeStatus, Csr,
-        DirectoryBuilder, OrderBuilder, OrderStatus, gen_rsa_private_key,
+        Account, AccountBuilder, AuthorizationStatus, Certificate, ChallengeStatus,
+        DirectoryBuilder, OrderBuilder, OrderStatus, gen_private_key,
         se_changlog::do_build_change_log,
         se_lock,
         se_user::{self, UserExtInfo, find_default_user},
@@ -171,12 +171,12 @@ pub async fn apply_cert(
 
     assert_eq!(order.status, OrderStatus::Ready);
 
-    // Generate an RSA private key for the certificate.
-    let pkey = gen_rsa_private_key(4096)?;
+    // Generate a Private key for the certificate.
+    let pkey = gen_private_key()?;
 
     // Create a certificate signing request for the order, and request
     // the certificate.
-    let order = order.finalize(Csr::Automatic(pkey.clone())).await?;
+    let order = order.finalize(&pkey).await?;
 
     // Poll the order every 5 seconds until it is in either the
     // `valid` or `invalid` state. Valid means that the certificate

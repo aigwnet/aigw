@@ -11,7 +11,6 @@ pub(crate) use account::AccountBuilder;
 pub(crate) use authorization::AuthorizationStatus;
 pub(crate) use authorization::ChallengeStatus;
 pub(crate) use directory::DirectoryBuilder;
-pub(crate) use helpers::gen_rsa_private_key;
-pub(crate) use order::Csr;
+pub(crate) use helpers::gen_private_key;
 pub(crate) use order::OrderBuilder;
 pub(crate) use order::OrderStatus;

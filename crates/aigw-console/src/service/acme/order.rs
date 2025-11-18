@@ -1,13 +1,8 @@
-use std::{sync::Arc, time::Duration};
-
-use crate::ssl::{
-    hash::MessageDigest,
-    stack::Stack,
-    x509::{X509Name, X509Req, extension::SubjectAlternativeName},
-};
 use aigw_core::TlsPrivateKey;
+use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, SanType, string::Ia5String};
 use serde::Deserialize;
 use serde_json::json;
+use std::{sync::Arc, time::Duration};
 use tracing::debug;
 
 use crate::service::acme::{
@@ -135,47 +130,6 @@ impl OrderBuilder {
     }
 }
 
-/// A certificate signing request.
-pub enum Csr {
-    /// Automatic signing takes just a private key. The other details of
-    /// the CSR (identifiers, common name, etc), will be automatically
-    /// retrieved from the order this is used with.
-    Automatic(TlsPrivateKey),
-}
-
-fn gen_csr(pkey: &TlsPrivateKey, domains: Vec<String>) -> Result<X509Req, Error> {
-    if domains.is_empty() {
-        return Err(Error::Validation(
-            "at least one domain name needs to be supplied",
-        ));
-    }
-
-    let mut builder = X509Req::builder()?;
-    let name = {
-        let mut name = X509Name::builder()?;
-        name.append_entry_by_text("CN", &domains[0])?;
-        name.build()
-    };
-    builder.set_subject_name(&name)?;
-
-    // Add all domains as SANs
-    let san_extension = {
-        let mut san = SubjectAlternativeName::new();
-        for domain in domains.iter() {
-            san.dns(domain);
-        }
-        san.build(&builder.x509v3_context(None))?
-    };
-    let mut stack = Stack::new()?;
-    stack.push(san_extension)?;
-    builder.add_extensions(&stack)?;
-
-    builder.set_pubkey(&pkey.0)?;
-    builder.sign(&pkey.0, MessageDigest::sha256())?;
-
-    Ok(builder.build())
-}
-
 impl Order {
     /// Finalize an order (request the final certificate).
     ///
@@ -187,18 +141,29 @@ impl Order {
     /// call [`Order::wait_done`] after this operation to wait until the
     /// ACME server has finished finalization, and the certificate is ready
     /// for download.
-    pub async fn finalize(&self, csr: Csr) -> anyhow::Result<Order> {
-        let csr = match csr {
-            Csr::Automatic(pkey) => gen_csr(
-                &pkey,
-                self.identifiers
-                    .iter()
-                    .map(|f| f.value.clone())
-                    .collect::<Vec<_>>(),
-            )?,
-        };
+    pub async fn finalize(&self, pkey: &TlsPrivateKey) -> anyhow::Result<Order> {
+        let domains = self
+            .identifiers
+            .iter()
+            .map(|f| f.value.clone())
+            .collect::<Vec<_>>();
+        let common_name = domains[0].clone();
+        let mut san_names = Vec::new();
+        for domain in &domains {
+            san_names.push(SanType::DnsName(Ia5String::try_from(domain.as_str())?));
+        }
 
-        let csr_b64 = b64(&csr.to_der()?);
+        let mut params = CertificateParams::new(domains)?;
+        let mut distinguished_name = DistinguishedName::new();
+        distinguished_name.push(DnType::CommonName, &common_name);
+        params.distinguished_name = distinguished_name;
+        params.subject_alt_names = san_names;
+
+        let pkey = KeyPair::from_pem(&pkey.try_to_string()?)?;
+        let csr = params.serialize_request(&pkey)?;
+        let csr = csr.der().as_ref();
+
+        let csr_b64 = b64(csr);
 
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
