@@ -2,10 +2,10 @@ use std::{sync::Arc, time::Duration};
 
 use crate::ssl::{
     hash::MessageDigest,
-    pkey::{PKey, Private},
     stack::Stack,
     x509::{X509Name, X509Req, extension::SubjectAlternativeName},
 };
+use aigw_core::TlsPrivateKey;
 use serde::Deserialize;
 use serde_json::json;
 use tracing::debug;
@@ -110,7 +110,7 @@ impl OrderBuilder {
                 json!({
                   "identifiers": self.identifiers,
                 }),
-                self.account.private_key.clone().unwrap(),
+                self.account.private_key.as_ref().unwrap(),
                 Some(self.account.id.clone()),
             )
             .await?;
@@ -140,10 +140,10 @@ pub enum Csr {
     /// Automatic signing takes just a private key. The other details of
     /// the CSR (identifiers, common name, etc), will be automatically
     /// retrieved from the order this is used with.
-    Automatic(PKey<Private>),
+    Automatic(TlsPrivateKey),
 }
 
-fn gen_csr(pkey: &PKey<Private>, domains: Vec<String>) -> Result<X509Req, Error> {
+fn gen_csr(pkey: &TlsPrivateKey, domains: Vec<String>) -> Result<X509Req, Error> {
     if domains.is_empty() {
         return Err(Error::Validation(
             "at least one domain name needs to be supplied",
@@ -170,8 +170,8 @@ fn gen_csr(pkey: &PKey<Private>, domains: Vec<String>) -> Result<X509Req, Error>
     stack.push(san_extension)?;
     builder.add_extensions(&stack)?;
 
-    builder.set_pubkey(pkey)?;
-    builder.sign(pkey, MessageDigest::sha256())?;
+    builder.set_pubkey(&pkey.0)?;
+    builder.sign(&pkey.0, MessageDigest::sha256())?;
 
     Ok(builder.build())
 }
@@ -207,7 +207,7 @@ impl Order {
             .authenticated_request::<_, Order>(
                 &self.finalize_url,
                 json!({ "csr": csr_b64 }),
-                account.private_key.clone().unwrap(),
+                account.private_key.as_ref().unwrap(),
                 Some(account.id.clone()),
             )
             .await?;
@@ -256,7 +256,7 @@ impl Order {
             .authenticated_request::<_, Order>(
                 &self.url,
                 json!(""),
-                account.private_key.clone().unwrap(),
+                account.private_key.as_ref().unwrap(),
                 Some(account.id.clone()),
             )
             .await?;

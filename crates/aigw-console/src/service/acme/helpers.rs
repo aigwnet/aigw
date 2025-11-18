@@ -1,7 +1,5 @@
-use crate::ssl::{
-    pkey::{PKey, Private},
-    rsa::Rsa,
-};
+use crate::ssl::{pkey::PKey, rsa::Rsa};
+use aigw_core::TlsPrivateKey;
 use base64::Engine;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use serde::{Deserialize, Serialize};
@@ -25,8 +23,8 @@ pub(crate) fn b64(data: &[u8]) -> String {
 
 /// Generate a new RSA private key using the specified size,
 /// using the system random.
-pub fn gen_rsa_private_key(bits: u32) -> Result<PKey<Private>, Error> {
+pub fn gen_rsa_private_key(bits: u32) -> Result<TlsPrivateKey, Error> {
     let rsa = Rsa::generate(bits)?;
     let key = PKey::from_rsa(rsa)?;
-    Ok(key)
+    Ok(TlsPrivateKey(key))
 }

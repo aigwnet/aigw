@@ -65,7 +65,7 @@ pub struct Site {
     pub rate_limit_unit: u64,
 }
 
-fn serialize_tls_private_key<S>(
+pub fn serialize_tls_private_key<S>(
     value: &Option<TlsPrivateKey>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
@@ -83,7 +83,9 @@ where
     }
 }
 
-fn deserialize_tls_private_key<'de, D>(deserializer: D) -> Result<Option<TlsPrivateKey>, D::Error>
+pub fn deserialize_tls_private_key<'de, D>(
+    deserializer: D,
+) -> Result<Option<TlsPrivateKey>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -123,7 +125,7 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct TlsPrivateKey(PKey<Private>);
+pub struct TlsPrivateKey(pub PKey<Private>);
 
 impl TlsPrivateKey {
     pub fn try_to_string(&self) -> anyhow::Result<String> {

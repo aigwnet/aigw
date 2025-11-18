@@ -193,7 +193,7 @@ pub async fn apply_cert(
 
     info!(target:"certificate", "Apply cert: {}, {:?} successfully!", email, domains);
 
-    let pkey = String::from_utf8_lossy(&pkey.private_key_to_pem_pkcs8()?).to_string();
+    let pkey = pkey.try_to_string()?;
 
     Ok(Certificate {
         tls_private_key: pkey,

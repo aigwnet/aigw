@@ -1,9 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
-
-use crate::ssl::pkey::{PKey, Private};
-use base64::{Engine, prelude::BASE64_STANDARD};
+use aigw_core::{TlsPrivateKey, deserialize_tls_private_key, serialize_tls_private_key};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::{collections::HashMap, sync::Arc};
 use tracing::debug;
 
 use crate::service::acme::{directory::Directory, error::Error, helpers::gen_rsa_private_key};
@@ -19,10 +17,10 @@ pub struct Account {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_private_key",
-        deserialize_with = "deserialize_private_key"
+        serialize_with = "serialize_tls_private_key",
+        deserialize_with = "deserialize_tls_private_key"
     )]
-    pub(crate) private_key: Option<PKey<Private>>,
+    pub(crate) private_key: Option<TlsPrivateKey>,
     pub(crate) key: HashMap<String, String>,
     pub(crate) id: String,
 }
@@ -49,45 +47,13 @@ struct AccountResponse {
     key: HashMap<String, String>,
 }
 
-fn serialize_private_key<S>(value: &Option<PKey<Private>>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    match value {
-        Some(value) => {
-            let key = value
-                .private_key_to_pem_pkcs8()
-                .map_err(|_| serde::ser::Error::custom("Private key pem format error"))?;
-            let key = unsafe { String::from_utf8_unchecked(key) };
-            serializer.serialize_str(&BASE64_STANDARD.encode(&key))
-        }
-        None => serializer.serialize_str(""),
-    }
-}
-
-fn deserialize_private_key<'de, D>(deserializer: D) -> Result<Option<PKey<Private>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let key = String::deserialize(deserializer)?;
-    if key.trim().is_empty() {
-        return Ok(None);
-    }
-    let key = BASE64_STANDARD
-        .decode(key)
-        .map_err(|_| serde::de::Error::custom("Private key base64 decode error"))?;
-    let key = PKey::private_key_from_pem(&key)
-        .map_err(|_| serde::de::Error::custom("Private key pem format error"))?;
-    Ok(Some(key))
-}
-
 /// An builder that is used to create / retrieve an [`Account`] from the
 /// ACME server.
 #[derive(Debug)]
 pub struct AccountBuilder {
     directory: Arc<Directory>,
 
-    private_key: Option<PKey<Private>>,
+    private_key: Option<TlsPrivateKey>,
 
     contact: Option<Vec<String>>,
     terms_of_service_agreed: Option<bool>,
@@ -154,7 +120,7 @@ impl AccountBuilder {
                   "termsOfServiceAgreed": self.terms_of_service_agreed,
                   "onlyReturnExisting": self.only_return_existing
                 }),
-                private_key.clone(),
+                &private_key,
                 None,
             )
             .await?;

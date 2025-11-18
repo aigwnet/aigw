@@ -21,6 +21,8 @@ pub use model::namelist::IpUpdateList;
 pub use model::site::DynamicCert;
 pub use model::site::Site;
 pub use model::site::TlsPrivateKey;
+pub use model::site::deserialize_tls_private_key;
+pub use model::site::serialize_tls_private_key;
 pub use model::statistics::Statistics;
 pub use protocol::Algorithm;
 pub use protocol::close::Close;

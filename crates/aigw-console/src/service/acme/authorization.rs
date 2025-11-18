@@ -112,7 +112,7 @@ impl Order {
                 .authenticated_request::<_, Authorization>(
                     &authorization_url,
                     "",
-                    account.private_key.clone().unwrap(),
+                    account.private_key.as_ref().unwrap(),
                     Some(account.id.clone()),
                 )
                 .await?;
@@ -156,7 +156,7 @@ impl Authorization {
             .authenticated_request::<_, Authorization>(
                 &self.url,
                 json!(""),
-                account.private_key.clone().unwrap(),
+                account.private_key.as_ref().unwrap(),
                 Some(account.id.clone()),
             )
             .await?;
@@ -245,7 +245,7 @@ impl Challenge {
             .authenticated_request::<_, Challenge>(
                 &self.url,
                 json!({}),
-                account.private_key.clone().unwrap(),
+                account.private_key.as_ref().unwrap(),
                 Some(account.id.clone()),
             )
             .await?;
@@ -267,7 +267,7 @@ impl Challenge {
             .authenticated_request::<_, Challenge>(
                 &self.url,
                 json!(""),
-                account.private_key.clone().unwrap(),
+                account.private_key.as_ref().unwrap(),
                 Some(account.id.clone()),
             )
             .await?;

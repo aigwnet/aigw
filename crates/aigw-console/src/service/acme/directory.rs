@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::ssl::pkey::{PKey, Private};
+use aigw_core::TlsPrivateKey;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tracing::debug;
@@ -102,7 +102,7 @@ impl Directory {
         &self,
         url: &str,
         payload: &str,
-        pkey: &PKey<Private>,
+        pkey: &TlsPrivateKey,
         account_id: &Option<String>,
     ) -> anyhow::Result<reqwest::Response> {
         let nonce = self.get_nonce().await?;
@@ -127,7 +127,7 @@ impl Directory {
         &self,
         url: &str,
         payload: &str,
-        pkey: &PKey<Private>,
+        pkey: &TlsPrivateKey,
         account_id: &Option<String>,
     ) -> anyhow::Result<(Result<Bytes, ServerError>, reqwest::header::HeaderMap)> {
         let mut attempt = 0;
@@ -163,7 +163,7 @@ impl Directory {
         &self,
         url: &str,
         payload: T,
-        pkey: PKey<Private>,
+        pkey: &TlsPrivateKey,
         account_id: Option<String>,
     ) -> anyhow::Result<(ServerResult<R>, reqwest::header::HeaderMap)>
     where
@@ -178,7 +178,7 @@ impl Directory {
         };
 
         let (res, headers) = self
-            .authenticated_request_bytes(url, &payload, &pkey, &account_id)
+            .authenticated_request_bytes(url, &payload, pkey, &account_id)
             .await?;
         let bytes = match res {
             Ok(bytes) => bytes,

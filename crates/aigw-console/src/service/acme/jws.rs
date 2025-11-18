@@ -1,8 +1,5 @@
-use crate::ssl::{
-    hash::MessageDigest,
-    pkey::{PKey, Private},
-    sign::Signer,
-};
+use crate::ssl::{hash::MessageDigest, sign::Signer};
+use aigw_core::TlsPrivateKey;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -28,11 +25,11 @@ pub(crate) struct Jwk {
 }
 
 impl Jwk {
-    pub fn new(pkey: &PKey<Private>) -> Jwk {
+    pub fn new(pkey: &TlsPrivateKey) -> Jwk {
         Jwk {
-            e: b64(&pkey.rsa().unwrap().e().to_vec()),
+            e: b64(&pkey.0.rsa().unwrap().e().to_vec()),
             kty: "RSA".to_string(),
-            n: b64(&pkey.rsa().unwrap().n().to_vec()),
+            n: b64(&pkey.0.rsa().unwrap().n().to_vec()),
         }
     }
 }
@@ -41,7 +38,7 @@ pub(crate) fn jws(
     url: &str,
     nonce: String,
     payload: &str,
-    pkey: &PKey<Private>,
+    pkey: &TlsPrivateKey,
     account_id: Option<String>,
 ) -> Result<String, Error> {
     let payload_b64 = b64(payload.as_bytes());
@@ -62,7 +59,7 @@ pub(crate) fn jws(
     let protected_b64 = b64(&serde_json::to_string(&header)?.into_bytes());
 
     let signature_b64 = {
-        let mut signer = Signer::new(MessageDigest::sha256(), pkey)?;
+        let mut signer = Signer::new(MessageDigest::sha256(), &pkey.0)?;
         signer.update(&format!("{}.{}", protected_b64, payload_b64).into_bytes())?;
         b64(&signer.sign_to_vec()?)
     };
