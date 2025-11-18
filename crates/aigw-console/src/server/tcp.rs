@@ -66,14 +66,16 @@ impl Handler {
             // While reading a request frame, also listen for the shutdown
             // signal.
             let data_type = tokio::select! {
-                res = {
-                    Handler::read(&mut self.reader, &mut buffer)
-                } => res?,
-                _ = self.shutdown.recv() => {
-                    // If a shutdown signal is received, return from `run`.
-                    // This will result in the task terminating.
-                    return Ok(());
+                res = Handler::read(&mut self.reader, &mut buffer) => {
+                    match res {
+                        Ok(t) => t,
+                        Err(e) => {
+                            error!("Read error from {}: {:?}", self.addr, e);
+                            break;
+                        }
+                    }
                 }
+                _ = self.shutdown.recv() => break,
             };
 
             match self.handle(data_type, &mut buffer).await {
@@ -84,10 +86,6 @@ impl Handler {
                 }
                 Err(e) => error!("Handle data error, {:?}", e),
             }
-        }
-        {
-            let mut connections = self.connections.lock().await;
-            connections.remove(&self.addr);
         }
         Ok(())
     }
@@ -205,6 +203,22 @@ impl Handler {
 
         Ok(false)
     }
+
+    async fn cleanup(&mut self) {
+        debug!("Cleaning connection {}", self.addr);
+
+        // 1) close writer
+        {
+            let mut conn = self.connection.lock().await;
+            let _ = conn.close().await;
+        }
+
+        // 2) remove from connections
+        {
+            let mut connections = self.connections.lock().await;
+            connections.remove(&self.addr);
+        }
+    }
 }
 
 struct TcpServer {
@@ -269,9 +283,9 @@ impl TcpServer {
             tokio::spawn(async move {
                 // Process the connection. If an error is encountered, log it.
                 if let Err(err) = handler.run().await {
-                    error!("connection error: {:?}", err);
+                    error!("Connection error: {:?}", err);
                 }
-
+                handler.cleanup().await;
                 // Move the permit into the task and drop it after completion.
                 // This returns the permit back to the semaphore.
                 drop(permit);

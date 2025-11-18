@@ -23,4 +23,8 @@ impl Connection {
         self.writer.flush().await?;
         Ok(size)
     }
+
+    pub async fn close(&mut self) {
+        let _ = self.writer.shutdown().await;
+    }
 }
