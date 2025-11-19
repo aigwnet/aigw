@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use crate::{
     service::{
         Account, AccountBuilder, AuthorizationStatus, Certificate, ChallengeStatus,
-        DirectoryBuilder, OrderBuilder, OrderStatus, gen_private_key,
+        DirectoryBuilder, OrderBuilder, OrderStatus, gen_rsa_private_key,
         se_changlog::do_build_change_log,
         se_lock,
         se_user::{self, UserExtInfo, find_default_user},
@@ -172,7 +172,7 @@ pub async fn apply_cert(
     assert_eq!(order.status, OrderStatus::Ready);
 
     // Generate a Private key for the certificate.
-    let pkey = gen_private_key()?;
+    let pkey = gen_rsa_private_key()?;
 
     // Create a certificate signing request for the order, and request
     // the certificate.

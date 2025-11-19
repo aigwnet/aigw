@@ -1,8 +1,11 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::ssl::hash::{MessageDigest, hash};
 use serde::Deserialize;
 use serde_json::json;
+use sha::{
+    sha256,
+    utils::{Digest, DigestExt},
+};
 use tracing::debug;
 
 use crate::service::acme::{
@@ -213,15 +216,12 @@ impl Challenge {
         if let Some(token) = self.token.clone() {
             let account = self.account.clone().unwrap();
 
-            let key_authorization = format!(
-                "{}.{}",
-                token,
-                b64(&hash(
-                    MessageDigest::sha256(),
-                    &serde_json::to_string(&Jwk::new(&account.private_key.clone().unwrap()))?
-                        .into_bytes()
-                )?)
-            );
+            let data = &serde_json::to_string(&Jwk::new(&account.private_key.clone().unwrap()))?
+                .into_bytes();
+            let mut sha = sha256::Sha256::default();
+            sha.digest(data);
+
+            let key_authorization = format!("{}.{}", token, b64(&sha.to_bytes()));
 
             Ok(Some(key_authorization))
         } else {

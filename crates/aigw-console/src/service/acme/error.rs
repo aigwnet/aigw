@@ -1,4 +1,3 @@
-use crate::ssl::error::ErrorStack;
 use serde::Deserialize;
 
 #[derive(Debug, thiserror::Error)]
@@ -28,12 +27,6 @@ impl From<reqwest::Error> for Error {
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Self {
         Self::Transport(Box::new(err))
-    }
-}
-
-impl From<ErrorStack> for Error {
-    fn from(err: ErrorStack) -> Self {
-        Self::Other(Box::new(err))
     }
 }
 

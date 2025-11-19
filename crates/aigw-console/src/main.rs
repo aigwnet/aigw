@@ -7,7 +7,6 @@ use storage::db::DatabaseClient;
 use tokio::{runtime::Runtime, sync::Mutex};
 use tracing::{debug, info};
 
-pub use openssl as ssl;
 use crate::args::AigwConsoleArgs;
 
 mod args;
