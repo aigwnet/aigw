@@ -30,6 +30,7 @@ pingora-http = {version = "0.6"}
 pingora-limits = {version = "0.6"}
 pingora-load-balancing = {version = "0.6"}
 pingora-proxy = {version = "0.6"}
+rustls = {version = "0.23"}
 serde = {version = "1", features = ["derive"]}
 serde_json = {version = "1"}
 sha = {version = "1"}

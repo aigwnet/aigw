@@ -5,7 +5,9 @@ use rbatis::{PageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    service::{map::LinkedHashMap, se_task::Task},
+    service::{
+        HH_FORMAT, HH_MM_FORMAT, MM_DD_FORMAT, date_format, map::LinkedHashMap, se_task::Task,
+    },
     storage::{
         tb_analytics_traffic::TbAnalyticsTraffic,
         tb_analytics_traffic_cluster::TbAnalyticsTrafficCluster,
@@ -70,11 +72,7 @@ pub async fn get_analytics_traffic(
     let mut items: Vec<AnalyticsTrafficItem> = items
         .iter()
         .map(|item| {
-            let gmt_create = item.gmt_create.as_ref().and_then(|s| {
-                chrono::DateTime::from_timestamp(s.unix_timestamp(), 0)
-                    .map(|t| t.with_timezone(&chrono::Local).format("%H:%M").to_string())
-            });
-
+            let gmt_create = date_format(item.gmt_create.as_ref(), HH_MM_FORMAT);
             AnalyticsTrafficItem {
                 time: gmt_create.map_or("-".to_string(), |s| s),
                 tls: item.tls.map_or(0, |i| i),
@@ -112,10 +110,8 @@ pub async fn get_analytics_traffic_1day(
         }
 
         for a in r.records {
-            let gmt_create = a.gmt_create.as_ref().and_then(|s| {
-                chrono::DateTime::from_timestamp(s.unix_timestamp(), 0)
-                    .map(|t| t.with_timezone(&chrono::Local).format("%H").to_string())
-            });
+            let gmt_create = date_format(a.gmt_create.as_ref(), HH_FORMAT);
+
             if let Some(gmt_create) = gmt_create {
                 if !maps.contains(&gmt_create) {
                     maps.insert(
@@ -170,10 +166,7 @@ pub async fn get_analytics_traffic_1month(
         }
 
         for a in r.records {
-            let gmt_create = a.gmt_create.as_ref().and_then(|s| {
-                chrono::DateTime::from_timestamp(s.unix_timestamp(), 0)
-                    .map(|t| t.with_timezone(&chrono::Local).format("%m-%d").to_string())
-            });
+            let gmt_create = date_format(a.gmt_create.as_ref(), MM_DD_FORMAT);
             if let Some(gmt_create) = gmt_create {
                 if !maps.contains(&gmt_create) {
                     maps.insert(
@@ -239,7 +232,7 @@ pub(crate) async fn analytics_traffic_minute(
     let access_items = TbAnalyticsTrafficCluster::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.timestamp()),
+        DateTime::from_timestamp(task.end_time.unix_timestamp()),
     )
     .await?;
 
@@ -255,8 +248,8 @@ pub(crate) async fn analytics_traffic_minute(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.timestamp()),
-                DateTime::from_timestamp(new_end_time.timestamp()),
+                DateTime::from_timestamp(task.end_time.unix_timestamp()),
+                DateTime::from_timestamp(new_end_time.unix_timestamp()),
             )
             .await?;
 
@@ -283,7 +276,7 @@ pub(crate) async fn analytics_traffic_hour(
     let access_item = TbAnalyticsTrafficClusterHour::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.timestamp()),
+        DateTime::from_timestamp(task.end_time.unix_timestamp()),
     )
     .await?;
 
@@ -299,8 +292,8 @@ pub(crate) async fn analytics_traffic_hour(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.timestamp()),
-                DateTime::from_timestamp(new_end_time.timestamp()),
+                DateTime::from_timestamp(task.end_time.unix_timestamp()),
+                DateTime::from_timestamp(new_end_time.unix_timestamp()),
             )
             .await?;
 

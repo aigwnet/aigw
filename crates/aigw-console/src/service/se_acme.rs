@@ -16,6 +16,7 @@ use anyhow::anyhow;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rbatis::{PageRequest, RBatis};
 use rcgen::{KeyPair, PKCS_RSA_SHA512};
+use time::OffsetDateTime;
 use tokio::{sync::mpsc::Sender, time::interval};
 use tracing::{debug, error, info};
 
@@ -138,7 +139,7 @@ pub async fn apply_cert(
             cluster.clone(),
             LogType::Acme,
             LogAction::Add,
-            chrono::Utc::now().timestamp() as u64,
+            OffsetDateTime::now_utc().unix_timestamp() as u64,
             300,
             Some(data),
         )

@@ -20,7 +20,7 @@ protobuf = {version = "3"}
 rcgen = {version = "0.14", features = ["aws_lc_rs"]}
 regex = {version = "1"}
 ring = {version = "0.17"}
-rustls = {version = "0.23"}
+rustls = {workspace = true}
 serde = {version = "1", features = ["derive"]}
 serde_json = {version = "1"}
 substring = {version = "1"}

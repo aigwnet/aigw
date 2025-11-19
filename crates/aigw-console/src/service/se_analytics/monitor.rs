@@ -4,7 +4,7 @@ use rbatis::{PageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    service::se_task::Task,
+    service::{HH_MM_FORMAT, date_format, se_task::Task},
     storage::{
         tb_analytics_monitor::TbAnalyticsMonitor,
         tb_analytics_monitor_cluster::TbAnalyticsMonitorCluster,
@@ -45,10 +45,7 @@ pub async fn get_analytics_monitor(
     let mut items: Vec<AnalyticsMonitorItem> = items
         .iter()
         .map(|item| {
-            let gmt_create = item.gmt_create.as_ref().and_then(|s| {
-                chrono::DateTime::from_timestamp(s.unix_timestamp(), 0)
-                    .map(|t| t.with_timezone(&chrono::Local).format("%H:%M").to_string())
-            });
+            let gmt_create = date_format(item.gmt_create.as_ref(), HH_MM_FORMAT);
             convert_tb_analytics_monitor_cluster(item, gmt_create)
         })
         .collect();
@@ -66,10 +63,7 @@ pub async fn get_analytics_monitor_server(
     let mut items: Vec<AnalyticsMonitorItem> = items
         .iter()
         .map(|item| {
-            let gmt_create = item.gmt_create.as_ref().and_then(|s| {
-                chrono::DateTime::from_timestamp(s.unix_timestamp(), 0)
-                    .map(|t| t.with_timezone(&chrono::Local).format("%H:%M").to_string())
-            });
+            let gmt_create = date_format(item.gmt_create.as_ref(), HH_MM_FORMAT);
             convert_tb_analytics_monitor(item, gmt_create)
         })
         .collect();
@@ -86,7 +80,7 @@ pub(crate) async fn analytics_monitor_minute(
     let mointor_items = TbAnalyticsMonitorCluster::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.timestamp()),
+        DateTime::from_timestamp(task.end_time.unix_timestamp()),
     )
     .await?;
 
@@ -103,8 +97,8 @@ pub(crate) async fn analytics_monitor_minute(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.timestamp()),
-                DateTime::from_timestamp(new_end_time.timestamp()),
+                DateTime::from_timestamp(task.end_time.unix_timestamp()),
+                DateTime::from_timestamp(new_end_time.unix_timestamp()),
             )
             .await?;
 
@@ -133,7 +127,7 @@ pub(crate) async fn analytics_monitor_hour(
     let monitor_item = TbAnalyticsMonitorClusterHour::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.timestamp()),
+        DateTime::from_timestamp(task.end_time.unix_timestamp()),
     )
     .await?;
 
@@ -150,8 +144,8 @@ pub(crate) async fn analytics_monitor_hour(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.timestamp()),
-                DateTime::from_timestamp(new_end_time.timestamp()),
+                DateTime::from_timestamp(task.end_time.unix_timestamp()),
+                DateTime::from_timestamp(new_end_time.unix_timestamp()),
             )
             .await?;
 

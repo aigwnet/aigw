@@ -12,7 +12,6 @@ anyhow = {workspace = true}
 arc-swap = {workspace = true}
 async-trait = {version = "0.1"}
 bytes = {version = "1"}
-chrono = {version = "0.4"}
 clap = {workspace = true}
 daemonize = {workspace = true}
 dashmap = {version = "6"}
@@ -38,7 +37,7 @@ pingora-load-balancing = {workspace = true}
 pingora-proxy = {workspace = true}
 regex = {version = "1"}
 rusqlite = {version = "0.35"}
-rustls = {version = "0.23"}
+rustls = {workspace = true}
 serde = {workspace = true}
 serde_json = {workspace = true}
 sha = {workspace = true}

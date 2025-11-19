@@ -7,6 +7,7 @@ use aigw_core::{
 };
 use bytes::BytesMut;
 use sysinfo::System;
+use time::OffsetDateTime;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{
@@ -269,15 +270,9 @@ impl ConsoleClient {
             let crypto = &*crypto.read().await;
             if let Some(crypto) = crypto {
                 let log_points = storage.load_log_points().await.map_or(vec![], |v| v);
-                let now = chrono::Utc::now();
-                let ts = now.naive_utc().and_utc().timestamp_millis();
-                info!(
-                    "Ping ==> : {}.{:03}, log_points: {:?}",
-                    now.with_timezone(&chrono::Local)
-                        .format("%Y-%m-%d %H:%M:%S"),
-                    now.timestamp_subsec_millis(),
-                    log_points
-                );
+                let now = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
+                let ts = now as i64;
+                info!("Ping ==> {}  log_points: {:?}", ts, log_points);
                 let pv = storage.pv_swap();
                 let rt = if pv == 0 { 0 } else { storage.rt_swap() / pv };
 
@@ -383,13 +378,7 @@ impl ConsoleClient {
         match data_type {
             Frame::HEARTBEAT_PONG => {
                 let pong = parse_pong(buffer, crypto)?;
-                let date = chrono::DateTime::from_timestamp_millis(pong.ts).unwrap();
-                info!(
-                    "Pong <== : {}.{:03}",
-                    date.with_timezone(&chrono::Local)
-                        .format("%Y-%m-%d %H:%M:%S"),
-                    date.timestamp_subsec_millis()
-                );
+                info!("Pong <== : {}", pong.ts);
             }
             Frame::DATA => {
                 let data = parse_data(buffer, crypto)?;

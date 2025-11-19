@@ -885,10 +885,6 @@ pub struct DirectoryBuilder {
 
 impl DirectoryBuilder {
     /// Creates a new builder with the specified directory root URL.
-    ///
-    /// Let's Encrypt: `https://acme-v02.api.letsencrypt.org/directory`
-    ///
-    /// Let's Encrypt Staging: `https://acme-staging-v02.api.letsencrypt.org/directory`
     pub fn new(url: String) -> Self {
         DirectoryBuilder {
             url,

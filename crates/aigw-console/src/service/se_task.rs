@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use crate::storage::tb_task::TbTask;
-use chrono::Timelike;
 use rbatis::{executor::RBatisTxExecutor, rbdc::DateTime};
+use time::OffsetDateTime;
 
 pub(crate) struct Task {
     pub name: String,
     pub r#type: u32,
-    pub end_time: chrono::DateTime<chrono::Utc>,
+    pub end_time: OffsetDateTime,
 }
 
 pub async fn find_task(rb: &rbatis::RBatis, name: &str, r#type: u32) -> anyhow::Result<Task> {
@@ -27,7 +27,7 @@ pub async fn find_task(rb: &rbatis::RBatis, name: &str, r#type: u32) -> anyhow::
         id: None,
         name: Some(name.to_owned()),
         r#type: Some(r#type),
-        last_time: Some(DateTime::from_timestamp(end_time.timestamp())),
+        last_time: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
         gmt_create: Some(now.clone()),
         gmt_modified: Some(now),
     };
@@ -42,7 +42,7 @@ pub async fn update_task(rb: &RBatisTxExecutor, task: &Task) -> anyhow::Result<(
         id: None,
         name: None,
         r#type: None,
-        last_time: Some(DateTime::from_timestamp(task.end_time.timestamp())),
+        last_time: Some(DateTime::from_timestamp(task.end_time.unix_timestamp())),
         gmt_create: None,
         gmt_modified: Some(now),
     };
@@ -55,23 +55,16 @@ fn convert_tb_task(tb_task: TbTask) -> Task {
         name: tb_task.name.map_or("".to_string(), |s| s),
         r#type: tb_task.r#type.map_or(0, |i| i),
         end_time: tb_task.last_time.map_or(get_one_mintue_ago(), |t| {
-            chrono::DateTime::from_timestamp(t.unix_timestamp(), 0)
+            OffsetDateTime::from_unix_timestamp(t.unix_timestamp())
                 .map_or(get_one_mintue_ago(), |t| t)
         }),
     }
 }
 
-fn get_one_mintue_ago() -> chrono::DateTime<chrono::Utc> {
-    let now = chrono::Utc::now();
-    let now = now.with_second(0).unwrap();
-    let now = now.with_nanosecond(0).unwrap();
-    now - Duration::from_secs(60)
+fn get_one_mintue_ago() -> OffsetDateTime {
+    OffsetDateTime::now_utc() - Duration::from_mins(1)
 }
 
-fn get_one_hour_ago() -> chrono::DateTime<chrono::Utc> {
-    let now = chrono::Utc::now();
-    let now = now.with_minute(0).unwrap();
-    let now = now.with_second(0).unwrap();
-    let now = now.with_nanosecond(0).unwrap();
-    now - Duration::from_secs(3600)
+fn get_one_hour_ago() -> OffsetDateTime {
+    OffsetDateTime::now_utc() - Duration::from_mins(60)
 }

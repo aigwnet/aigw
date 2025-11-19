@@ -1,5 +1,6 @@
 use std::{collections::HashMap, net::SocketAddr, pin::Pin, sync::Arc, time::Duration};
 
+use ::time::OffsetDateTime;
 use aigw_core::{
     Algorithm, Buffer, CryptoCore, Frame, Shutdown, Signature, build_handshake_response,
     build_pong, parse_ack, parse_handshake_request, parse_ping,
@@ -162,7 +163,8 @@ impl Handler {
 
                         log_points.extend(ping.log_points.clone());
 
-                        build_pong(buffer, crypto, chrono::Utc::now().timestamp_millis())?;
+                        let ts = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
+                        build_pong(buffer, crypto, ts as i64)?;
                         connection.write(buffer.as_ref()).await?;
 
                         // save ping

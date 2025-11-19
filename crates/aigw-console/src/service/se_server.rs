@@ -1,8 +1,12 @@
 use aigw_core::HandshakeInfo;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
-use crate::{service::Page, storage::tb_server::TbServer};
+use crate::{
+    service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT, date_format},
+    storage::tb_server::TbServer,
+};
 
 pub async fn update_or_insert_server(
     rb: &rbatis::RBatis,
@@ -63,19 +67,14 @@ pub async fn find_server_by_page(
 
 fn convert_tb_server(server: &TbServer) -> Server {
     let gmt_create = server.gmt_create.as_ref().and_then(|s| {
-        chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
-            t.with_timezone(&chrono::Local)
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        })
+        OffsetDateTime::from_unix_timestamp(s.unix_timestamp())
+            .ok()
+            .map(|t| {
+                t.format(YYYY_MM_DD_HH_MM_SS_FORMAT)
+                    .map_or("".to_string(), |s| s)
+            })
     });
-    let gmt_modified = server.gmt_modified.as_ref().and_then(|s| {
-        chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).map(|t| {
-            t.with_timezone(&chrono::Local)
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        })
-    });
+    let gmt_modified = date_format(server.gmt_modified.as_ref(), YYYY_MM_DD_HH_MM_SS_FORMAT);
     Server {
         id: server.id,
         cluster_name: server

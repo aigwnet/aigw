@@ -4,6 +4,7 @@ mod traffic;
 pub use monitor::AnalyticsMonitorItem;
 pub use monitor::get_analytics_monitor;
 pub use monitor::get_analytics_monitor_server;
+use time::OffsetDateTime;
 pub use traffic::AnalyticsTrafficItem;
 pub use traffic::ExtInfo;
 pub use traffic::get_analytics_traffic;
@@ -157,7 +158,7 @@ async fn do_start_analytics_minute(rb: &RBatis) -> anyhow::Result<()> {
         let mut end_time = task.end_time;
         let mut new_end_time = task.end_time + Duration::from_secs(60);
 
-        while new_end_time.timestamp() < DateTime::utc().unix_timestamp() {
+        while new_end_time.unix_timestamp() < DateTime::utc().unix_timestamp() {
             let (monitor_item, monitor_size) =
                 analytics_monitor_minute(rb, &cluster_name, &task).await?;
             let traffic_item = analytics_traffic_minute(rb, &cluster_name, &task).await?;
@@ -222,7 +223,7 @@ async fn do_start_analytics_hour(rb: &RBatis) -> anyhow::Result<()> {
         let mut end_time = task.end_time;
         let mut new_end_time = task.end_time + Duration::from_secs(3600);
 
-        while new_end_time.timestamp() < DateTime::utc().unix_timestamp() {
+        while new_end_time.unix_timestamp() < DateTime::utc().unix_timestamp() {
             let (monitor_item, monitor_size) =
                 analytics_monitor_hour(rb, &cluster_name, &task).await?;
             let traffic_item = analytics_traffic_hour(rb, &cluster_name, &task).await?;
@@ -266,7 +267,7 @@ async fn do_save_cluster_minute(
     traffic_item: Option<TrafficItem>,
     cluster_name: String,
     task: &Task,
-    end_time: chrono::DateTime<chrono::Utc>,
+    end_time: OffsetDateTime,
 ) -> anyhow::Result<()> {
     if let Some(item) = monitor_item
         && monitor_size > 0
@@ -290,8 +291,8 @@ async fn do_save_cluster_minute(
                 net_received: Some(item.net_received / monitor_size as u64),
                 rt: Some(item.rt / monitor_size as u64),
                 error: Some(item.error),
-                gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
+                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
             },
         )
         .await?;
@@ -308,8 +309,8 @@ async fn do_save_cluster_minute(
                 http_country: serde_json::to_string(&item.ext_info.http_country).ok(),
                 http_code: serde_json::to_string(&item.ext_info.http_code).ok(),
                 http_source: serde_json::to_string(&item.ext_info.http_source).ok(),
-                gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
+                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
             },
         )
         .await?;
@@ -326,7 +327,7 @@ async fn do_save_cluster_hour(
     traffic_item: Option<TrafficItem>,
     cluster_name: String,
     task: &Task,
-    end_time: chrono::DateTime<chrono::Utc>,
+    end_time: OffsetDateTime,
 ) -> anyhow::Result<()> {
     if monitor_size == 0 {
         return Ok(());
@@ -353,8 +354,8 @@ async fn do_save_cluster_hour(
                 net_received: Some(item.net_received / monitor_size as u64),
                 rt: Some(item.rt / monitor_size as u64),
                 error: Some(item.error),
-                gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
+                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
             },
         )
         .await?;
@@ -371,8 +372,8 @@ async fn do_save_cluster_hour(
                 http_country: serde_json::to_string(&item.ext_info.http_country).ok(),
                 http_code: serde_json::to_string(&item.ext_info.http_code).ok(),
                 http_source: serde_json::to_string(&item.ext_info.http_source).ok(),
-                gmt_create: Some(DateTime::from_timestamp(end_time.timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.timestamp())),
+                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
             },
         )
         .await?;

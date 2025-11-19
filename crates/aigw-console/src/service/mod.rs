@@ -13,6 +13,7 @@ mod se_task;
 mod se_user;
 
 pub(crate) use acme::*;
+use rbatis::rbdc::DateTime;
 pub(crate) use se_acme::apply_cert;
 pub(crate) use se_acme::renew_certs;
 pub(crate) use se_analytics::AnalyticsMonitorItem;
@@ -62,6 +63,19 @@ pub(crate) use se_user::update_profile;
 
 use serde::Deserialize;
 use serde::Serialize;
+use time::OffsetDateTime;
+use time::format_description::BorrowedFormatItem;
+use time::macros::format_description;
+
+pub(crate) static HH_FORMAT: &[BorrowedFormatItem<'static>] = format_description!("[hour]");
+pub(crate) static HH_MM_FORMAT: &[BorrowedFormatItem<'static>] =
+    format_description!("[hour]:[minute]");
+pub(crate) static MM_DD_FORMAT: &[BorrowedFormatItem<'static>] =
+    format_description!("[month]-[day]");
+pub(crate) static YYYY_MM_DD_FORMAT: &[BorrowedFormatItem<'static>] =
+    format_description!("[year]-[month]-[day]");
+pub(crate) static YYYY_MM_DD_HH_MM_SS_FORMAT: &[BorrowedFormatItem<'static>] =
+    format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct Page<T: Send + Sync> {
@@ -105,4 +119,15 @@ impl<T: Send + Sync> Page<T> {
 pub struct Certificate {
     pub tls_private_key: String,
     pub tls_cert: String,
+}
+
+pub(crate) fn date_format(
+    date: Option<&DateTime>,
+    format: &[BorrowedFormatItem<'_>],
+) -> Option<String> {
+    date.and_then(|date| {
+        OffsetDateTime::from_unix_timestamp(date.unix_timestamp())
+            .ok()
+            .and_then(|t| t.format(format).map_or(None, |s| Some(s)))
+    })
 }
