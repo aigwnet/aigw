@@ -65,7 +65,7 @@ pub async fn apply_cert(
     email: &str,
     domains: &[&str],
 ) -> anyhow::Result<Certificate> {
-    info!("Start to apply cert: {}, {:?}", email, domains);
+    info!(target:"certificate", "Start to apply cert: {}, {:?}", email, domains);
     if domains.is_empty() {
         return Err(anyhow!("Domain is blank."));
     }
