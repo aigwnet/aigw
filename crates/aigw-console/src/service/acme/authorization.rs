@@ -9,12 +9,11 @@ use sha::{
 };
 use tracing::debug;
 
-use crate::service::{Identifier, acme::{
-    account::Account,
-    error::{Error, ServerError},
-    jws::Jwk,
-    order::Order,
-}, b64};
+use crate::service::{
+    Identifier,
+    acme::{ServerError, account::Account, jws::Jwk, order::Order},
+    b64,
+};
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -111,7 +110,7 @@ impl Order {
         let mut authorizations = vec![];
 
         for authorization_url in self.authorization_urls.clone() {
-            let (res, _) = directory
+            let (mut authorization, _) = directory
                 .authenticated_request::<_, Authorization>(
                     &authorization_url,
                     "",
@@ -119,10 +118,6 @@ impl Order {
                     Some(account.id.clone()),
                 )
                 .await?;
-
-            let res: Result<Authorization, Error> = res.into();
-
-            let mut authorization = res?;
             authorization.account = Some(account.clone());
             authorization.url = authorization_url;
             for challenge in &mut authorization.challenges {
@@ -155,7 +150,7 @@ impl Authorization {
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
 
-        let (res, _) = directory
+        let (mut authorization, _) = directory
             .authenticated_request::<_, Authorization>(
                 &self.url,
                 json!(""),
@@ -163,8 +158,6 @@ impl Authorization {
                 Some(account.id.clone()),
             )
             .await?;
-        let res: Result<Authorization, Error> = res.into();
-        let mut authorization = res?;
         authorization.url = self.url.clone();
         authorization.account = Some(account.clone());
         Ok(authorization)
@@ -194,7 +187,9 @@ impl Authorization {
 
         while authorization.status == AuthorizationStatus::Pending {
             if i >= attempts {
-                return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
+                return Err(anyhow::anyhow!(
+                    "the maximum poll attempts have been exceeded"
+                ));
             }
             debug!(target:"certificate",
                 "{:?},Authorization still pending. Waiting to poll.",
@@ -251,7 +246,7 @@ impl Challenge {
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
 
-        let (res, _) = directory
+        let (mut challenge, _) = directory
             .authenticated_request::<_, Challenge>(
                 &self.url,
                 json!({}),
@@ -259,8 +254,6 @@ impl Challenge {
                 Some(account.id.clone()),
             )
             .await?;
-        let res: Result<Challenge, Error> = res.into();
-        let mut challenge = res?;
         challenge.account = Some(account.clone());
 
         Ok(challenge)
@@ -273,7 +266,7 @@ impl Challenge {
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
 
-        let (res, _) = directory
+        let (mut challenge, _) = directory
             .authenticated_request::<_, Challenge>(
                 &self.url,
                 json!(""),
@@ -281,8 +274,6 @@ impl Challenge {
                 Some(account.id.clone()),
             )
             .await?;
-        let res: Result<Challenge, Error> = res.into();
-        let mut challenge = res?;
         challenge.account = Some(account.clone());
         Ok(challenge)
     }
@@ -309,7 +300,9 @@ impl Challenge {
             || challenge.status == ChallengeStatus::Processing
         {
             if i >= attempts {
-                return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
+                return Err(anyhow::anyhow!(
+                    "the maximum poll attempts have been exceeded"
+                ));
             }
             debug!(target:"certificate",
                 "{:?}, {:?}, Challenge not done. Waiting to poll.",

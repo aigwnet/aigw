@@ -1,7 +1,6 @@
 mod account;
 mod authorization;
 mod directory;
-mod error;
 mod jws;
 mod order;
 
@@ -30,4 +29,18 @@ pub(crate) struct Identifier {
 
 pub(crate) fn b64(data: &[u8]) -> String {
     BASE64_URL_SAFE_NO_PAD.encode(data)
+}
+
+/// This is an error as returned by the ACME server.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ServerError {
+    /// The type of this error.
+    pub r#type: Option<String>,
+    /// The human readable title of this error.
+    pub title: Option<String>,
+    /// The status code of this error.
+    pub status: Option<u16>,
+    /// The human readable extra description for this error.
+    pub detail: Option<String>,
 }

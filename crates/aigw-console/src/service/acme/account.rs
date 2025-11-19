@@ -5,7 +5,7 @@ use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
 use tracing::debug;
 
-use crate::service::acme::{directory::Directory, error::Error};
+use crate::service::acme::directory::Directory;
 
 /// An ACME account. This is used to identify a subscriber to an ACME server.
 ///
@@ -99,7 +99,7 @@ impl AccountBuilder {
 
         let url = self.directory.new_account_url.clone();
 
-        let (res, headers) = self
+        let (acc, headers) = self
             .directory
             .authenticated_request::<_, AccountResponse>(
                 &url,
@@ -112,9 +112,6 @@ impl AccountBuilder {
                 None,
             )
             .await?;
-        let res: Result<AccountResponse, Error> = res.into();
-
-        let acc = res?;
 
         debug!(target: "certificate",
             "Account: {}, {:?}, {:?}",

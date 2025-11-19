@@ -5,10 +5,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tracing::debug;
 
-use crate::service::acme::{
-    error::{Error, ServerError, ServerResult},
-    jws::jws,
-};
+use crate::service::{ServerError, acme::jws::jws};
 
 /// An builder that is used create a [`Directory`].
 pub struct DirectoryBuilder {
@@ -33,13 +30,11 @@ impl DirectoryBuilder {
     ///
     /// If no http client is specified, a default client will be created using
     /// the webpki trust roots.
-    pub async fn build(&mut self) -> Result<Arc<Directory>, Error> {
+    pub async fn build(&mut self) -> anyhow::Result<Arc<Directory>> {
         let http_client = self.http_client.clone().unwrap_or_default();
 
         let resp = http_client.get(&self.url).send().await?;
-
-        let res: Result<Directory, Error> = resp.json::<ServerResult<Directory>>().await?.into();
-        let mut dir = res?;
+        let mut dir = resp.json::<Directory>().await?;
 
         dir.http_client = http_client;
         dir.nonce = Mutex::new(None);
@@ -129,7 +124,7 @@ impl Directory {
         payload: &str,
         pkey: &TlsPrivateKey,
         account_id: &Option<String>,
-    ) -> anyhow::Result<(Result<Bytes, ServerError>, reqwest::header::HeaderMap)> {
+    ) -> anyhow::Result<(Bytes, reqwest::header::HeaderMap)> {
         let mut attempt = 0;
 
         loop {
@@ -140,9 +135,8 @@ impl Directory {
                 .await?;
 
             let headers = resp.headers().clone();
-
             if resp.status().is_success() {
-                return Ok((Ok(resp.bytes().await?), headers));
+                return Ok((resp.bytes().await?, headers));
             }
 
             let err: ServerError = resp.json().await?;
@@ -155,7 +149,7 @@ impl Directory {
                 continue;
             }
 
-            return Ok((Err(err), headers));
+            return Err(anyhow::anyhow!(serde_json::to_string(&err)?));
         }
     }
 
@@ -165,7 +159,7 @@ impl Directory {
         payload: T,
         pkey: &TlsPrivateKey,
         account_id: Option<String>,
-    ) -> anyhow::Result<(ServerResult<R>, reqwest::header::HeaderMap)>
+    ) -> anyhow::Result<(R, reqwest::header::HeaderMap)>
     where
         T: Serialize,
         R: DeserializeOwned,
@@ -177,16 +171,12 @@ impl Directory {
             payload
         };
 
-        let (res, headers) = self
+        let (bytes, headers) = self
             .authenticated_request_bytes(url, &payload, pkey, &account_id)
             .await?;
-        let bytes = match res {
-            Ok(bytes) => bytes,
-            Err(err) => return Ok((ServerResult::Err(err), headers)),
-        };
 
         let val: R = serde_json::from_slice(&bytes)?;
 
-        Ok((ServerResult::Ok(val), headers))
+        Ok((val, headers))
     }
 }

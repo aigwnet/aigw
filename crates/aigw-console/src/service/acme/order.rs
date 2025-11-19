@@ -7,10 +7,7 @@ use tracing::debug;
 
 use crate::service::{
     Identifier,
-    acme::{
-        account::Account,
-        error::{Error, ServerError},
-    },
+    acme::{ServerError, account::Account},
     b64,
 };
 
@@ -102,7 +99,7 @@ impl OrderBuilder {
     pub async fn build(&mut self) -> anyhow::Result<Order> {
         let dir = self.account.directory.clone().unwrap();
 
-        let (res, headers) = dir
+        let (mut order, headers) = dir
             .authenticated_request::<_, Order>(
                 &dir.new_order_url,
                 json!({
@@ -112,9 +109,6 @@ impl OrderBuilder {
                 Some(self.account.id.clone()),
             )
             .await?;
-
-        let res: Result<Order, Error> = res.into();
-        let mut order = res?;
 
         let order_url = headers
             .get(reqwest::header::LOCATION)
@@ -171,7 +165,7 @@ impl Order {
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
 
-        let (res, _) = directory
+        let (mut order, _) = directory
             .authenticated_request::<_, Order>(
                 &self.finalize_url,
                 json!({ "csr": csr_b64 }),
@@ -179,9 +173,6 @@ impl Order {
                 Some(account.id.clone()),
             )
             .await?;
-        let res: Result<Order, Error> = res.into();
-        let mut order = res?;
-
         order.account = Some(account.clone());
         order.url = self.url.clone();
         Ok(order)
@@ -206,7 +197,7 @@ impl Order {
                 &Some(account.id.clone()),
             )
             .await?
-            .0?;
+            .0;
 
         Ok(String::from_utf8_lossy(&bytes[..]).to_string())
     }
@@ -218,7 +209,7 @@ impl Order {
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
 
-        let (res, _) = directory
+        let (mut order, _) = directory
             .authenticated_request::<_, Order>(
                 &self.url,
                 json!(""),
@@ -226,8 +217,6 @@ impl Order {
                 Some(account.id.clone()),
             )
             .await?;
-        let res: Result<Order, Error> = res.into();
-        let mut order = res?;
         order.account = Some(account.clone());
         order.url = self.url.clone();
         Ok(order)
@@ -255,7 +244,9 @@ impl Order {
 
         while order.status == OrderStatus::Pending {
             if i >= attempts {
-                return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
+                return Err(anyhow::anyhow!(
+                    "the maximum poll attempts have been exceeded"
+                ));
             }
             debug!(target:"certificate", "{:?}, Order still pending. Waiting to poll.", poll_interval);
             tokio::time::sleep(poll_interval).await;
@@ -292,7 +283,9 @@ impl Order {
             || order.status == OrderStatus::Processing
         {
             if i >= attempts {
-                return Err(anyhow::anyhow!(Error::MaxAttemptsExceeded));
+                return Err(anyhow::anyhow!(
+                    "the maximum poll attempts have been exceeded"
+                ));
             }
             debug!(
                 target:"certificate", "delay = {:?}, status = {:?} Order not done. Waiting to poll.",
