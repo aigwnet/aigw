@@ -291,18 +291,18 @@ impl Storage {
     }
 
     fn fill_certified_key(&self, site: &mut Site) -> anyhow::Result<()> {
-        if let Some(key) = &site.tls_private_key {
-            if let Some(c) = &site.tls_cert {
-                let mut certs = vec![c.cert.cert().clone()];
-                for c in &c.cert_chain {
-                    certs.push(c.cert().clone());
-                }
-                let private_key = self
-                    .crypto_provider
-                    .key_provider
-                    .load_private_key(key.0.clone_key())?;
-                site.certified_key = Some(Arc::new(CertifiedKey::new(certs, private_key)));
+        if let Some(key) = &site.tls_private_key
+            && let Some(c) = &site.tls_cert
+        {
+            let mut certs = vec![c.cert.cert().clone()];
+            for c in &c.cert_chain {
+                certs.push(c.cert().clone());
             }
+            let private_key = self
+                .crypto_provider
+                .key_provider
+                .load_private_key(key.0.clone_key())?;
+            site.certified_key = Some(Arc::new(CertifiedKey::new(certs, private_key)));
         }
         Ok(())
     }

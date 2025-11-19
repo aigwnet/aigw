@@ -76,7 +76,7 @@ unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
 
         let alpn_list = get_alpn(ssl);
         // A “00” here denotes the lack of ALPN.
-        let alpn = alpn_list.get(0).map_or("00", |s| s);
+        let alpn = alpn_list.first().map_or("00", |s| s);
 
         fingerprint += &format!("{:02}", ciphers_len);
         fingerprint += &format!("{:02}", extensions_len);
@@ -87,7 +87,7 @@ unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
         //info!(target: "test", "Ciphers: {}, Ciphers Hash: {}", &ciphers, &ciphers_hash);
         //info!(target: "test", "Extensions: {}, Extensions Hash:  {}", &extensions, extensions_hash);
 
-        return (fingerprint, fingerprint_origin);
+        (fingerprint, fingerprint_origin)
     }
 }
 
@@ -133,13 +133,11 @@ unsafe fn get_version(ssl: *mut SSL) -> u16 {
             }
         }
 
-        let version = if highest_supported_tls_client_version > 0 {
+        if highest_supported_tls_client_version > 0 {
             highest_supported_tls_client_version
         } else {
             legacy_version
-        };
-
-        version
+        }
     }
 }
 
@@ -207,7 +205,6 @@ unsafe fn get_alpn(ssl: *mut SSL) -> Vec<String> {
             && !alpn_data.is_null()
             && alpn_len >= 2
         {
-            let alpn_len = alpn_len as usize;
             // Example: [0, 12, 2, 104, 50, 8, 104, 116, 116, 112, 47, 49, 46, 49]
             let data = slice::from_raw_parts(alpn_data, alpn_len);
             let list_len = u16::from_be_bytes([data[0], data[1]]) as usize;
@@ -256,8 +253,7 @@ unsafe fn get_alpn(ssl: *mut SSL) -> Vec<String> {
             // info!(target: "test", "ALPN: {:?}", protocols);
         }
     }
-    //
-    return protocols;
+    protocols
 }
 
 ///
@@ -432,11 +428,25 @@ unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
 
 #[inline]
 fn is_grease(val: u16) -> bool {
-    match val {
-        0x0a0a | 0x1a1a | 0x2a2a | 0x3a3a | 0x4a4a | 0x5a5a | 0x6a6a | 0x7a7a | 0x8a8a | 0x9a9a
-        | 0xaaaa | 0xbaba | 0xcaca | 0xdada | 0xeaea | 0xfafa => true,
-        _ => false,
-    }
+    matches!(
+        val,
+        0x0a0a
+            | 0x1a1a
+            | 0x2a2a
+            | 0x3a3a
+            | 0x4a4a
+            | 0x5a5a
+            | 0x6a6a
+            | 0x7a7a
+            | 0x8a8a
+            | 0x9a9a
+            | 0xaaaa
+            | 0xbaba
+            | 0xcaca
+            | 0xdada
+            | 0xeaea
+            | 0xfafa
+    )
 }
 
 fn is_ignore(val: u16) -> bool {

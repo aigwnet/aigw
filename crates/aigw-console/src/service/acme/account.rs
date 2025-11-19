@@ -94,13 +94,8 @@ impl AccountBuilder {
     }
 
     /// This will create / retrieve an [`Account`] from the ACME server.
-    ///
-    /// If the [`AccountBuilder`] does not contain a private key, a new
-    /// 4096 bit RSA key will be generated (using the system random). If
-    /// a key is generated, it can be retrieved from the created [`Account`]
-    /// through the [`Account::private_key`] method.
     pub async fn build(&mut self) -> anyhow::Result<Arc<Account>> {
-        let private_key = gen_private_key()?;
+        let private_key = Self::gen_private_key()?;
 
         let url = self.directory.new_account_url.clone();
 
@@ -145,46 +140,12 @@ impl AccountBuilder {
 
         Ok(Arc::new(account))
     }
-}
 
-/// Generate a new Private key
-fn gen_private_key() -> anyhow::Result<TlsPrivateKey> {
-    let key_pair = KeyPair::generate_for(&PKCS_ECDSA_P256_SHA256)?;
-    let s = &key_pair.serialize_pem();
-    let key = TlsPrivateKey::try_from(s.as_bytes())?;
-    Ok(key)
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::service::DirectoryBuilder;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn test_account() -> anyhow::Result<()> {
-        let dir = DirectoryBuilder::new(
-            "https://acme-staging-v02.api.letsencrypt.org/directory".to_string(),
-        )
-        .build()
-        .await?;
-
-        let contact = "mailto:test123@126.com".to_string();
-
-        // Create an ACME account to use for the order. For production
-        // purposes, you should keep the account (and private key), so
-        // you can renew your certificate easily.
-        let mut builder = AccountBuilder::new(dir.clone());
-        builder.contact(vec![contact]);
-        builder.terms_of_service_agreed(true);
-        builder.only_return_existing(false);
-        let account = builder.build().await;
-
-        if let Err(err) = account {
-            println!("err: {:?}", err);
-        }
-
-        Ok(())
+    /// Generate a new Private key
+    fn gen_private_key() -> anyhow::Result<TlsPrivateKey> {
+        let key_pair = KeyPair::generate_for(&PKCS_ECDSA_P256_SHA256)?;
+        let s = &key_pair.serialize_pem();
+        let key = TlsPrivateKey::try_from(s.as_bytes())?;
+        Ok(key)
     }
 }

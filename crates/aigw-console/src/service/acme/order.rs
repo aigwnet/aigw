@@ -202,7 +202,7 @@ impl Order {
             .authenticated_request_bytes(
                 &certificate_url,
                 "",
-                &account.private_key.as_ref().unwrap(),
+                account.private_key.as_ref().unwrap(),
                 &Some(account.id.clone()),
             )
             .await?
