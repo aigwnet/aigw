@@ -84,7 +84,7 @@ pub async fn apply_cert(
         account.directory = Some(dir);
         Arc::new(account)
     } else {
-        error!("Get account error: {:?}", r.err());
+        debug!("Get account error: {:?}", r.err());
         let contact = "mailto:".to_string() + email;
 
         // Create an ACME account to use for the order. For production

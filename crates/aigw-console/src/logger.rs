@@ -72,7 +72,7 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
 pub fn init_logger(log_dir: &str) {
     let filter = EnvFilter::from_default_env()
         .add_directive("database=debug".parse().unwrap())
-        .add_directive("certificate=info".parse().unwrap())
+        .add_directive("certificate=debug".parse().unwrap())
         .add_directive(LevelFilter::INFO.into());
 
     let timer = fmt::time::OffsetTime::new(

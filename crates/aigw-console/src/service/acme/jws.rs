@@ -22,10 +22,10 @@ struct JwsHeader {
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Jwk {
+    crv: String,
+    kty: String,
     x: String,
     y: String,
-    kty: String,
-    crv: String,
 }
 
 impl Jwk {
