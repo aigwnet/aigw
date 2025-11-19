@@ -13,6 +13,10 @@ use aigw_core::{AcmeToken, Cluster, LogPoint, LogType, Site};
 use dashmap::DashMap;
 use pingora_limits::rate::Rate;
 use rusqlite::{Connection, params};
+use rustls::{
+    crypto::{CryptoProvider, aws_lc_rs::default_provider},
+    sign::CertifiedKey,
+};
 use tokio::sync::Mutex;
 
 use crate::server::RateLimit;
@@ -27,6 +31,7 @@ pub struct Storage {
     default_tls_site: arc_swap::ArcSwap<Option<Arc<Site>>>,
     acme_tokens: arc_swap::ArcSwap<HashMap<String, AcmeToken>>,
     counter: Counter,
+    crypto_provider: CryptoProvider,
 }
 
 #[derive(Default)]
@@ -64,6 +69,8 @@ impl Storage {
         }
         db_path.push("aigw.db");
 
+        let provider = default_provider();
+
         Ok(Self {
             data_dir: path,
             cluster: cluster.clone(),
@@ -84,6 +91,7 @@ impl Storage {
             default_tls_site: arc_swap::ArcSwap::new(Default::default()),
             acme_tokens: arc_swap::ArcSwap::new(Default::default()),
             counter: Counter::default(),
+            crypto_provider: provider,
         })
     }
 }
@@ -143,12 +151,14 @@ impl Storage {
             let path = entry.path();
             if path.is_file() {
                 let content = fs::read_to_string(&path)?;
-                let site: Site = serde_json::from_str(&content)?;
+                let mut site: Site = serde_json::from_str(&content)?;
                 if !site.cluster.eq(&self.cluster) {
                     // Delete invalid data
                     let _ = fs::remove_file(&path);
                     continue;
                 }
+
+                self.fill_certified_key(&mut site)?;
                 ss.push(Arc::new(site));
             }
         }
@@ -181,7 +191,9 @@ impl Storage {
         Ok(())
     }
 
-    pub fn add_site(&self, site: Arc<Site>) {
+    pub fn add_site(&self, mut site: Site) -> anyhow::Result<()> {
+        self.fill_certified_key(&mut site)?;
+        let site = Arc::new(site);
         let mut sites = (**self.sites.load()).clone();
         let mut rates = (**self.rates.load()).clone();
 
@@ -206,6 +218,8 @@ impl Storage {
 
         self.sites.store(Arc::new(sites));
         self.rates.store(Arc::new(rates));
+
+        Ok(())
     }
 
     pub fn remove_site(&self, site: &Site) {
@@ -274,6 +288,23 @@ impl Storage {
         }
 
         Ok(res)
+    }
+
+    fn fill_certified_key(&self, site: &mut Site) -> anyhow::Result<()> {
+        if let Some(key) = &site.tls_private_key {
+            if let Some(c) = &site.tls_cert {
+                let mut certs = vec![c.cert.cert().clone()];
+                for c in &c.cert_chain {
+                    certs.push(c.cert().clone());
+                }
+                let private_key = self
+                    .crypto_provider
+                    .key_provider
+                    .load_private_key(key.0.clone_key())?;
+                site.certified_key = Some(Arc::new(CertifiedKey::new(certs, private_key)));
+            }
+        }
+        Ok(())
     }
 }
 

@@ -59,7 +59,7 @@ impl DataFrameHandler {
                         path.push(site.name.clone() + ".json");
                         fs::write(path, serde_json::to_string_pretty(&site)?)?;
                         info!(target: "console", "{:?} site: {:?}", change_log.log_action, site.name);
-                        self.storage.add_site(Arc::new(site));
+                        self.storage.add_site(site)?;
                     }
                     LogAction::Delete => {
                         let site: Site = serde_json::from_slice(&change_log.data)?;

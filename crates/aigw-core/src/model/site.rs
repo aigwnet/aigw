@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use base64::{Engine, prelude::BASE64_STANDARD};
 use pem::Pem;
-use rustls::pki_types::PrivateKeyDer;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use x509_parser::prelude::{FromDer, X509Certificate};
@@ -63,6 +63,9 @@ pub struct Site {
 
     pub rate_limit: isize,
     pub rate_limit_unit: u64,
+
+    #[serde(skip)]
+    pub certified_key: Option<Arc<rustls::sign::CertifiedKey>>,
 }
 
 pub fn serialize_tls_private_key<S>(
@@ -157,7 +160,7 @@ pub struct X509Cert {
     subject: String,
     not_after: OffsetDateTime,
     not_before: OffsetDateTime,
-    cert: Vec<u8>,
+    cert: CertificateDer<'static>,
 }
 impl X509Cert {
     pub fn from_pem(pem: &[u8]) -> anyhow::Result<Self> {
@@ -170,12 +173,12 @@ impl X509Cert {
             subject: c.subject().to_string(),
             not_after: c.validity().not_after.to_datetime(),
             not_before: c.validity().not_before.to_datetime(),
-            cert: pem.contents().into(),
+            cert: CertificateDer::from(pem.contents().to_vec()),
         })
     }
 
     pub fn to_pem(&self) -> String {
-        let data = pem::Pem::new("CERTIFICATE", self.cert.clone());
+        let data = pem::Pem::new("CERTIFICATE", self.cert.as_ref());
         data.to_string()
     }
 
@@ -191,7 +194,7 @@ impl X509Cert {
         self.not_before
     }
 
-    pub fn cert(&self) -> &[u8] {
+    pub fn cert(&self) -> &CertificateDer<'static> {
         &self.cert
     }
 }

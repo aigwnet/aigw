@@ -213,6 +213,7 @@ async fn convert_tb_site(
             .rate_limit_unit
             .map_or(1000, |i| if i == 0 { 1000 } else { i }),
         locations: vec![],
+        certified_key: None,
     };
 
     if let Some(names) = tb_site.alt_names

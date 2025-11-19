@@ -38,6 +38,7 @@ pingora-load-balancing = {workspace = true}
 pingora-proxy = {workspace = true}
 regex = {version = "1"}
 rusqlite = {version = "0.35"}
+rustls = {version = "0.23"}
 serde = {workspace = true}
 serde_json = {workspace = true}
 sha = {workspace = true}
