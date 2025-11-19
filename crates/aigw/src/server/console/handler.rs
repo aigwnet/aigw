@@ -8,13 +8,13 @@ use crate::server::storage::Storage;
 pub struct DataFrameHandler {
     pub(crate) storage: Arc<Storage>,
     #[cfg(target_os = "linux")]
-    pub(crate) ebpf_handler: Arc<crate::server::epbf::EbpfHandler>,
+    pub(crate) ebpf_handler: Option<Arc<crate::server::epbf::EbpfHandler>>,
 }
 
 impl DataFrameHandler {
     pub fn new(
         storage: Arc<Storage>,
-        #[cfg(target_os = "linux")] ebpf_handler: Arc<crate::server::epbf::EbpfHandler>,
+        #[cfg(target_os = "linux")] ebpf_handler: Option<Arc<crate::server::epbf::EbpfHandler>>,
     ) -> Self {
         Self {
             storage,
@@ -43,8 +43,12 @@ impl DataFrameHandler {
 
                     #[cfg(target_os = "linux")]
                     {
-                        self.ebpf_handler
-                            .handle_switch(cluster.enable_white_list, cluster.enable_block_list)?;
+                        if let Some(ebpf_handler) = &self.ebpf_handler {
+                            ebpf_handler.handle_switch(
+                                cluster.enable_white_list,
+                                cluster.enable_block_list,
+                            )?;
+                        }
                     }
                     self.storage.store_cluster(Arc::new(cluster));
                 }
@@ -101,14 +105,18 @@ impl DataFrameHandler {
 
                                 let ip_list_for_update: IpUpdateList =
                                     serde_json::from_slice(&change_log.data)?;
-                                self.ebpf_handler.handle_update(ip_list_for_update)?;
+                                if let Some(ebpf_handler) = &self.ebpf_handler {
+                                    ebpf_handler.handle_update(ip_list_for_update)?;
+                                }
                             }
                             LogAction::Delete => {
                                 use aigw_core::IpDeleteList;
 
                                 let ip_list_for_delete: IpDeleteList =
                                     serde_json::from_slice(&change_log.data)?;
-                                self.ebpf_handler.handle_delete(ip_list_for_delete)?;
+                                if let Some(ebpf_handler) = &self.ebpf_handler {
+                                    ebpf_handler.handle_delete(ip_list_for_delete)?;
+                                }
                             }
                         }
                     }

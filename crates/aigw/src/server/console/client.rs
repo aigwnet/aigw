@@ -44,7 +44,7 @@ impl ConsoleClient {
         password: &str,
         cluster: String,
         sender: Arc<mpsc::Sender<Vec<u8>>>,
-        #[cfg(target_os = "linux")] ebpf_handler: Arc<crate::server::epbf::EbpfHandler>,
+        #[cfg(target_os = "linux")] ebpf_handler: Option<Arc<crate::server::epbf::EbpfHandler>>,
     ) -> Self {
         let signature = Arc::new(Signature::new(password));
         let crypto = Arc::new(RwLock::new(None));

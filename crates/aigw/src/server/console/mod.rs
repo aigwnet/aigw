@@ -29,7 +29,7 @@ impl AigwConsoleService {
         address: &str,
         password: &str,
         cluster: String,
-        #[cfg(target_os = "linux")] ebpf_handler: Arc<super::epbf::EbpfHandler>,
+        #[cfg(target_os = "linux")] ebpf_handler: Option<Arc<super::epbf::EbpfHandler>>,
     ) -> Self {
         let (tx, rx) = mpsc::channel::<Vec<u8>>(1024);
         let tx = Arc::new(tx);

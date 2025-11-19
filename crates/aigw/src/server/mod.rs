@@ -39,12 +39,18 @@ pub fn run(
     let shutdown_tx = Arc::new(shutdown_tx);
 
     #[cfg(target_os = "linux")]
-    let ebpf_handler = Arc::new({
+    let ebpf_handler = {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;
         rt.block_on(async { epbf::run(config.basic().iface(), args.ebpf.as_ref()) })
-    }?);
+    }
+    .map(|h| Arc::new(h));
+    #[cfg(target_os = "linux")]
+    if let Err(e) = &ebpf_handler {
+        use tracing::error;
+        error!("{:?}", e);
+    }
 
     let aigwc_service = AigwConsoleService::new(
         storage.clone(),
@@ -53,7 +59,7 @@ pub fn run(
         config.console().key(),
         config.console().cluster().to_string(),
         #[cfg(target_os = "linux")]
-        ebpf_handler,
+        ebpf_handler.ok(),
     );
 
     let mut works = std::thread::available_parallelism()
