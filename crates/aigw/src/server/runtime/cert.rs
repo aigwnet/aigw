@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use aigw_core::{DynamicCert, Site, TlsPrivateKey};
 use async_trait::async_trait;
-use pingora_core::{listeners::TlsAccept, protocols::tls::TlsRef, tls::ssl};
+use pingora_core::{
+    listeners::TlsAccept,
+    protocols::tls::TlsRef,
+    tls::{pkey::PKey, ssl, x509::X509},
+};
 use tracing::error;
 
 use crate::server::storage::Storage;
@@ -35,10 +39,13 @@ impl DynamicTlsAccept {
         ssl: &mut TlsRef,
     ) -> anyhow::Result<()> {
         for cert in &cert.cert_chain {
-            pingora_core::tls::ext::ssl_add_chain_cert(ssl, cert)?;
+            let cert = X509::from_der(cert.cert())?;
+            pingora_core::tls::ext::ssl_add_chain_cert(ssl, &cert)?;
         }
-        pingora_core::tls::ext::ssl_use_certificate(ssl, &cert.cert)?;
-        pingora_core::tls::ext::ssl_use_private_key(ssl, key.as_ref())?;
+        let cert = X509::from_der(cert.cert.cert())?;
+        pingora_core::tls::ext::ssl_use_certificate(ssl, &cert)?;
+        let key = PKey::private_key_from_der(key.0.secret_der())?;
+        pingora_core::tls::ext::ssl_use_private_key(ssl, &key)?;
         Ok(())
     }
 }
