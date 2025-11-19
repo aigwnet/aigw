@@ -27,6 +27,100 @@ fn b64(data: &[u8]) -> String {
     BASE64_URL_SAFE_NO_PAD.encode(data)
 }
 
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct JwsHeader {
+    nonce: String,
+    alg: String,
+    url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    kid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    jwk: Option<Jwk>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct Jwk {
+    crv: String,
+    kty: String,
+    x: String,
+    y: String,
+}
+
+impl Jwk {
+    pub fn new(key_pair: &ring::signature::EcdsaKeyPair) -> Jwk {
+        let public_key = key_pair.public_key().as_ref();
+
+        // if public_key.len() != 65 || public_key[0] != 4 {
+        //     return Err(anyhow::anyhow!("Invalid ECDSA public key"));
+        // }
+
+        let x = &public_key[1..33];
+        let y = &public_key[33..65];
+
+        Jwk {
+            kty: "EC".to_string(),
+            x: b64(x),
+            y: b64(y),
+            crv: "P-256".to_string(),
+        }
+    }
+}
+
+fn jws(
+    url: &str,
+    nonce: String,
+    payload: &str,
+    pkey: &TlsPrivateKey,
+    account_id: Option<String>,
+) -> anyhow::Result<String> {
+    let pkcs8 = pkey.0.secret_der();
+    let rand = SystemRandom::new();
+    let key_pair =
+        ring::signature::EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pkcs8, &rand)
+            .map_err(|_e| anyhow::anyhow!("from_pkcs8 error"))?;
+
+    let payload_b64 = b64(payload.as_bytes());
+
+    let mut header = JwsHeader {
+        nonce,
+        alg: "ES256".into(),
+        url: url.to_string(),
+        ..Default::default()
+    };
+
+    if let Some(kid) = account_id {
+        header.kid = kid.into();
+    } else {
+        header.jwk = Some(Jwk::new(&key_pair));
+    }
+
+    let protected_b64 = b64(&serde_json::to_string(&header)?.into_bytes());
+
+    let signature_b64 = {
+        let data = &format!("{}.{}", protected_b64, payload_b64).into_bytes();
+        let r = key_pair
+            .sign(&rand, data)
+            .map_err(|_e| anyhow::anyhow!("sign error"))?;
+        b64(r.as_ref())
+    };
+
+    Ok(serde_json::to_string(&json!({
+      "protected": protected_b64,
+      "payload": payload_b64,
+      "signature": signature_b64
+    }))?)
+}
+
+fn extract_nonce_from_response(resp: &reqwest::Response) -> anyhow::Result<Option<String>> {
+    let headers = resp.headers();
+    let maybe_nonce_res = headers.get("replay-nonce");
+    if let Some(hv) = maybe_nonce_res {
+        Ok(Some(hv.to_str()?.to_string()))
+    } else {
+        Ok(None)
+    }
+}
+
 /// This is an error as returned by the ACME server.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -468,7 +562,7 @@ impl Order {
     /// Update the order to match the current server state.
     ///
     /// Most users should use [`Order::wait_ready`] or [`Order::wait_done`].
-    pub async fn poll(&self) -> anyhow::Result<Order> {
+    async fn poll(&self) -> anyhow::Result<Order> {
         let account = self.account.clone().unwrap();
         let directory = account.directory.clone().unwrap();
 
@@ -496,7 +590,7 @@ impl Order {
     /// Specify the interval at which to poll the acme server, and how often to
     /// attempt polling before timing out. Polling should not happen faster than
     /// about every 5 seconds to avoid rate limits in the acme server.
-    pub async fn wait_ready(
+    pub(crate) async fn wait_ready(
         self,
         poll_interval: Duration,
         attempts: usize,
@@ -532,7 +626,7 @@ impl Order {
     /// Specify the interval at which to poll the acme server, and how often to
     /// attempt polling before timing out. Polling should not happen faster than
     /// about every 5 seconds to avoid rate limits in the acme server.
-    pub async fn wait_done(
+    pub(crate) async fn wait_done(
         self,
         poll_interval: Duration,
         attempts: usize,
@@ -783,90 +877,6 @@ impl Challenge {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
-struct JwsHeader {
-    nonce: String,
-    alg: String,
-    url: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    kid: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    jwk: Option<Jwk>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default)]
-struct Jwk {
-    crv: String,
-    kty: String,
-    x: String,
-    y: String,
-}
-
-impl Jwk {
-    pub fn new(key_pair: &ring::signature::EcdsaKeyPair) -> Jwk {
-        let public_key = key_pair.public_key().as_ref();
-
-        // if public_key.len() != 65 || public_key[0] != 4 {
-        //     return Err(anyhow::anyhow!("Invalid ECDSA public key"));
-        // }
-
-        let x = &public_key[1..33];
-        let y = &public_key[33..65];
-
-        Jwk {
-            kty: "EC".to_string(),
-            x: b64(x),
-            y: b64(y),
-            crv: "P-256".to_string(),
-        }
-    }
-}
-
-pub(crate) fn jws(
-    url: &str,
-    nonce: String,
-    payload: &str,
-    pkey: &TlsPrivateKey,
-    account_id: Option<String>,
-) -> anyhow::Result<String> {
-    let pkcs8 = pkey.0.secret_der();
-    let rand = SystemRandom::new();
-    let key_pair =
-        ring::signature::EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pkcs8, &rand)
-            .map_err(|_e| anyhow::anyhow!("from_pkcs8 error"))?;
-
-    let payload_b64 = b64(payload.as_bytes());
-
-    let mut header = JwsHeader {
-        nonce,
-        alg: "ES256".into(),
-        url: url.to_string(),
-        ..Default::default()
-    };
-
-    if let Some(kid) = account_id {
-        header.kid = kid.into();
-    } else {
-        header.jwk = Some(Jwk::new(&key_pair));
-    }
-
-    let protected_b64 = b64(&serde_json::to_string(&header)?.into_bytes());
-
-    let signature_b64 = {
-        let data = &format!("{}.{}", protected_b64, payload_b64).into_bytes();
-        let r = key_pair
-            .sign(&rand, data)
-            .map_err(|_e| anyhow::anyhow!("sign error"))?;
-        b64(r.as_ref())
-    };
-
-    Ok(serde_json::to_string(&json!({
-      "protected": protected_b64,
-      "payload": payload_b64,
-      "signature": signature_b64
-    }))?)
-}
-
 /// An builder that is used create a [`Directory`].
 pub struct DirectoryBuilder {
     url: String,
@@ -925,18 +935,8 @@ pub struct Directory {
     pub(crate) key_change_url: String,
 }
 
-fn extract_nonce_from_response(resp: &reqwest::Response) -> anyhow::Result<Option<String>> {
-    let headers = resp.headers();
-    let maybe_nonce_res = headers.get("replay-nonce");
-    if let Some(hv) = maybe_nonce_res {
-        Ok(Some(hv.to_str()?.to_string()))
-    } else {
-        Ok(None)
-    }
-}
-
 impl Directory {
-    pub(crate) async fn get_nonce(&self) -> anyhow::Result<String> {
+    async fn get_nonce(&self) -> anyhow::Result<String> {
         let maybe_nonce = {
             let mut guard = self.nonce.lock().unwrap();
             (*guard).take()
@@ -978,7 +978,7 @@ impl Directory {
         Ok(resp)
     }
 
-    pub(crate) async fn authenticated_request_bytes(
+    async fn authenticated_request_bytes(
         &self,
         url: &str,
         payload: &str,
@@ -1013,7 +1013,7 @@ impl Directory {
         }
     }
 
-    pub(crate) async fn authenticated_request<T, R>(
+    async fn authenticated_request<T, R>(
         &self,
         url: &str,
         payload: T,
