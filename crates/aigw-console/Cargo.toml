@@ -22,7 +22,6 @@ lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
 md5 = {workspace = true}
 once_cell = {workspace = true}
-openssl = {version = "0.10"}
 pingora-load-balancing = {workspace = true}
 rbatis = {version = "4.6"}
 rbdc-mysql = {version = "4.5"}

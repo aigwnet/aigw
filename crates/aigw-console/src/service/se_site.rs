@@ -7,11 +7,8 @@ use aigw_core::{
     ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
     convert_headers, convert_headers_to_string, new_path_selector, new_rewrite,
 };
-use anyhow::anyhow;
-use openssl::asn1::Asn1TimeRef;
 use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
-use tracing::error;
 
 use crate::{
     service::{Page, do_build_change_log},
@@ -81,15 +78,13 @@ pub async fn update_cert(
 
     let cert = DynamicCert::try_from(tls_cert.as_bytes())?;
 
-    let (tls_cert_start_date, tls_cert_end_date) = (
-        asn1time_to_datetime(cert.cert.not_before()).ok(),
-        asn1time_to_datetime(cert.cert.not_after()).ok(),
-    );
-
     tb_site.tls_cert = Some(tls_cert);
-    tb_site.tls_cert_start_date =
-        tls_cert_start_date.map(|d| DateTime::from_timestamp(d.timestamp()));
-    tb_site.tls_cert_end_date = tls_cert_end_date.map(|d| DateTime::from_timestamp(d.timestamp()));
+    tb_site.tls_cert_start_date = Some(DateTime::from_timestamp(
+        cert.cert.not_before().unix_timestamp(),
+    ));
+    tb_site.tls_cert_end_date = Some(DateTime::from_timestamp(
+        cert.cert.not_after().unix_timestamp(),
+    ));
     tb_site.tls_private_key = Some(tls_private_key);
     tb_site.gmt_modified = Some(now.clone());
 
@@ -322,8 +317,12 @@ async fn do_add_new_site(
     } else {
         site.tls_cert.as_ref().map_or((None, None), |cert| {
             (
-                asn1time_to_datetime(cert.cert.not_before()).ok(),
-                asn1time_to_datetime(cert.cert.not_after()).ok(),
+                Some(DateTime::from_timestamp(
+                    cert.cert.not_before().unix_timestamp(),
+                )),
+                Some(DateTime::from_timestamp(
+                    cert.cert.not_after().unix_timestamp(),
+                )),
             )
         })
     };
@@ -341,8 +340,8 @@ async fn do_add_new_site(
         tls_enforce: site.tls_enforce,
         acme_on: site.acme_on,
         tls_cert,
-        tls_cert_start_date: tls_cert_start_date.map(|d| DateTime::from_timestamp(d.timestamp())),
-        tls_cert_end_date: tls_cert_end_date.map(|d| DateTime::from_timestamp(d.timestamp())),
+        tls_cert_start_date,
+        tls_cert_end_date,
         tls_private_key,
         rate_limit: Some(site.rate_limit),
         rate_limit_unit: Some(site.rate_limit_unit),
@@ -421,8 +420,12 @@ async fn do_modify_site(
     } else {
         site.tls_cert.as_ref().map_or((None, None), |cert| {
             (
-                asn1time_to_datetime(cert.cert.not_before()).ok(),
-                asn1time_to_datetime(cert.cert.not_after()).ok(),
+                Some(DateTime::from_timestamp(
+                    cert.cert.not_before().unix_timestamp(),
+                )),
+                Some(DateTime::from_timestamp(
+                    cert.cert.not_after().unix_timestamp(),
+                )),
             )
         })
     };
@@ -434,9 +437,8 @@ async fn do_modify_site(
         String::from_utf8_unchecked(item.as_os_str().as_encoded_bytes().to_vec())
     });
     tb_site.tls_cert = tls_cert;
-    tb_site.tls_cert_start_date =
-        tls_cert_start_date.map(|d| DateTime::from_timestamp(d.timestamp()));
-    tb_site.tls_cert_end_date = tls_cert_end_date.map(|d| DateTime::from_timestamp(d.timestamp()));
+    tb_site.tls_cert_start_date = tls_cert_start_date;
+    tb_site.tls_cert_end_date = tls_cert_end_date;
     tb_site.tls_private_key = tls_private_key;
     tb_site.rate_limit = Some(site.rate_limit);
     tb_site.rate_limit_unit = Some(site.rate_limit_unit);
@@ -613,19 +615,4 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
         }),
         auto_index: if location.auto_index { 1 } else { 0 },
     }
-}
-
-pub fn asn1time_to_datetime(
-    asn1_time: &Asn1TimeRef,
-) -> anyhow::Result<chrono::DateTime<chrono::Utc>> {
-    let time_str = asn1_time.to_string().replace("GMT", "+00:00"); //"Jun 10 04:53:12 2025 GMT"
-
-    let r = chrono::DateTime::parse_from_str(&time_str, "%b %d %H:%M:%S %Y %z");
-    if let Err(e) = r {
-        error!("pasrse time error: {}, {:?}", time_str, e);
-        return Err(anyhow!(e));
-    }
-    let datetime = r?.with_timezone(&chrono::Utc);
-
-    Ok(datetime)
 }

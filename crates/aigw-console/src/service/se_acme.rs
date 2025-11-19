@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use crate::{
     service::{
         Account, AccountBuilder, AuthorizationStatus, Certificate, ChallengeStatus,
-        DirectoryBuilder, OrderBuilder, OrderStatus, gen_rsa_private_key,
+        DirectoryBuilder, OrderBuilder, OrderStatus,
         se_changlog::do_build_change_log,
         se_lock,
         se_user::{self, UserExtInfo, find_default_user},
@@ -11,15 +11,24 @@ use crate::{
     },
     storage::{db::DatabaseClient, tb_site::TbSite, tb_user::TbUser},
 };
-use aigw_core::{AcmeToken, ChangeLog, LOCAL_IP, LogAction, LogType};
+use aigw_core::{AcmeToken, ChangeLog, LOCAL_IP, LogAction, LogType, TlsPrivateKey};
 use anyhow::anyhow;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rbatis::{PageRequest, RBatis};
+use rcgen::{KeyPair, PKCS_RSA_SHA512};
 use tokio::{sync::mpsc::Sender, time::interval};
 use tracing::{debug, error, info};
 
 const LETS_ENCRYPT_URL: &str = "https://acme-v02.api.letsencrypt.org/directory";
 // const LETS_ENCRYPT_URL: &str = "https://acme-staging-v02.api.letsencrypt.org/directory";
+
+/// Generate a new RSA Private key
+fn gen_rsa_private_key() -> anyhow::Result<TlsPrivateKey> {
+    let key_pair = KeyPair::generate_for(&PKCS_RSA_SHA512)?;
+    let s = &key_pair.serialize_pem();
+    let key = TlsPrivateKey::try_from(s.as_bytes())?;
+    Ok(key)
+}
 
 async fn get_account(rb: &RBatis, email: &str) -> anyhow::Result<Account> {
     let user = TbUser::select_by_email(rb, email)

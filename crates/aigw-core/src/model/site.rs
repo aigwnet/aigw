@@ -1,11 +1,11 @@
 use std::{path::PathBuf, sync::Arc};
 
 use base64::{Engine, prelude::BASE64_STANDARD};
-use pingora_core::tls::{
-    pkey::{PKey, Private},
-    x509::X509,
-};
+use pem::Pem;
+use rustls::pki_types::PrivateKeyDer;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
+use x509_parser::prelude::{FromDer, X509Certificate};
 
 use super::location::ProxyLocation;
 
@@ -97,9 +97,9 @@ where
         .decode(key)
         .map_err(|_| serde::de::Error::custom("Private key base64 decode error"))?;
 
-    let key = PKey::private_key_from_pem(&key)
+    let key = TlsPrivateKey::try_from(&key[..])
         .map_err(|_| serde::de::Error::custom("Private key pem format error"))?;
-    Ok(Some(TlsPrivateKey(key)))
+    Ok(Some(key))
 }
 
 fn serialize_locs<S>(value: &[Arc<ProxyLocation>], serializer: S) -> Result<S::Ok, S::Error>
@@ -124,13 +124,14 @@ where
     Ok(items)
 }
 
-#[derive(Debug, Clone)]
-pub struct TlsPrivateKey(pub PKey<Private>);
+#[derive(Debug)]
+pub struct TlsPrivateKey(pub PrivateKeyDer<'static>);
 
 impl TlsPrivateKey {
     pub fn try_to_string(&self) -> anyhow::Result<String> {
-        let key = self.0.private_key_to_pem_pkcs8()?;
-        Ok(unsafe { String::from_utf8_unchecked(key) })
+        let key = self.0.secret_der();
+        let pem = Pem::new("PRIVATE KEY", key);
+        Ok(pem.to_string())
     }
 }
 
@@ -138,32 +139,72 @@ impl TryFrom<&[u8]> for TlsPrivateKey {
     type Error = anyhow::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let key = PKey::private_key_from_pem(value)?;
+        let pem = pem::parse(value)?;
+        let key = PrivateKeyDer::try_from(pem.contents().to_vec())
+            .map_err(|_| anyhow::anyhow!("Parse TlsPrivateKey error."))?;
         Ok(TlsPrivateKey(key))
-    }
-}
-
-impl AsRef<PKey<Private>> for TlsPrivateKey {
-    fn as_ref(&self) -> &PKey<Private> {
-        &self.0
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct DynamicCert {
-    pub cert: X509,
-    pub cert_chain: Vec<X509>,
+    pub cert: X509Cert,
+    pub cert_chain: Vec<X509Cert>,
+}
+
+#[derive(Debug, Clone)]
+pub struct X509Cert {
+    subject: String,
+    not_after: OffsetDateTime,
+    not_before: OffsetDateTime,
+    cert: Vec<u8>,
+}
+impl X509Cert {
+    pub fn from_pem(pem: &[u8]) -> anyhow::Result<Self> {
+        let pem = pem::parse(pem)?;
+        if pem.tag() != "CERTIFICATE" {
+            return Err(anyhow::anyhow!("PEM is not a certificate"));
+        }
+        let (_, c) = X509Certificate::from_der(pem.contents())?;
+        Ok(Self {
+            subject: c.subject().to_string(),
+            not_after: c.validity().not_after.to_datetime(),
+            not_before: c.validity().not_before.to_datetime(),
+            cert: pem.contents().into(),
+        })
+    }
+
+    pub fn to_pem(&self) -> String {
+        let data = pem::Pem::new("CERTIFICATE", self.cert.clone());
+        data.to_string()
+    }
+
+    pub fn subject(&self) -> &str {
+        &self.subject
+    }
+
+    pub fn not_after(&self) -> OffsetDateTime {
+        self.not_after
+    }
+
+    pub fn not_before(&self) -> OffsetDateTime {
+        self.not_before
+    }
+
+    pub fn cert(&self) -> &[u8] {
+        &self.cert
+    }
 }
 
 impl DynamicCert {
     pub fn try_to_string(&self) -> anyhow::Result<String> {
         let mut s = String::new();
-        let cert = self.cert.to_pem()?;
-        s += unsafe { String::from_utf8_unchecked(cert) }.as_str();
+        let cert = self.cert.to_pem();
+        s += cert.as_str();
 
         for cert in &self.cert_chain {
-            let cert = cert.to_pem()?;
-            s += unsafe { String::from_utf8_unchecked(cert) }.as_str();
+            let cert = cert.to_pem();
+            s += cert.as_str();
         }
 
         Ok(s)
@@ -178,7 +219,7 @@ impl TryFrom<&[u8]> for DynamicCert {
 
         let mut certs = vec![];
         for p in pems {
-            let cert = X509::from_pem(p.to_string().as_bytes())?;
+            let cert = X509Cert::from_pem(p.to_string().as_bytes())?;
             certs.push(cert);
         }
 

@@ -1,15 +1,16 @@
 use aigw_core::{TlsPrivateKey, deserialize_tls_private_key, serialize_tls_private_key};
+use rcgen::{KeyPair, PKCS_ECDSA_P256_SHA256};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
 use tracing::debug;
 
-use crate::service::acme::{directory::Directory, error::Error, helpers::gen_rsa_private_key};
+use crate::service::acme::{directory::Directory, error::Error};
 
 /// An ACME account. This is used to identify a subscriber to an ACME server.
 ///
 /// This resource should be created through an [`AccountBuilder`].
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Account {
     #[serde(skip)]
     pub(crate) directory: Option<Arc<Directory>>,
@@ -99,7 +100,7 @@ impl AccountBuilder {
     /// a key is generated, it can be retrieved from the created [`Account`]
     /// through the [`Account::private_key`] method.
     pub async fn build(&mut self) -> anyhow::Result<Arc<Account>> {
-        let private_key = gen_rsa_private_key()?;
+        let private_key = gen_private_key()?;
 
         let url = self.directory.new_account_url.clone();
 
@@ -146,6 +147,14 @@ impl AccountBuilder {
     }
 }
 
+/// Generate a new Private key
+fn gen_private_key() -> anyhow::Result<TlsPrivateKey> {
+    let key_pair = KeyPair::generate_for(&PKCS_ECDSA_P256_SHA256)?;
+    let s = &key_pair.serialize_pem();
+    let key = TlsPrivateKey::try_from(s.as_bytes())?;
+    Ok(key)
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -155,10 +164,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_account() -> anyhow::Result<()> {
-        let dir =
-            DirectoryBuilder::new("https://acme-staging-v02.api.letsencrypt.org/directory".to_string())
-                .build()
-                .await?;
+        let dir = DirectoryBuilder::new(
+            "https://acme-staging-v02.api.letsencrypt.org/directory".to_string(),
+        )
+        .build()
+        .await?;
 
         let contact = "mailto:test123@126.com".to_string();
 

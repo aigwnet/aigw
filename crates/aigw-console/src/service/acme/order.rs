@@ -5,10 +5,13 @@ use serde_json::json;
 use std::{sync::Arc, time::Duration};
 use tracing::debug;
 
-use crate::service::acme::{
-    account::Account,
-    error::{Error, ServerError},
-    helpers::{Identifier, b64},
+use crate::service::{
+    Identifier,
+    acme::{
+        account::Account,
+        error::{Error, ServerError},
+    },
+    b64,
 };
 
 /// The status of this order.
@@ -199,13 +202,11 @@ impl Order {
             .authenticated_request_bytes(
                 &certificate_url,
                 "",
-                &account.private_key.clone().unwrap(),
+                &account.private_key.as_ref().unwrap(),
                 &Some(account.id.clone()),
             )
             .await?
             .0?;
-
-        // X509::stack_from_pem(&bytes)?
 
         Ok(String::from_utf8_lossy(&bytes[..]).to_string())
     }

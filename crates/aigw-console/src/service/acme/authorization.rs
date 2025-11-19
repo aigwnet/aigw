@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use ring::{rand::SystemRandom, signature::ECDSA_P256_SHA256_FIXED_SIGNING};
 use serde::Deserialize;
 use serde_json::json;
 use sha::{
@@ -8,13 +9,12 @@ use sha::{
 };
 use tracing::debug;
 
-use crate::service::acme::{
+use crate::service::{Identifier, acme::{
     account::Account,
     error::{Error, ServerError},
-    helpers::{Identifier, b64},
     jws::Jwk,
     order::Order,
-};
+}, b64};
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -212,12 +212,22 @@ impl Authorization {
 impl Challenge {
     /// The key authorization is the token that the HTTP01 challenge
     /// should be serving for the ACME server to inspect.
-    pub fn key_authorization(&self) -> Result<Option<String>, Error> {
+    pub fn key_authorization(&self) -> anyhow::Result<Option<String>> {
         if let Some(token) = self.token.clone() {
             let account = self.account.clone().unwrap();
 
-            let data = &serde_json::to_string(&Jwk::new(&account.private_key.clone().unwrap()))?
-                .into_bytes();
+            let pkey = account.private_key.as_ref().unwrap();
+            let pkcs8 = pkey.0.secret_der();
+
+            let rand = SystemRandom::new();
+            let key_pair = ring::signature::EcdsaKeyPair::from_pkcs8(
+                &ECDSA_P256_SHA256_FIXED_SIGNING,
+                pkcs8,
+                &rand,
+            )
+            .map_err(|_e| anyhow::anyhow!("from_pkcs8 error"))?;
+
+            let data = &serde_json::to_string(&Jwk::new(&key_pair))?.into_bytes();
             let mut sha = sha256::Sha256::default();
             sha.digest(data);
 

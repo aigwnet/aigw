@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use aigw_core::{ChangeLog, Site};
 use anyhow::anyhow;
 use axum::{
@@ -5,6 +7,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 use rbatis::{PageRequest, RBatis};
+use time::OffsetDateTime;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error};
 
@@ -13,8 +16,8 @@ use crate::{
         ApiContext, ApiData, ApiError, ApiResponseResult, Pagination, auth::ExtractUser,
     },
     service::{
-        Page, add_site, apply_cert, asn1time_to_datetime, build_change_log_delete_site, find_site,
-        find_site_by_page, modify_site, update_cert,
+        Page, add_site, apply_cert, build_change_log_delete_site, find_site, find_site_by_page,
+        modify_site, update_cert,
     },
 };
 
@@ -105,17 +108,10 @@ impl HttpApiSite {
 
         let update_cert = !alt_names_eq
             || old_site.tls_cert.is_none_or(|cert| {
-                asn1time_to_datetime(cert.cert.not_before())
-                    .ok()
-                    .is_none_or(|d| {
-                        debug!(
-                            "{} {} {}",
-                            chrono::Utc::now().timestamp(),
-                            d.timestamp(),
-                            chrono::Utc::now().timestamp() - d.timestamp()
-                        );
-                        chrono::Utc::now().timestamp() - d.timestamp() > 30 * 24 * 3600
-                    })
+                let now = OffsetDateTime::now_utc();
+                let before = cert.cert.not_before();
+                debug!("{} {} {}", now, before, now - before);
+                (now - before) > Duration::from_secs(30 * 24 * 3600)
             });
 
         if site.tls_on && site.acme_on && update_cert {

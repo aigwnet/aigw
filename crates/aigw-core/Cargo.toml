@@ -13,20 +13,23 @@ http = {version = "1"}
 lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
 pem = {version = "3"}
-pingora-core = {workspace = true}
 pingora-http = {workspace = true}
 pingora-load-balancing = {workspace = true}
 prost = {version = "0.13"}
 protobuf = {version = "3"}
+rcgen = {version = "0.14", features = ["aws_lc_rs"]}
 regex = {version = "1"}
 ring = {version = "0.17"}
+rustls = {version = "0.23"}
 serde = {version = "1", features = ["derive"]}
 serde_json = {version = "1"}
 substring = {version = "1"}
 sysinfo = {version = "0.37"}
 thiserror = {version = "2"}
+time = {workspace = true}
 tokio = {workspace = true}
 tracing = {workspace = true}
+x509-parser = {version = "0.18"}
 
 [build-dependencies]
 prost-build = {version = "0.13"}
