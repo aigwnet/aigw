@@ -284,7 +284,7 @@ unsafe fn get_ciphers(ssl: *mut SSL) -> (u8, String, String) {
     unsafe {
         let mut ptr = std::ptr::null();
         let len = SSL_client_hello_get0_ciphers(ssl, &mut ptr);
-        if len > 0 && len % 2 == 0 {
+        if len.is_multiple_of(2) {
             let data = slice::from_raw_parts(ptr, len);
 
             let mut ciphers = data
@@ -400,7 +400,7 @@ unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
             let data = slice::from_raw_parts(sa_data, sa_len);
 
             let list_len = u16::from_be_bytes([data[0], data[1]]) as usize;
-            if list_len == 0 || list_len % 2 != 0 || list_len + 2 != sa_len {
+            if list_len == 0 || !list_len.is_multiple_of(2) || list_len + 2 != sa_len {
                 "".to_string()
             } else {
                 let data = &data[2..];

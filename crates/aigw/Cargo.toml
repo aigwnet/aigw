@@ -13,7 +13,7 @@ arc-swap = {workspace = true}
 async-trait = {version = "0.1"}
 bytes = {version = "1"}
 clap = {workspace = true}
-dashmap = {version = "6"}
+dashmap = {workspace = true}
 dyn-fmt = {version = "0.4.3"}
 hex = {workspace = true}
 hostname = {version = "0.4"}

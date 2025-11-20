@@ -1,13 +1,12 @@
 use std::{collections::HashMap, time::Duration};
 
+use aigw_core::date_format_local;
 use lazy_static::lazy_static;
 use rbatis::{PageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    service::{
-        HH_FORMAT, HH_MM_FORMAT, MM_DD_FORMAT, date_format, map::LinkedHashMap, se_task::Task,
-    },
+    service::{HH_FORMAT, HH_MM_FORMAT, MM_DD_FORMAT, map::LinkedHashMap, se_task::Task},
     storage::{
         tb_analytics_traffic::TbAnalyticsTraffic,
         tb_analytics_traffic_cluster::TbAnalyticsTrafficCluster,
@@ -72,7 +71,10 @@ pub async fn get_analytics_traffic(
     let mut items: Vec<AnalyticsTrafficItem> = items
         .iter()
         .map(|item| {
-            let gmt_create = date_format(item.gmt_create.as_ref(), HH_MM_FORMAT);
+            let gmt_create = item
+                .gmt_create
+                .as_ref()
+                .and_then(|d| date_format_local(d.unix_timestamp(), HH_MM_FORMAT));
             AnalyticsTrafficItem {
                 time: gmt_create.map_or("-".to_string(), |s| s),
                 tls: item.tls.map_or(0, |i| i),
@@ -110,7 +112,9 @@ pub async fn get_analytics_traffic_1day(
         }
 
         for a in r.records {
-            let gmt_create = date_format(a.gmt_create.as_ref(), HH_FORMAT);
+            let gmt_create = a
+                .gmt_create
+                .and_then(|d| date_format_local(d.unix_timestamp(), HH_FORMAT));
 
             if let Some(gmt_create) = gmt_create {
                 if !maps.contains(&gmt_create) {
@@ -166,7 +170,9 @@ pub async fn get_analytics_traffic_1month(
         }
 
         for a in r.records {
-            let gmt_create = date_format(a.gmt_create.as_ref(), MM_DD_FORMAT);
+            let gmt_create = a
+                .gmt_create
+                .and_then(|d| date_format_local(d.unix_timestamp(), MM_DD_FORMAT));
             if let Some(gmt_create) = gmt_create {
                 if !maps.contains(&gmt_create) {
                     maps.insert(

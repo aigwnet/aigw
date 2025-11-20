@@ -95,10 +95,7 @@ impl BroadcastServer {
 
     async fn broadcast_to_aigw(&self, changelog: ChangeLog) -> anyhow::Result<()> {
         // push the change to all aigw servers connected to this server.
-        let aigw_servers = {
-            let conn = self.connections.lock().await;
-            conn.clone()
-        };
+        let aigw_servers: Vec<_> = self.connections.iter().map(|r| r.value().clone()).collect();
 
         let log_point = LogPoint {
             log_id: changelog.log_id,
@@ -112,7 +109,7 @@ impl BroadcastServer {
 
         let mut buf = Buffer::new(128);
 
-        for (_, conn) in aigw_servers {
+        for conn in aigw_servers {
             let mut conn = conn.lock().await;
             if let Some(crypto) = &conn.crypto {
                 build_data(&mut buf, data.clone(), crypto)?;

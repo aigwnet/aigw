@@ -1,17 +1,17 @@
-use std::{collections::HashMap, fs, sync::Arc};
+use std::{fs, sync::Arc};
 
-use aigw_core::ChangeLog;
+use aigw_core::{ChangeLog, init_logger};
 use conf::AigwConsoleConfig;
+use dashmap::DashMap;
 use regex::Regex;
 use storage::db::DatabaseClient;
-use tokio::{runtime::Runtime, sync::Mutex};
+use tokio::runtime::Runtime;
 use tracing::{debug, info};
 
 use crate::args::AigwConsoleArgs;
 
 mod args;
 mod conf;
-mod logger;
 mod server;
 mod service;
 mod storage;
@@ -21,7 +21,6 @@ fn main() -> anyhow::Result<()> {
     #[cfg(unix)]
     if args.daemon {
         use aigw_core::daemonize;
-
         daemonize(
             args.user.as_ref(),
             args.group.as_ref(),
@@ -29,7 +28,14 @@ fn main() -> anyhow::Result<()> {
         );
     }
 
-    logger::init_logger(args.log_dir.as_ref().map_or("logs", |s| s));
+    let targets = DashMap::new();
+    targets.insert("certificate", "certificate");
+    targets.insert("database", "database");
+    init_logger(
+        args.log_dir.as_ref().map_or("logs", |s| s),
+        targets,
+        &["database=debug", "certificate=debug"],
+    );
 
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file
@@ -96,7 +102,7 @@ fn start(
     database_client: Arc<DatabaseClient>,
     config: Arc<AigwConsoleConfig>,
 ) -> anyhow::Result<()> {
-    let connections = Arc::new(Mutex::new(HashMap::new()));
+    let connections = Arc::new(DashMap::new());
 
     let (sender, receiver) = tokio::sync::mpsc::channel::<ChangeLog>(1024);
 

@@ -4,14 +4,13 @@ use std::{
 };
 
 use aigw_core::{
-    ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
-    convert_headers, convert_headers_to_string, new_path_selector, new_rewrite,
+    ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey, convert_headers, convert_headers_to_string, date_format_local, new_path_selector, new_rewrite
 };
 use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 
 use crate::{
-    service::{Page, YYYY_MM_DD_FORMAT, date_format, do_build_change_log},
+    service::{Page, YYYY_MM_DD_FORMAT, do_build_change_log},
     storage::{
         tb_backend::TbBackend, tb_change_log::TbChangeLog, tb_location::TbLocation, tb_site::TbSite,
     },
@@ -173,8 +172,14 @@ async fn convert_tb_site(
     let tls_cert = tb_site
         .tls_cert
         .and_then(|item| DynamicCert::try_from(item.as_bytes()).ok());
-    let tls_cert_start_date = date_format(tb_site.tls_cert_start_date.as_ref(), YYYY_MM_DD_FORMAT);
-    let tls_cert_end_date = date_format(tb_site.tls_cert_end_date.as_ref(), YYYY_MM_DD_FORMAT);
+    let tls_cert_start_date = tb_site
+        .tls_cert_start_date
+        .as_ref()
+        .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_FORMAT));
+    let tls_cert_end_date = tb_site
+        .tls_cert_end_date
+        .as_ref()
+        .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_FORMAT));
     let cluster = tb_site
         .cluster_name
         .clone()

@@ -1,26 +1,27 @@
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
-use std::fs;
-use std::io;
-use std::sync::{Arc, Mutex};
+use std::{
+    fs, io,
+    sync::{Arc, Mutex},
+};
 use time::format_description::FormatItem;
-use tracing::Level;
-use tracing::level_filters::LevelFilter;
-use tracing_appender::non_blocking::NonBlocking;
-use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt;
-use tracing_subscriber::fmt::MakeWriter;
+use tracing::{Level, level_filters::LevelFilter};
+use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
+use tracing_subscriber::{
+    EnvFilter,
+    fmt::{self, MakeWriter},
+};
 
 static WRITER_CACHE: Lazy<DashMap<String, NonBlocking>> = Lazy::new(DashMap::new);
 static GUARD_CACHE: Lazy<Mutex<Vec<WorkerGuard>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
-static TIME_FORMAT: &[FormatItem] = time::macros::format_description!(
+pub static LOGGER_TIME_FORMAT: &[FormatItem] = time::macros::format_description!(
     "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]"
 );
 
-pub struct MultiFileWriter {
+struct MultiFileWriter {
     log_dir: Arc<String>,
+    targets: DashMap<&'static str, &'static str>,
 }
 
 impl MultiFileWriter {
@@ -49,12 +50,7 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
         let key = if *meta.level() == Level::ERROR {
             "error"
         } else {
-            match meta.target() {
-                "access" => "access",
-                "test" => "test",
-                "console" => "console",
-                _ => "default",
-            }
+            self.targets.get(meta.target()).map_or("default", |s| *s)
         };
 
         Box::new(self.get_writer(key))
@@ -65,19 +61,27 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
     }
 }
 
-pub fn init_logger(log_dir: &str) {
-    let filter = EnvFilter::builder()
-        .with_default_directive(LevelFilter::INFO.into())
-        .from_env_lossy();
+pub fn init_logger(
+    log_dir: &str,
+    targets: DashMap<&'static str, &'static str>,
+    log_levels: &[&str],
+) {
+    let mut filter = EnvFilter::from_default_env();
+    for level in log_levels {
+        filter = filter.add_directive((*level).parse().unwrap());
+    }
+    filter = filter.add_directive(LevelFilter::INFO.into());
+
     let timer = fmt::time::OffsetTime::new(
         time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC),
-        TIME_FORMAT,
+        LOGGER_TIME_FORMAT,
     );
 
     tracing_subscriber::fmt()
         .with_timer(timer)
         .with_writer(MultiFileWriter {
             log_dir: Arc::new(log_dir.to_string()),
+            targets,
         })
         .with_env_filter(filter)
         .init();

@@ -1,6 +1,7 @@
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc};
 
 use connection::Connection;
+use dashmap::DashMap;
 use tokio::sync::Mutex;
 
 pub(crate) mod broadcast;
@@ -8,7 +9,7 @@ pub(crate) mod connection;
 pub(crate) mod http;
 pub(crate) mod tcp;
 
-pub(crate) type Connections = Arc<Mutex<HashMap<SocketAddr, Arc<Mutex<Connection>>>>>;
+pub(crate) type Connections = Arc<DashMap<SocketAddr, Arc<Mutex<Connection>>>>;
 
 #[cfg(test)]
 mod tests {

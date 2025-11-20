@@ -10,10 +10,12 @@ base64 = {workspace = true}
 byteorder = {version = "1"}
 bytes = {version = "1"}
 daemonize = {workspace = true}
+dashmap = {workspace = true}
 http = {version = "1"}
 lazy_static = {workspace = true}
 libc = {workspace = true}
 local-ip-address = {version = "0.6"}
+once_cell = {workspace = true}
 pem = {version = "3"}
 pingora-http = {workspace = true}
 pingora-load-balancing = {workspace = true}
@@ -31,6 +33,8 @@ thiserror = {version = "2"}
 time = {workspace = true}
 tokio = {workspace = true}
 tracing = {workspace = true}
+tracing-appender = {workspace = true}
+tracing-subscriber = {workspace = true}
 x509-parser = {version = "0.18"}
 
 [build-dependencies]

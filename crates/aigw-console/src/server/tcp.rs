@@ -55,10 +55,7 @@ impl Handler {
 
     /// Process a single connection.
     async fn run(&mut self) -> anyhow::Result<()> {
-        {
-            let mut connections = self.connections.lock().await;
-            connections.insert(self.addr, self.connection.clone());
-        }
+        self.connections.insert(self.addr, self.connection.clone());
         let mut buffer = Buffer::new(128);
 
         // As long as the shutdown signal has not been received, try to read a
@@ -216,10 +213,7 @@ impl Handler {
         }
 
         // 2) remove from connections
-        {
-            let mut connections = self.connections.lock().await;
-            connections.remove(&self.addr);
-        }
+        self.connections.remove(&self.addr);
     }
 }
 

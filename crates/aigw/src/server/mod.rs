@@ -45,7 +45,7 @@ pub fn run(
             .build()?;
         rt.block_on(async { epbf::run(config.basic().iface(), args.ebpf.as_ref()) })
     }
-    .map(|h| Arc::new(h));
+    .map(Arc::new);
     #[cfg(target_os = "linux")]
     if let Err(e) = &ebpf_handler {
         use tracing::error;

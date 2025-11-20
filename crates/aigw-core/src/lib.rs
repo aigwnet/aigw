@@ -42,6 +42,10 @@ pub use util::buf::Buffer;
 pub use util::crypto::CryptoCore;
 #[cfg(unix)]
 pub use util::daemon::daemonize;
+pub use util::date::date_format_local;
+pub use util::date::date_format_utc;
+pub use util::logger::LOGGER_TIME_FORMAT;
+pub use util::logger::init_logger;
 pub use util::protocol::*;
 pub use util::shutdown::Shutdown;
 pub use util::signature::Signature;

@@ -1,9 +1,9 @@
 use std::{collections::HashMap, net::ToSocketAddrs, sync::Arc, time::Duration};
 
 use aigw_core::{
-    Buffer, Close, CryptoCore, DataAck, Frame, HandshakeInfo, LOCAL_IP, Signature, build_ack,
-    build_close, build_handshake_request, build_ping, parse_data, parse_handshake_response,
-    parse_pong, statistics,
+    Buffer, Close, CryptoCore, DataAck, Frame, HandshakeInfo, LOCAL_IP, LOGGER_TIME_FORMAT,
+    Signature, build_ack, build_close, build_handshake_request, build_ping, date_format_local,
+    parse_data, parse_handshake_response, parse_pong, statistics,
 };
 use bytes::BytesMut;
 use sysinfo::System;
@@ -72,14 +72,14 @@ impl ConsoleClient {
             let socket_addrs = match addr.to_socket_addrs() {
                 Ok(addrs) => addrs.collect::<Vec<_>>(),
                 Err(e) => {
-                    eprintln!("Failed to resolve address {}: {}", addr, e);
+                    error!("Failed to resolve address {}: {}", addr, e);
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
             };
 
             if socket_addrs.is_empty() {
-                eprintln!("Failed to resolve address {}", addr);
+                error!("Failed to resolve address {}", addr);
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                 continue;
             }
@@ -272,7 +272,8 @@ impl ConsoleClient {
                 let log_points = storage.load_log_points().await.map_or(vec![], |v| v);
                 let now = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
                 let ts = now as i64;
-                info!("Ping ==> {}  log_points: {:?}", ts, log_points);
+                let ts_str = date_format_local(ts, LOGGER_TIME_FORMAT);
+                info!("Ping ==> {:?}  log_points: {:?}", ts_str, log_points);
                 let pv = storage.pv_swap();
                 let rt = if pv == 0 { 0 } else { storage.rt_swap() / pv };
 
@@ -378,7 +379,9 @@ impl ConsoleClient {
         match data_type {
             Frame::HEARTBEAT_PONG => {
                 let pong = parse_pong(buffer, crypto)?;
-                info!("Pong <== : {}", pong.ts);
+
+                let ts = date_format_local(pong.ts, LOGGER_TIME_FORMAT);
+                info!("Pong <== : {:?}", ts);
             }
             Frame::DATA => {
                 let data = parse_data(buffer, crypto)?;

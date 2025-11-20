@@ -2,10 +2,8 @@ use daemonize::Daemonize;
 use std::ffi::CString;
 use std::{fs, path::Path};
 
-/// Start a server instance as a daemon.
-
+/// Start an instance as a daemon.
 pub fn daemonize(user: Option<&String>, group: Option<&String>, pid_file: &str) {
-
     let daemonize = Daemonize::new()
         .umask(0o007) // allow same group to access files but not everyone else
         .pid_file(pid_file);

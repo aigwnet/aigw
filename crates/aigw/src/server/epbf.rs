@@ -62,14 +62,13 @@ pub struct EbpfHandler {
     ebpf: Mutex<Ebpf>,
 }
 
+type Ipv4AndV6Iptems = (
+    Vec<(u32, std::net::Ipv4Addr)>,
+    Vec<(u32, std::net::Ipv6Addr)>,
+);
+
 impl EbpfHandler {
-    fn parse_ip_entries(
-        &self,
-        items: Vec<(u32, String)>,
-    ) -> anyhow::Result<(
-        Vec<(u32, std::net::Ipv4Addr)>,
-        Vec<(u32, std::net::Ipv6Addr)>,
-    )> {
+    fn parse_ip_entries(&self, items: Vec<(u32, String)>) -> anyhow::Result<Ipv4AndV6Iptems> {
         let mut ipv4 = vec![];
         let mut ipv6 = vec![];
         for (prefix_len, item) in items {

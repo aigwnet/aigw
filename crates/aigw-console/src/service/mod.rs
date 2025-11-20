@@ -13,7 +13,9 @@ mod se_task;
 mod se_user;
 
 pub(crate) use acme::*;
-use rbatis::rbdc::DateTime;
+use serde::{Deserialize, Serialize};
+use time::{format_description::BorrowedFormatItem, macros::format_description};
+
 pub(crate) use se_acme::apply_cert;
 pub(crate) use se_acme::renew_certs;
 pub(crate) use se_analytics::AnalyticsMonitorItem;
@@ -60,12 +62,6 @@ pub(crate) use se_user::query_user;
 pub(crate) use se_user::token_validate;
 pub(crate) use se_user::update_password;
 pub(crate) use se_user::update_profile;
-
-use serde::Deserialize;
-use serde::Serialize;
-use time::OffsetDateTime;
-use time::format_description::BorrowedFormatItem;
-use time::macros::format_description;
 
 pub(crate) static HH_FORMAT: &[BorrowedFormatItem<'static>] = format_description!("[hour]");
 pub(crate) static HH_MM_FORMAT: &[BorrowedFormatItem<'static>] =
@@ -119,15 +115,4 @@ impl<T: Send + Sync> Page<T> {
 pub struct Certificate {
     pub tls_private_key: String,
     pub tls_cert: String,
-}
-
-pub(crate) fn date_format(
-    date: Option<&DateTime>,
-    format: &[BorrowedFormatItem<'_>],
-) -> Option<String> {
-    date.and_then(|date| {
-        OffsetDateTime::from_unix_timestamp(date.unix_timestamp())
-            .ok()
-            .and_then(|t| t.format(format).map_or(None, |s| Some(s)))
-    })
 }

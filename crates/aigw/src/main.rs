@@ -4,7 +4,8 @@ mod server;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
-mod logger;
+use aigw_core::init_logger;
+use dashmap::DashMap;
 use server::{AigwConfig, ServerOpt, Storage};
 
 use crate::server::GeoLite;
@@ -28,7 +29,11 @@ fn main() -> anyhow::Result<()> {
         args.daemon = false;
     }
 
-    logger::init_logger(args.log_dir.as_ref().map_or("logs", |s| s));
+    let targets = DashMap::new();
+    targets.insert("console", "console");
+    targets.insert("access", "access");
+    targets.insert("test", "test");
+    init_logger(args.log_dir.as_ref().map_or("logs", |s| s), targets, &[]);
 
     let config_file = if let Some(config_file) = args.config.as_ref() {
         config_file

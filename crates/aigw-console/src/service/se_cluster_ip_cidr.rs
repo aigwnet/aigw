@@ -1,9 +1,9 @@
-use aigw_core::{ChangeLog, IpUpdate, IpUpdateList, LogAction, LogType};
+use aigw_core::{ChangeLog, IpUpdate, IpUpdateList, LogAction, LogType, date_format_local};
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT, date_format, do_build_change_log},
+    service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT, do_build_change_log},
     storage::tb_cluster_ip_cidr::TbClusterIpCidr,
 };
 
@@ -77,21 +77,20 @@ pub async fn find_ip_cidr_by_page(
 }
 
 fn convert_tb_cluster_ip_cidr(tb_cluster_ip_cidr: TbClusterIpCidr) -> ClusterIpCidr {
-  
-    let start_time = date_format(
-        tb_cluster_ip_cidr.start_time.as_ref(),
-        YYYY_MM_DD_HH_MM_SS_FORMAT,
-    );
+    let start_time = tb_cluster_ip_cidr
+        .start_time
+        .as_ref()
+        .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
 
-    let end_time = date_format(
-        tb_cluster_ip_cidr.end_time.as_ref(),
-        YYYY_MM_DD_HH_MM_SS_FORMAT,
-    );
+    let end_time = tb_cluster_ip_cidr
+        .end_time
+        .as_ref()
+        .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
 
-    let gmt_modified = date_format(
-        tb_cluster_ip_cidr.gmt_modified.as_ref(),
-        YYYY_MM_DD_HH_MM_SS_FORMAT,
-    );
+    let gmt_modified = tb_cluster_ip_cidr
+        .gmt_modified
+        .as_ref()
+        .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
 
     ClusterIpCidr {
         id: tb_cluster_ip_cidr.id,
