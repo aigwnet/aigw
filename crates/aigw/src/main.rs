@@ -1,7 +1,5 @@
 use core::panic;
 use std::{fs, sync::Arc};
-#[cfg(unix)]
-mod daemon;
 mod server;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
@@ -20,7 +18,9 @@ fn main() -> anyhow::Result<()> {
 
     #[cfg(unix)]
     if args.daemon {
-        daemon::daemonize(
+        use aigw_core::daemonize;
+
+        daemonize(
             args.user.as_ref(),
             args.group.as_ref(),
             args.pid_file.as_ref().map_or("/tmp/aigw.pid", |s| s),

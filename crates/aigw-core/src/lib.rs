@@ -40,6 +40,8 @@ pub use protocol::heartbeat::Ping;
 pub use protocol::heartbeat::Pong;
 pub use util::buf::Buffer;
 pub use util::crypto::CryptoCore;
+#[cfg(unix)]
+pub use util::daemon::daemonize;
 pub use util::protocol::*;
 pub use util::shutdown::Shutdown;
 pub use util::signature::Signature;

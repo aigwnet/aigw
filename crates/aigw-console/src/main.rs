@@ -18,19 +18,15 @@ mod storage;
 
 fn main() -> anyhow::Result<()> {
     let args = AigwConsoleArgs::do_parse();
-
+    #[cfg(unix)]
     if args.daemon {
-        let mut daemonize = daemonize::Daemonize::new();
-        if let Some(user) = &args.user {
-            daemonize = daemonize.user(user as &str);
-        }
-        if let Some(group) = &args.group {
-            daemonize = daemonize.group(group as &str);
-        }
-        if let Some(pid_file) = &args.pid_file {
-            daemonize = daemonize.pid_file(pid_file).chown_pid_file(true);
-        }
-        daemonize.start()?;
+        use aigw_core::daemonize;
+
+        daemonize(
+            args.user.as_ref(),
+            args.group.as_ref(),
+            args.pid_file.as_ref().map_or("/tmp/aigwc.pid", |s| s),
+        );
     }
 
     logger::init_logger(args.log_dir.as_ref().map_or("logs", |s| s));

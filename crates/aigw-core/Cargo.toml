@@ -9,8 +9,10 @@ anyhow = {workspace = true}
 base64 = {workspace = true}
 byteorder = {version = "1"}
 bytes = {version = "1"}
+daemonize = {workspace = true}
 http = {version = "1"}
 lazy_static = {workspace = true}
+libc = {workspace = true}
 local-ip-address = {version = "0.6"}
 pem = {version = "3"}
 pingora-http = {workspace = true}
