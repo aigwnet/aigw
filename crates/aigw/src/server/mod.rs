@@ -70,14 +70,11 @@ pub fn run(
     }
     let main_conf = ServerConf {
         grace_period_seconds: Some(30),
-        pid_file: args
-            .pid_file
-            .as_ref()
-            .map_or("/tmp/aigw.pid".to_string(), |p| p.clone()),
+        pid_file: String::new(),
         upgrade_sock: "/tmp/aigw_upgrade.sock".to_string(),
-        user: args.user.clone(),
-        group: args.group.clone(),
-        daemon: args.daemon,
+        user: None,
+        group: None,
+        daemon: false,
         threads: works,
         ..Default::default()
     };

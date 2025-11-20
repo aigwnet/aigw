@@ -1,6 +1,7 @@
 use core::panic;
 use std::{fs, sync::Arc};
-
+#[cfg(unix)]
+mod daemon;
 mod server;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
@@ -15,7 +16,17 @@ pub(crate) static SERVER: &str = "Aigw";
 lazy_static::lazy_static! {}
 
 fn main() -> anyhow::Result<()> {
-    let args = ServerOpt::parse_args();
+    let mut args = ServerOpt::parse_args();
+
+    #[cfg(unix)]
+    if args.daemon {
+        daemon::daemonize(
+            args.user.as_ref(),
+            args.group.as_ref(),
+            args.pid_file.as_ref().map_or("/tmp/aigw.pid", |s| s),
+        );
+        args.daemon = false;
+    }
 
     logger::init_logger(args.log_dir.as_ref().map_or("logs", |s| s));
 
