@@ -66,7 +66,9 @@ impl<'a> MakeWriter<'a> for MultiFileWriter {
 }
 
 pub fn init_logger(log_dir: &str) {
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::INFO.into());
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
     let timer = fmt::time::OffsetTime::new(
         time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC),
         TIME_FORMAT,
