@@ -43,7 +43,9 @@ pub use util::crypto::CryptoCore;
 #[cfg(unix)]
 pub use util::daemon::daemonize;
 pub use util::date::date_format_local;
+pub use util::date::date_format_local_nanos;
 pub use util::date::date_format_utc;
+pub use util::date::date_format_utc_nanos;
 pub use util::logger::LOGGER_TIME_FORMAT;
 pub use util::logger::init_logger;
 pub use util::protocol::*;

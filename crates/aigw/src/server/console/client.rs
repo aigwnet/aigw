@@ -2,8 +2,8 @@ use std::{collections::HashMap, net::ToSocketAddrs, sync::Arc, time::Duration};
 
 use aigw_core::{
     Buffer, Close, CryptoCore, DataAck, Frame, HandshakeInfo, LOCAL_IP, LOGGER_TIME_FORMAT,
-    Signature, build_ack, build_close, build_handshake_request, build_ping, date_format_local,
-    parse_data, parse_handshake_response, parse_pong, statistics,
+    Signature, build_ack, build_close, build_handshake_request, build_ping,
+    date_format_local_nanos, parse_data, parse_handshake_response, parse_pong, statistics,
 };
 use bytes::BytesMut;
 use sysinfo::System;
@@ -272,7 +272,7 @@ impl ConsoleClient {
                 let log_points = storage.load_log_points().await.map_or(vec![], |v| v);
                 let now = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
                 let ts = now as i64;
-                let ts_str = date_format_local(ts, LOGGER_TIME_FORMAT);
+                let ts_str = date_format_local_nanos((ts as i128) * 1_000_000, LOGGER_TIME_FORMAT);
                 info!("Ping ==> {:?}  log_points: {:?}", ts_str, log_points);
                 let pv = storage.pv_swap();
                 let rt = if pv == 0 { 0 } else { storage.rt_swap() / pv };
@@ -380,7 +380,7 @@ impl ConsoleClient {
             Frame::HEARTBEAT_PONG => {
                 let pong = parse_pong(buffer, crypto)?;
 
-                let ts = date_format_local(pong.ts, LOGGER_TIME_FORMAT);
+                let ts = date_format_local_nanos((pong.ts as i128) * 1_000_000, LOGGER_TIME_FORMAT);
                 info!("Pong <== : {:?}", ts);
             }
             Frame::DATA => {
