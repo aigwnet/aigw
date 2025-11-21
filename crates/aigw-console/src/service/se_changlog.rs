@@ -48,6 +48,7 @@ pub async fn do_build_change_log(
 
     Ok(ChangeLog {
         log_id: change_log.id.unwrap(),
+        cluster: change_log.cluster_name.unwrap_or_default(),
         log_type,
         log_action,
         data_id: change_log.data_id.unwrap(),
@@ -81,6 +82,7 @@ pub async fn send_all_sites_to_aigw(
                         let json = serde_json::to_string_pretty(&item)?;
                         logs.push(ChangeLog {
                             log_id: item.id.unwrap(),
+                            cluster: item.cluster,
                             log_type: LogType::Site,
                             log_action: LogAction::Add,
                             data_id: item.id.unwrap(),
@@ -150,6 +152,7 @@ pub async fn send_change_logs_to_aigw(
                         for item in page.records {
                             logs.push(ChangeLog {
                                 log_id: item.id.unwrap(),
+                                cluster: item.cluster_name.unwrap_or_default(),
                                 log_type,
                                 log_action: item.log_action.unwrap().try_into()?,
                                 data_id: item.data_id.unwrap(),

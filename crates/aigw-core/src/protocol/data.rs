@@ -97,6 +97,7 @@ impl From<pb::LogPoint> for LogPoint {
 #[derive(Clone, Debug)]
 pub struct ChangeLog {
     pub log_id: u64,
+    pub cluster: String,
     pub log_type: LogType,
     pub log_action: LogAction,
     pub data_id: u64,
@@ -123,6 +124,7 @@ impl From<ChangeLog> for pb::ChangeLog {
     fn from(val: ChangeLog) -> Self {
         Self {
             log_id: val.log_id,
+            cluster_name: val.cluster,
             log_type: val.log_type.code(),
             log_action: val.log_action.code(),
             data_id: val.data_id,
@@ -135,6 +137,7 @@ impl From<pb::ChangeLog> for ChangeLog {
     fn from(val: pb::ChangeLog) -> Self {
         Self {
             log_id: val.log_id,
+            cluster: val.cluster_name,
             log_type: val.log_type.try_into().unwrap(),
             log_action: val.log_action.try_into().unwrap(),
             data_id: val.data_id,

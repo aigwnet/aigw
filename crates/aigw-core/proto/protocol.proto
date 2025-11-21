@@ -70,10 +70,11 @@ message Data {
 
 message ChangeLog {
     uint64 log_id = 1;
-    uint32 log_type = 2;
-    uint32 log_action = 3;
-    uint64 data_id = 4;
-    bytes data = 5;
+    string cluster_name = 2;
+    uint32 log_type = 3;
+    uint32 log_action = 4;
+    uint64 data_id = 5;
+    bytes data = 6;
 }
 
 message Ack {
