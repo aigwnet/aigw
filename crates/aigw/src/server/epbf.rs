@@ -8,7 +8,12 @@ use aya::{
 };
 use tracing::{debug, warn};
 
-pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<EbpfHandler> {
+pub struct EpbfConfig {
+    pub iface: String,
+    pub path: Option<String>,
+}
+
+pub fn run(config: &EpbfConfig) -> anyhow::Result<EbpfHandler> {
     // Bump the memlock rlimit. This is needed for older kernels that don't use the
     // new memcg based accounting, see https://lwn.net/Articles/837122/
     let rlim = libc::rlimit {
@@ -20,7 +25,7 @@ pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<EbpfHandler> {
         debug!("remove limit on locked memory failed, ret is: {ret}");
     }
 
-    let mut ebpf = if let Some(epbf) = epbf {
+    let mut ebpf = if let Some(epbf) = config.path {
         aya::Ebpf::load_file(epbf)?
     } else {
         aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
@@ -48,9 +53,9 @@ pub fn run(iface: &str, epbf: Option<&String>) -> anyhow::Result<EbpfHandler> {
 
     let program: &mut Xdp = ebpf.program_mut("aigw").unwrap().try_into()?;
     program.load()?;
-    if let Err(e) = program.attach(iface, XdpFlags::default()) {
+    if let Err(e) = program.attach(&config.iface, XdpFlags::default()) {
         eprintln!("Native XDP attach failed ({}), falling back to SKB mode", e);
-        program.attach(iface, XdpFlags::SKB_MODE)?;
+        program.attach(&config.iface, XdpFlags::SKB_MODE)?;
     }
 
     Ok(EbpfHandler {

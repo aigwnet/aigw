@@ -38,28 +38,15 @@ pub fn run(
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let shutdown_tx = Arc::new(shutdown_tx);
 
-    #[cfg(target_os = "linux")]
-    let ebpf_handler = {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        rt.block_on(async { epbf::run(config.basic().iface(), args.ebpf.as_ref()) })
-    }
-    .map(Arc::new);
-    #[cfg(target_os = "linux")]
-    if let Err(e) = &ebpf_handler {
-        use tracing::error;
-        error!("{:?}", e);
-    }
-
     let aigwc_service = AigwConsoleService::new(
+        config.clone(),
         storage.clone(),
         shutdown_tx.clone(),
-        config.console().address(),
-        config.console().key(),
-        config.console().cluster().to_string(),
         #[cfg(target_os = "linux")]
-        ebpf_handler.ok(),
+        epbf::EpbfConfig {
+            iface: config.basic().iface().to_string(),
+            path: args.ebpf,
+        },
     );
 
     let mut works = std::thread::available_parallelism()

@@ -19,7 +19,10 @@ use tokio::{
 };
 use tracing::{error, info};
 
-use crate::{server::storage::Storage, version::VERSION};
+use crate::{
+    server::{AigwConfig, storage::Storage},
+    version::VERSION,
+};
 
 use super::DataFrameHandler;
 
@@ -27,7 +30,6 @@ const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
 
 pub struct ConsoleClient {
-    data_handler: Arc<DataFrameHandler>,
     shutdown_tx: Arc<Sender<()>>,
     address: String,
     cluster: String,
@@ -38,33 +40,28 @@ pub struct ConsoleClient {
 
 impl ConsoleClient {
     pub fn new(
-        storage: Arc<Storage>,
+        config: Arc<AigwConfig>,
         shutdown_tx: Arc<Sender<()>>,
-        address: &str,
-        password: &str,
-        cluster: String,
         sender: Arc<mpsc::Sender<Vec<u8>>>,
-        #[cfg(target_os = "linux")] ebpf_handler: Option<Arc<crate::server::epbf::EbpfHandler>>,
     ) -> Self {
-        let signature = Arc::new(Signature::new(password));
+        let signature = Arc::new(Signature::new(config.console().key()));
         let crypto = Arc::new(RwLock::new(None));
 
         Self {
-            data_handler: Arc::new(DataFrameHandler::new(
-                storage,
-                #[cfg(target_os = "linux")]
-                ebpf_handler,
-            )),
             shutdown_tx,
-            address: address.to_owned(),
-            cluster,
+            address: config.console().address().to_owned(),
+            cluster: config.console().cluster().to_owned(),
             sender,
             signature,
             crypto,
         }
     }
 
-    pub async fn start(&self, rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>) {
+    pub async fn start(
+        &self,
+        rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>,
+        data_handler: Arc<DataFrameHandler>,
+    ) {
         let addr = &self.address;
         let signature = &self.signature;
         let sender = &self.sender;
@@ -87,7 +84,7 @@ impl ConsoleClient {
             match TcpStream::connect(socket_addrs[0]).await {
                 Ok(stream) => {
                     let r = ConsoleClient::run(
-                        self.data_handler.clone(),
+                        data_handler.clone(),
                         self.shutdown_tx.clone(),
                         sender,
                         rx.clone(),
