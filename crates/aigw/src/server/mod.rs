@@ -45,7 +45,7 @@ pub fn run(
         #[cfg(target_os = "linux")]
         epbf::EpbfConfig {
             iface: config.basic().iface().to_string(),
-            path: args.ebpf,
+            path: args.ebpf.clone(),
         },
     );
 

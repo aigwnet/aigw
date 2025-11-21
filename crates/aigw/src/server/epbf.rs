@@ -25,7 +25,7 @@ pub fn run(config: &EpbfConfig) -> anyhow::Result<EbpfHandler> {
         debug!("remove limit on locked memory failed, ret is: {ret}");
     }
 
-    let mut ebpf = if let Some(epbf) = config.path {
+    let mut ebpf = if let Some(epbf) = &config.path {
         aya::Ebpf::load_file(epbf)?
     } else {
         aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
