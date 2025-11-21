@@ -82,10 +82,6 @@ const onAdd = () => {
     router.push('/security/cluster/ip/add?type=' + activeKey.value);
 };
 
-const onEdit = (row: RowType) => {
-    router.push('/security/cluster/ip/edit/' + row.id);
-};
-
 const onClusterEdit = (row: RowType) => {
     router.push('/sites/clusters/edit/' + row.cluster_name);
 };
@@ -154,7 +150,6 @@ watch(activeKey, (newType, oldType) => {
                         <Button type="link" @click="onClusterEdit(row)">{{ row.cluster_name }}</Button>
                     </template>
                     <template #action="{ row }">
-                        <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
                         <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
                     </template>
                     <template #ip="{ row }">
@@ -180,7 +175,6 @@ watch(activeKey, (newType, oldType) => {
                         <Button type="link" @click="onClusterEdit(row)">{{ row.cluster_name }}</Button>
                     </template>
                     <template #action="{ row }">
-                        <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
                         <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
                     </template>
                     <template #ip="{ row }">

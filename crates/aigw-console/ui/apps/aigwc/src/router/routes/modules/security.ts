@@ -32,18 +32,6 @@ const routes: RouteRecordRaw[] = [
           title: $t('page.security.cluster.newIp'),
         },
       },
-      {
-        name: 'Cluster IP Edit',
-        path: '/security/cluster/ip/edit//:id',
-        component: () =>
-          import('#/views/security/cluster/edit_ip.vue'),
-        meta: {
-          activePath: '/security/cluster',
-          hideInMenu: true,
-          maxNumOfOpenTab: 1,
-          title: $t('page.security.cluster.editIp'),
-        },
-      },
     ],
   },
 ];
