@@ -28,11 +28,11 @@ impl HttpApiCluster {
     }
 
     pub async fn cluster_modify(
-        Path(id): Path<u64>,
+        Path(name): Path<String>,
         State(context): State<ApiContext>,
         Json(cluster): Json<Cluster>,
     ) -> ApiResponseResult<()> {
-        let change_log = modify_cluster(&context.database_client.rb, &cluster, id)
+        let change_log = modify_cluster(&context.database_client.rb, &cluster, &name)
             .await
             .map_err(ApiError::from)?;
         let _ = context.sender.send(change_log).await;
@@ -68,7 +68,7 @@ impl HttpApiCluster {
         Ok(ApiData(Some(r)))
     }
 
-    pub async fn cluster_delete(
+    pub async fn delete(
         Path(name): Path<String>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<bool> {

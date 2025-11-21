@@ -7,7 +7,7 @@ import { watch, ref } from 'vue';
 import { message, Button, Tabs, TabPane } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { getClusterIpTableApi, deleteClusterApi } from '#/api';
+import { getClusterIpTableApi, deleteClusterIpApi } from '#/api';
 import { clusterStore } from '#/store';
 
 import {
@@ -95,7 +95,7 @@ const onDelete = async (row: RowType) => {
     confirm({
         beforeClose({ isConfirm }) {
             if (!isConfirm) return;
-            return deleteClusterApi(row.cluster_name);
+            return deleteClusterIpApi(row.id);
         },
         centered: false,
         content: $t('page.deleteConfirm'),
@@ -103,7 +103,7 @@ const onDelete = async (row: RowType) => {
     })
         .then(() => {
             message.success({
-                content: $t('page.cluster.deleteSuccess'),
+                content: $t('page.security.cluster.deleteSuccess'),
             });
             gridApi.reload()
         })

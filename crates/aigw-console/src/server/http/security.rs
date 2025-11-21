@@ -6,7 +6,10 @@ use rbatis::PageRequest;
 
 use crate::{
     server::http::{ApiContext, ApiData, ApiError, ApiResponseResult, Pagination},
-    service::{ClusterIpCidr, ClusterIpCidrList, Page, add_new_cluster_ip, find_ip_cidr_by_page},
+    service::{
+        ClusterIpCidr, ClusterIpCidrList, Page, add_new_cluster_ip, delete_cluster_ip,
+        find_ip_cidr_by_page,
+    },
 };
 
 pub(crate) struct HttpApiSecurity {}
@@ -39,5 +42,15 @@ impl HttpApiSecurity {
         .await
         .map_err(ApiError::from)?;
         Ok(ApiData(Some(data)))
+    }
+
+    pub async fn delete(
+        Path(id): Path<u64>,
+        State(context): State<ApiContext>,
+    ) -> ApiResponseResult<bool> {
+        delete_cluster_ip(&context.database_client.rb, id)
+            .await
+            .map_err(ApiError::from)?;
+        Ok(ApiData(Some(true)))
     }
 }

@@ -102,6 +102,11 @@ pub async fn find_ip_cidr_by_page(
     Ok(page)
 }
 
+pub async fn delete_cluster_ip(rb: &RBatis, id: u64) -> anyhow::Result<()> {
+    let _ = TbClusterIpCidr::delete_by_id(rb, id).await?;
+    Ok(())
+}
+
 fn convert_tb_cluster_ip_cidr(tb_cluster_ip_cidr: TbClusterIpCidr) -> ClusterIpCidr {
     let start_time = tb_cluster_ip_cidr
         .start_time

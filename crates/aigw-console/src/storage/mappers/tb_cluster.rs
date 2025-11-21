@@ -41,3 +41,4 @@ impl_delete!(TbCluster { delete_by_id(id: u64) => "`WHERE id = #{id}`"});
 impl_delete!(TbCluster { delete_by_name(name: &str) => "`WHERE name = #{name}`"});
 impl_select_page!(TbCluster{select_page() => "`ORDER BY ID DESC`"});
 impl_update!(TbCluster {update_by_id(id: u64) => "`where id = #{id}`"});
+impl_update!(TbCluster {update_by_name(name: &str) => "`where name = #{name}`"});

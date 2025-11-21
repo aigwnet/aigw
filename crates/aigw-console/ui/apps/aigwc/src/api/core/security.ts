@@ -15,3 +15,7 @@ export async function getClusterIpTableApi(cluster: string | null, type: string,
 export async function addClusterIpApi(params: Object) {
     return requestClient.post<BasicResult>('/security/ip', params);
 }
+
+export async function deleteClusterIpApi(id: number) {
+  return requestClient.delete(`/security/ip/${id}`);
+}

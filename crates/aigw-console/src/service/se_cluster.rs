@@ -41,7 +41,11 @@ pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<C
     Ok(change_log)
 }
 
-pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::Result<ChangeLog> {
+pub async fn modify_cluster(
+    rb: &RBatis,
+    cluster: &Cluster,
+    name: &str,
+) -> anyhow::Result<ChangeLog> {
     let now = DateTime::utc();
     let table = &TbCluster {
         id: None,
@@ -55,7 +59,7 @@ pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::
         gmt_create: None,
         gmt_modified: Some(now),
     };
-    TbCluster::update_by_id(rb, table, id).await?;
+    TbCluster::update_by_name(rb, table, name).await?;
     let c = find_cluster_by_name(rb, &cluster.name).await?;
     let s = serde_json::to_string_pretty(&c)?;
     let change_log = do_build_change_log(
@@ -63,7 +67,7 @@ pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::
         cluster.name.clone(),
         LogType::Cluster,
         LogAction::Update,
-        id,
+        c.id.unwrap_or_default(),
         0,
         Some(s),
     )
