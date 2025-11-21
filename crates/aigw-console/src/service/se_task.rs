@@ -62,9 +62,9 @@ fn convert_tb_task(tb_task: TbTask) -> Task {
 }
 
 fn get_one_mintue_ago() -> OffsetDateTime {
-    OffsetDateTime::now_utc() - Duration::from_mins(1)
+    OffsetDateTime::now_utc() - Duration::from_secs(60)
 }
 
 fn get_one_hour_ago() -> OffsetDateTime {
-    OffsetDateTime::now_utc() - Duration::from_mins(60)
+    OffsetDateTime::now_utc() - Duration::from_secs(3600)
 }

@@ -25,11 +25,11 @@ rcgen = {version = "0.14", features = ["aws_lc_rs"]}
 regex = {version = "1"}
 ring = {version = "0.17"}
 rustls = {workspace = true}
-serde = {version = "1", features = ["derive"]}
-serde_json = {version = "1"}
+serde = {workspace = true}
+serde_json = {workspace = true}
 substring = {version = "1"}
 sysinfo = {version = "0.37"}
-thiserror = {version = "2"}
+thiserror = {workspace = true}
 time = {workspace = true}
 tokio = {workspace = true}
 tracing = {workspace = true}

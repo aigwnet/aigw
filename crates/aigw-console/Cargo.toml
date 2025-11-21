@@ -33,14 +33,12 @@ ring = {version = "0.17"}
 serde = {workspace = true}
 serde_json = {workspace = true}
 sha = {workspace = true}
-thiserror = {version = "2"}
+thiserror = {workspace = true}
 time = {workspace = true}
 tokio = {workspace = true}
 toml = {version = "0.9"}
 tower-http = {version = "0.6", features = ["fs", "trace"]}
 tracing = {workspace = true}
-tracing-appender = {workspace = true}
-tracing-subscriber = {workspace = true}
 
 [package.metadata.deb]
 assets = [
