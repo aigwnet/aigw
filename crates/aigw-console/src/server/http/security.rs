@@ -6,7 +6,7 @@ use rbatis::PageRequest;
 
 use crate::{
     server::http::{ApiContext, ApiData, ApiError, ApiResponseResult, Pagination},
-    service::{ClusterIpCidr, Page, add_new_cluster_ip, find_ip_cidr_by_page},
+    service::{ClusterIpCidr, ClusterIpCidrList, Page, add_new_cluster_ip, find_ip_cidr_by_page},
 };
 
 pub(crate) struct HttpApiSecurity {}
@@ -14,9 +14,9 @@ pub(crate) struct HttpApiSecurity {}
 impl HttpApiSecurity {
     pub async fn add_cluster_ip_list(
         State(context): State<ApiContext>,
-        Json(ip): Json<ClusterIpCidr>,
+        Json(list): Json<ClusterIpCidrList>,
     ) -> ApiResponseResult<()> {
-        let change_log = add_new_cluster_ip(&context.database_client.rb, &ip)
+        let change_log = add_new_cluster_ip(&context.database_client.rb, &list)
             .await
             .map_err(ApiError::from)?;
         let _ = context.sender.send(change_log).await;

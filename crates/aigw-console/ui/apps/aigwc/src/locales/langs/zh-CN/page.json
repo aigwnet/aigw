@@ -121,6 +121,7 @@
       "list": "集群名单",
       "ipWhiteList": "IP白名单",
       "ipBlockList": "IP黑名单",
+      "ipList": "IP名单",
       "listType": "名单类型",
       "newIp": "添加IP名单",
       "editIp": "修改IP名单",

@@ -121,6 +121,7 @@
       "list": "Cluster IP List",
       "ipWhiteList": "IP Whitelist",
       "ipBlockList": "IP Blocklist",
+      "ipList": "IP List",
       "listType": "IP List Type",
       "newIp": "Add New IP List",
       "editIp": "Edit IP",

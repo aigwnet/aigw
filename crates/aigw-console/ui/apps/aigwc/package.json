@@ -54,6 +54,7 @@
     "vue": "catalog:",
     "vue-router": "catalog:",
     "js-md5": "^0.8.3",
+    "ipaddr.js": "^1.1.0",
     "echarts": "catalog:"
   },
   "devDependencies": {

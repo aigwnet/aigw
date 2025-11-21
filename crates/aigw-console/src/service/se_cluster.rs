@@ -71,8 +71,8 @@ pub async fn modify_cluster(rb: &RBatis, cluster: &Cluster, id: u64) -> anyhow::
     Ok(change_log)
 }
 
-pub async fn find_cluster(rb: &RBatis, id: u64) -> anyhow::Result<Cluster> {
-    let cluster = TbCluster::select_by_id(rb, id)
+pub async fn find_cluster(rb: &RBatis, name: &str) -> anyhow::Result<Cluster> {
+    let cluster = TbCluster::select_by_name(rb, name)
         .await?
         .ok_or(anyhow::anyhow!("Cluster not found."))?;
     Ok(convert_tb_cluster(&cluster))

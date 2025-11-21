@@ -19,38 +19,64 @@ pub struct ClusterIpCidr {
     pub gmt_modified: Option<String>,
 }
 
-pub async fn add_new_cluster_ip(rb: &RBatis, ip: &ClusterIpCidr) -> anyhow::Result<ChangeLog> {
-    let now = DateTime::utc();
-    TbClusterIpCidr::insert(
-        rb,
-        &TbClusterIpCidr {
-            id: None,
-            cluster_name: Some(ip.cluster_name.clone()),
-            ip: Some(ip.ip.clone()),
-            prefix_len: Some(ip.prefix_len),
-            r#type: Some(ip.r#type),
-            start_time: None,
-            end_time: None,
-            gmt_create: Some(now.clone()),
-            gmt_modified: Some(now),
-        },
-    )
-    .await?;
+#[derive(Serialize, Deserialize)]
+pub struct IpCidr {
+    pub ip: String,
+    pub prefix_len: u32,
+}
 
-    let data = IpUpdateList {
-        item_type: ip.r#type.into(),
-        data: vec![IpUpdate {
+#[derive(Serialize, Deserialize)]
+pub struct ClusterIpCidrList {
+    pub id: Option<u64>,
+    pub cluster_name: String,
+    pub list: Vec<IpCidr>,
+    pub r#type: u8,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+    pub gmt_modified: Option<String>,
+}
+
+pub async fn add_new_cluster_ip(
+    rb: &RBatis,
+    list: &ClusterIpCidrList,
+) -> anyhow::Result<ChangeLog> {
+    let now = DateTime::utc();
+
+    let mut update_list = vec![];
+    for ip_cidr in &list.list {
+        TbClusterIpCidr::insert(
+            rb,
+            &TbClusterIpCidr {
+                id: None,
+                cluster_name: Some(list.cluster_name.clone()),
+                ip: Some(ip_cidr.ip.clone()),
+                prefix_len: Some(ip_cidr.prefix_len),
+                r#type: Some(list.r#type),
+                start_time: None,
+                end_time: None,
+                gmt_create: Some(now.clone()),
+                gmt_modified: Some(now.clone()),
+            },
+        )
+        .await?;
+
+        update_list.push(IpUpdate {
             start_time: 0,
             end_time: 0,
-            prefix_len: ip.prefix_len,
-            data: ip.ip.clone(),
-        }],
+            prefix_len: ip_cidr.prefix_len,
+            data: ip_cidr.ip.clone(),
+        });
+    }
+
+    let data = IpUpdateList {
+        item_type: list.r#type.into(),
+        data: update_list,
     };
 
     let s = serde_json::to_string_pretty(&data)?;
     let change_log = do_build_change_log(
         rb,
-        ip.cluster_name.clone(),
+        list.cluster_name.clone(),
         LogType::IpLayer4,
         LogAction::Add,
         0,

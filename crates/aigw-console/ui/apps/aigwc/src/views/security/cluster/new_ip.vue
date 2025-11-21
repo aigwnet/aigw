@@ -5,14 +5,10 @@ import { Page, Loading } from '@vben/common-ui';
 import { $t } from '#/locales';
 import { getAllClustersApi, addClusterIpApi } from '#/api';
 import { useRoute } from 'vue-router';
-import { useVbenForm, z } from '#/adapter/form';
+import { useVbenForm } from '#/adapter/form';
 import { clusterStore } from '#/store';
-
+import { ipListRule } from '#/utils'
 let clusterAccess = clusterStore();
-
-const ipRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\/([0-9]|[1-2][0-9]|3[0-2]))?$|^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$|^([0-9a-fA-F]{1,4}::?){1,7}[0-9a-fA-F]{0,4}(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/;
-
-const ipRule = z.string().regex(ipRegex, { message: 'Please enter a valid IPv4 or IPv6 address (with optional CIDR)' });
 
 
 const LAYER4_OPTIONS = [
@@ -55,13 +51,15 @@ const [Form, formApi] = useVbenForm({
             label: $t('page.security.cluster.listType'),
         },
         {
-            component: 'Input',
+            component: 'Textarea',
             componentProps: {
                 placeholder: 'e.g., 2001:db8::/32',
+                rows: 20,
+                class: 'font-mono',
             },
-            fieldName: 'ip',
-            label: "IP",
-            rules: ipRule,
+            fieldName: 'list',
+            label: $t('page.security.cluster.ipList'),
+            rules: ipListRule,
         },
         {
             component: 'DatePicker',
@@ -96,23 +94,28 @@ const submitting = ref(false);
 async function handleAsyncSubmit(values: Record<string, any>) {
 
     try {
-        var ip = values.ip;
-        var prefix_len;
-        if (ip.includes("/")) {
-            var tmp = ip.split('/');
-            ip = tmp[0];
-            prefix_len = tmp[1];
-        } else if (ip.includes(".")) {
-            prefix_len = 32
-        } else {
-            prefix_len = 128
+        var list = Array();
+        for (const line of values.list.split(/\r?\n/)) {
+            var ip = line;
+            var prefix_len;
+            if (ip.includes("/")) {
+                var tmp = ip.split('/');
+                ip = tmp[0];
+                prefix_len = parseInt(tmp[1], 10);
+            } else if (ip.includes(".")) {
+                prefix_len = 32
+            } else {
+                prefix_len = 128
+            }
+            list.push({
+                "ip": ip,
+                "prefix_len": prefix_len
+            })
         }
-        //let ip = parseIp(values.ip);
 
         const processedValues = {
             ...values,
-            ip: ip,
-            prefix_len,
+            list: list
         };
         await addClusterIpApi(processedValues);
         formApi.resetForm();

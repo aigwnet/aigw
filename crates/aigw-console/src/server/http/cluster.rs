@@ -40,10 +40,10 @@ impl HttpApiCluster {
     }
 
     pub async fn cluster_detail(
-        Path(id): Path<u64>,
+        Path(name): Path<String>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Cluster> {
-        let cluster = find_cluster(&context.database_client.rb, id)
+        let cluster = find_cluster(&context.database_client.rb, &name)
             .await
             .map_err(ApiError::from)?;
         Ok(ApiData(Some(cluster)))

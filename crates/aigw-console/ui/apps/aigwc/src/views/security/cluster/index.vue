@@ -34,7 +34,7 @@ const gridOptions: VxeTableGridOptions<RowType> = {
     columns: [
         { title: 'No', type: 'seq', width: 50 },
         { slots: { default: 'ip' }, title: "IP", align: "left", width: 320 },
-        { field: 'cluster_name', align: "left", title: $t('page.cluster.name') },
+        { slots: { default: 'cluster_name' }, align: "left", title: $t('page.cluster.name') },
         { field: 'start_time', title: $t('page.security.startTime') },
         { field: 'end_time', title: $t('page.security.endTime') },
         { field: 'gmt_modified', sortable: true, title: $t('page.modifiedTime') },
@@ -60,7 +60,6 @@ const gridOptions: VxeTableGridOptions<RowType> = {
         sort: true,
     },
     sortConfig: {
-        defaultSort: { field: 'category', order: 'desc' },
         remote: true,
     },
     toolbarConfig: {
@@ -85,6 +84,10 @@ const onAdd = () => {
 
 const onEdit = (row: RowType) => {
     router.push('/security/cluster/ip/edit/' + row.id);
+};
+
+const onClusterEdit = (row: RowType) => {
+    router.push('/sites/clusters/edit/' + row.cluster_name);
 };
 
 const onDelete = async (row: RowType) => {
@@ -147,6 +150,9 @@ watch(activeKey, (newType, oldType) => {
                             {{ $t('page.add') }}
                         </Button>
                     </template>
+                    <template #cluster_name="{ row }">
+                        <Button type="link" @click="onClusterEdit(row)">{{ row.cluster_name }}</Button>
+                    </template>
                     <template #action="{ row }">
                         <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
                         <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
@@ -169,6 +175,9 @@ watch(activeKey, (newType, oldType) => {
                         <Button class="mr-2" type="primary" @click="onAdd()">
                             {{ $t('page.add') }}
                         </Button>
+                    </template>
+                    <template #cluster_name="{ row }">
+                        <Button type="link" @click="onClusterEdit(row)">{{ row.cluster_name }}</Button>
                     </template>
                     <template #action="{ row }">
                         <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>

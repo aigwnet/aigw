@@ -71,7 +71,7 @@ const onAdd = () => {
 };
 
 const onEdit = (row: RowType) => {
-    router.push('/sites/clusters/edit/' + row.id);
+    router.push('/sites/clusters/edit/' + row.name);
 };
 
 const onDelete = async (row: RowType) => {

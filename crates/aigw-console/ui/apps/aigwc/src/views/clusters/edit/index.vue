@@ -24,6 +24,7 @@ const index = computed(() => {
 setTabTitle(`${index.value} - ` + $t('page.details'));
 
 const submitting = ref(true);
+const cluster_id = ref<number>();
 
 const [Form, formApi] = useVbenForm({
     handleSubmit: onSubmit,
@@ -96,6 +97,7 @@ const fetchData = async () => {
     } else {
         cluster.namelist = "3";
     }
+    cluster_id.value = cluster.id;
     formApi.setValues(cluster);
     submitting.value = false;
 }
@@ -108,7 +110,7 @@ async function handleAsyncSubmit(values: Record<string, any>) {
             enable_block_list: values.namelist == "2",
         };
         submitting.value = true;
-        await updateClusterApi(index.value, processedValues);
+        await updateClusterApi(cluster_id.value, processedValues);
         message.success({
             content: $t('page.cluster.updateSuccess'),
         });

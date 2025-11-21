@@ -41,6 +41,7 @@ pub(crate) use se_cluster::find_cluster_by_name;
 pub(crate) use se_cluster::find_cluster_by_page;
 pub(crate) use se_cluster::modify_cluster;
 pub(crate) use se_cluster_ip_cidr::ClusterIpCidr;
+pub(crate) use se_cluster_ip_cidr::ClusterIpCidrList;
 pub(crate) use se_cluster_ip_cidr::add_new_cluster_ip;
 pub(crate) use se_cluster_ip_cidr::find_ip_cidr_by_page;
 pub(crate) use se_console::send_change_log_to_peers;
