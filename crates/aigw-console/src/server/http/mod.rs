@@ -80,15 +80,15 @@ pub async fn run(
         )
         .route(
             "/api/v1/clusters",
-            post(HttpApiCluster::cluster_add).layer(auth_layer.clone()),
+            post(HttpApiCluster::add).layer(auth_layer.clone()),
         )
         .route(
             "/api/v1/clusters/{name}",
-            put(HttpApiCluster::cluster_modify).layer(auth_layer.clone()),
+            put(HttpApiCluster::update).layer(auth_layer.clone()),
         )
         .route(
             "/api/v1/clusters/{name}",
-            get(HttpApiCluster::cluster_detail).layer(auth_layer.clone()),
+            get(HttpApiCluster::query).layer(auth_layer.clone()),
         )
         .route(
             "/api/v1/clusters/{name}",
@@ -100,7 +100,7 @@ pub async fn run(
         )
         .route(
             "/api/v1/clusters/all",
-            get(HttpApiCluster::clusters).layer(auth_layer.clone()),
+            get(HttpApiCluster::query_all).layer(auth_layer.clone()),
         )
         .route(
             "/api/v1/sites",

@@ -16,7 +16,7 @@ use crate::{
 pub(crate) struct HttpApiCluster {}
 
 impl HttpApiCluster {
-    pub async fn cluster_add(
+    pub async fn add(
         State(context): State<ApiContext>,
         Json(cluster): Json<Cluster>,
     ) -> ApiResponseResult<()> {
@@ -27,7 +27,7 @@ impl HttpApiCluster {
         Ok(ApiData(None))
     }
 
-    pub async fn cluster_modify(
+    pub async fn update(
         Path(name): Path<String>,
         State(context): State<ApiContext>,
         Json(cluster): Json<Cluster>,
@@ -39,7 +39,7 @@ impl HttpApiCluster {
         Ok(ApiData(None))
     }
 
-    pub async fn cluster_detail(
+    pub async fn query(
         Path(name): Path<String>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Cluster> {
@@ -49,7 +49,7 @@ impl HttpApiCluster {
         Ok(ApiData(Some(cluster)))
     }
 
-    pub async fn clusters(State(context): State<ApiContext>) -> ApiResponseResult<Vec<Cluster>> {
+    pub async fn query_all(State(context): State<ApiContext>) -> ApiResponseResult<Vec<Cluster>> {
         let clusters = find_all(&context.database_client.rb)
             .await
             .map_err(ApiError::from)?;
