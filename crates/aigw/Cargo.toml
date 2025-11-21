@@ -48,8 +48,6 @@ tokio = {workspace = true}
 tokio-util = {version = "0.7", features = ["codec"]}
 toml = {version = "0.8"}
 tracing = {workspace = true}
-tracing-appender = {workspace = true}
-tracing-subscriber = {workspace = true}
 url = {version = "2"}
 urlencoding = {version = "2"}
 
