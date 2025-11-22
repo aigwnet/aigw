@@ -1,18 +1,18 @@
-use core::net::Ipv6Addr;
+// use core::net::Ipv6Addr;
 
 use aya_ebpf::{
     bindings::xdp_action::{XDP_DROP, XDP_PASS},
     maps::lpm_trie::Key,
     programs::XdpContext,
 };
-use aya_log_ebpf::info;
+// use aya_log_ebpf::info;
 use network_types::ip::Ipv6Hdr;
 
 use crate::{BLOCKLIST_IPV6_CIDR, SWITCH, WHITELIST_IPV6_CIDR};
 
-pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
-    let dst_addr = u128::from_be_bytes(unsafe { (*ip_hdr).dst_addr });
-    let src_addr = u128::from_be_bytes(unsafe { (*ip_hdr).src_addr });
+pub fn handle_xdp(_ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
+    // let dst_addr = u128::from_be_bytes(unsafe { (*ip_hdr).dst_addr });
+    // let src_addr = u128::from_be_bytes(unsafe { (*ip_hdr).src_addr });
 
     //
     let action = unsafe {
@@ -40,13 +40,13 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
         }
     };
 
-    info!(
-        &ctx,
-        "received packet, SRC: {} -->DEST: {}, ACTION: {}",
-        Ipv6Addr::from_bits(src_addr),
-        Ipv6Addr::from_bits(dst_addr),
-        action
-    );
+    // info!(
+    //     &ctx,
+    //     "received packet, SRC: {} -->DEST: {}, ACTION: {}",
+    //     Ipv6Addr::from_bits(src_addr),
+    //     Ipv6Addr::from_bits(dst_addr),
+    //     action
+    // );
 
     Ok(action)
 }

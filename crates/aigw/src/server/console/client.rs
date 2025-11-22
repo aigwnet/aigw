@@ -125,7 +125,7 @@ impl ConsoleClient {
                 }
             }
         }
-        info!("Aigw Console client exited.")
+        info!(target:"console", "Aigw Console client exited.")
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -140,11 +140,11 @@ impl ConsoleClient {
         crypto: Arc<RwLock<Option<CryptoCore>>>,
         cluster: String,
     ) -> anyhow::Result<bool> {
-        info!("Connected to {}", addr);
+        info!(target:"console", "Connected to {}", addr);
         let (mut reader, mut writer) = stream.into_split();
 
         let log_points = data_handler.storage.load_log_points().await?;
-        info!("Send handshake, log_points: {:?}", log_points);
+        info!(target:"console", "Send handshake, log_points: {:?}", log_points);
         // start handshake
         let (private_key, ecdh_public_key) = CryptoCore::create_ecdh_keypair();
 
@@ -200,7 +200,7 @@ impl ConsoleClient {
         {
             *crypto.write().await = Some(new_crypto);
         }
-        info!("Handshake successfully to {}", addr);
+        info!(target:"console", "Handshake successfully to {}", addr);
 
         let crypto_for_hb = crypto.clone();
         let sender_for_hb = sender.clone();
@@ -226,19 +226,19 @@ impl ConsoleClient {
         let mut shutdown = shutdown_tx.subscribe();
         let r = tokio::select! {
             _ = &mut send_handle => {
-                info!("Send task exited");
+                info!(target:"console", "Send task exited");
                 false
             },
             _ = &mut recv_handle => {
-                info!("Receive task exited");
+                info!(target:"console", "Receive task exited");
                 false
             },
             _ = &mut heartbeat_handle => {
-                info!("Heartbeat task exited");
+                info!(target:"console", "Heartbeat task exited");
                 false
             },
             _ = shutdown.recv() => {
-                 info!("Shutting down aigw console client.");
+                 info!(target:"console", "Shutting down aigw console client.");
                  true
             }
         };
@@ -274,7 +274,7 @@ impl ConsoleClient {
                 let now = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
                 let ts = now as i64;
                 let ts_str = date_format_local_nanos((ts as i128) * 1_000_000, LOGGER_TIME_FORMAT);
-                info!("Ping ==> {:?}  log_points: {:?}", ts_str, log_points);
+                info!(target:"console", "Ping ==> {:?}  log_points: {:?}", ts_str, log_points);
                 let pv = storage.pv_swap();
                 let rt = if pv == 0 { 0 } else { storage.rt_swap() / pv };
 
@@ -382,11 +382,11 @@ impl ConsoleClient {
                 let pong = parse_pong(buffer, crypto)?;
 
                 let ts = date_format_local_nanos((pong.ts as i128) * 1_000_000, LOGGER_TIME_FORMAT);
-                info!("Pong <== : {:?}", ts);
+                info!(target:"console", "Pong <== {:?}", ts);
             }
             Frame::DATA => {
                 let data = parse_data(buffer, crypto)?;
-                info!("Received Data");
+                info!(target:"console", "Received Data");
                 data_handler.handle(&data).await?;
 
                 if let Some(log_point) = data.log_point {
@@ -398,7 +398,7 @@ impl ConsoleClient {
                         crypto,
                     )?;
                     if let Ok(()) = sender.send(buffer.as_ref().to_vec()).await {
-                        info!("Send ack: {}, {:?}", log_point.log_id, log_point.log_type);
+                        info!(target:"console", "Send ack: {}, {:?}", log_point.log_id, log_point.log_type);
                     }
                 }
             }
@@ -416,7 +416,7 @@ impl ConsoleClient {
             build_close(&mut buffer, &Close {}, crypto)?;
             self.sender.send(buffer.as_ref().to_vec()).await?;
         }
-        info!("Send close to aigw console server.");
+        info!(target:"console", "Send close to aigw console server.");
         Ok(())
     }
 }
