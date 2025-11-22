@@ -57,7 +57,9 @@ impl Service for AigwConsoleService {
         _listeners_per_fd: usize,
     ) {
         #[cfg(target_os = "linux")]
-        let ebpf_handler = super::epbf::run(&self.epbf_config).ok().map(Arc::new);
+        let ebpf_handler = super::epbf::run(&self.epbf_config, self.console_client.address())
+            .ok()
+            .map(Arc::new);
         let data_handler = Arc::new(DataFrameHandler::new(
             self.storage.clone(),
             #[cfg(target_os = "linux")]

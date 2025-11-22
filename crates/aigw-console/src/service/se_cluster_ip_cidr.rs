@@ -1,4 +1,4 @@
-use aigw_core::{ChangeLog, IpUpdate, IpUpdateList, LogAction, LogType, date_format_local};
+use aigw_core::{ChangeLog, IpItem, IpList, LogAction, LogType, date_format_local};
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ pub async fn add_new_cluster_ip(
 ) -> anyhow::Result<ChangeLog> {
     let now = DateTime::utc();
 
-    let mut update_list = vec![];
+    let mut ip_list = vec![];
     for ip_cidr in &list.list {
         TbClusterIpCidr::insert(
             rb,
@@ -60,17 +60,15 @@ pub async fn add_new_cluster_ip(
         )
         .await?;
 
-        update_list.push(IpUpdate {
-            start_time: 0,
-            end_time: 0,
+        ip_list.push(IpItem {
             prefix_len: ip_cidr.prefix_len,
             data: ip_cidr.ip.clone(),
         });
     }
 
-    let data = IpUpdateList {
+    let data = IpList {
         item_type: list.r#type.into(),
-        data: update_list,
+        data: ip_list,
     };
 
     let s = serde_json::to_string_pretty(&data)?;

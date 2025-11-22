@@ -57,6 +57,10 @@ impl ConsoleClient {
         }
     }
 
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
     pub async fn start(
         &self,
         rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>,

@@ -101,18 +101,14 @@ impl DataFrameHandler {
                     {
                         match change_log.log_action {
                             LogAction::Add | LogAction::Update => {
-                                use aigw_core::IpUpdateList;
-
-                                let ip_list_for_update: IpUpdateList =
+                                let ip_list_for_update: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
                                 if let Some(ebpf_handler) = &self.ebpf_handler {
                                     ebpf_handler.handle_update(ip_list_for_update)?;
                                 }
                             }
                             LogAction::Delete => {
-                                use aigw_core::IpDeleteList;
-
-                                let ip_list_for_delete: IpDeleteList =
+                                let ip_list_for_delete: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
                                 if let Some(ebpf_handler) = &self.ebpf_handler {
                                     ebpf_handler.handle_delete(ip_list_for_delete)?;
