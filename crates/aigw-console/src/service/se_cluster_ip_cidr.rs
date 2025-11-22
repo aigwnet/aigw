@@ -100,9 +100,32 @@ pub async fn find_ip_cidr_by_page(
     Ok(page)
 }
 
-pub async fn delete_cluster_ip(rb: &RBatis, id: u64) -> anyhow::Result<()> {
+pub async fn delete_cluster_ip(rb: &RBatis, id: u64) -> anyhow::Result<ChangeLog> {
+    let ip = TbClusterIpCidr::select_by_id(rb, id)
+        .await?
+        .map_or(Err(anyhow::anyhow!("ClusterIpCidr not found.")), |i| Ok(i))?;
     let _ = TbClusterIpCidr::delete_by_id(rb, id).await?;
-    Ok(())
+
+    let data = IpList {
+        item_type: ip.r#type.unwrap_or_default() as u32,
+        data: vec![IpItem {
+            prefix_len: ip.prefix_len.unwrap_or_default(),
+            data: ip.ip.unwrap_or_default(),
+        }],
+    };
+
+    let s = serde_json::to_string_pretty(&data)?;
+    let change_log = do_build_change_log(
+        rb,
+        ip.cluster_name.unwrap_or_default(),
+        LogType::IpLayer4,
+        LogAction::Delete,
+        0,
+        0,
+        Some(s),
+    )
+    .await?;
+    Ok(change_log)
 }
 
 fn convert_tb_cluster_ip_cidr(tb_cluster_ip_cidr: TbClusterIpCidr) -> ClusterIpCidr {

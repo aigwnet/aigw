@@ -97,7 +97,8 @@ impl BroadcastServer {
         let cluster = changelog.cluster.clone();
         // push the change to all aigw servers connected to this server.
         let aigw_servers: Vec<_> = self.connections.iter().map(|r| r.value().clone()).collect();
-
+        let log_type = &changelog.log_type.clone();
+        let log_action = &changelog.log_action.clone();
         let log_point = LogPoint {
             log_id: changelog.log_id,
             log_type: changelog.log_type,
@@ -122,6 +123,8 @@ impl BroadcastServer {
                 if let Err(e) = conn.write(buf.as_ref()).await {
                     error!("Wrtie to aigw error, {:?}", e);
                 }
+
+                info!(target: "broadcast", "Send [{:?} {:?}] message to {} {}.", log_type, log_action, &cluster, conn.ip.as_ref().map_or("", |s|s));
             }
         }
 

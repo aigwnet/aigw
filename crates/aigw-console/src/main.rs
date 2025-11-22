@@ -31,6 +31,7 @@ fn main() -> anyhow::Result<()> {
     let targets = DashMap::new();
     targets.insert("certificate", "certificate");
     targets.insert("database", "database");
+    targets.insert("broadcast", "broadcast");
     init_logger(
         args.log_dir.as_ref().map_or("logs", |s| s),
         targets,

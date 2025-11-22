@@ -48,9 +48,10 @@ impl HttpApiSecurity {
         Path(id): Path<u64>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<bool> {
-        delete_cluster_ip(&context.database_client.rb, id)
+        let change_log = delete_cluster_ip(&context.database_client.rb, id)
             .await
             .map_err(ApiError::from)?;
+        let _ = context.sender.send(change_log).await;
         Ok(ApiData(Some(true)))
     }
 }
