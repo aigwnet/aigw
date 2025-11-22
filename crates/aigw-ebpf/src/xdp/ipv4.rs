@@ -3,15 +3,11 @@ use aya_ebpf::{
     maps::lpm_trie::Key,
     programs::XdpContext,
 };
-use aya_log_ebpf::info;
 use network_types::ip::Ipv4Hdr;
 
 use crate::{BLOCKLIST_IPV4_CIDR, SWITCH, WHITELIST_IPV4_CIDR};
 
-pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv4Hdr) -> Result<u32, i64> {
-    let dst_addr = u32::from_be_bytes(unsafe { (*ip_hdr).dst_addr });
-    let src_addr = u32::from_be_bytes(unsafe { (*ip_hdr).src_addr });
-
+pub fn handle_xdp(_ctx: XdpContext, ip_hdr: *const Ipv4Hdr) -> Result<u32, i64> {
     //
     let action = unsafe {
         let key = Key::<[u8; 4]> {
@@ -37,10 +33,6 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv4Hdr) -> Result<u32, i64> {
             XDP_PASS
         }
     };
-    info!(
-        &ctx,
-        "received packet, SRC: {:i} -->DEST: {:i}, ACTION: {}", src_addr, dst_addr, action
-    );
 
     Ok(action)
 }
