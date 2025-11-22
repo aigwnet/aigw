@@ -1,7 +1,4 @@
-use std::{
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs},
-    sync::Mutex,
-};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs};
 
 use aigw_core::{IpItem, IpList};
 use aya::{
@@ -10,6 +7,7 @@ use aya::{
     programs::{Xdp, XdpFlags},
 };
 use ipnet::{Ipv4Net, Ipv6Net};
+use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
 
 pub struct EpbfConfig {
@@ -87,11 +85,8 @@ impl EbpfHandler {
     /// Failing to skip it will disrupt communication between the gateway and the configuration center,
     /// rendering all subsequent control commands from the configuration center ineffective.
     ///
-    pub fn handle_update(&self, ip_list: IpList) -> anyhow::Result<()> {
-        let mut ebpf = self
-            .ebpf
-            .lock()
-            .map_err(|_| anyhow::anyhow!("ebpf get lock error."))?;
+    pub async fn handle_update(&self, ip_list: IpList) -> anyhow::Result<()> {
+        let ebpf = &mut *self.ebpf.lock().await;
 
         let ip_data = ip_list
             .data
@@ -105,7 +100,7 @@ impl EbpfHandler {
                 //
                 let (ipv4, ipv6) = self.filter_address_ip(ipv4, ipv6)?;
                 self.update_maps(
-                    &mut ebpf,
+                    ebpf,
                     &ipv4,
                     &ipv6,
                     "WHITELIST_IPV4_CIDR",
@@ -113,7 +108,7 @@ impl EbpfHandler {
                 )
             }
             2 => self.update_maps(
-                &mut ebpf,
+                ebpf,
                 &ipv4,
                 &ipv6,
                 "BLOCKLIST_IPV4_CIDR",
@@ -123,11 +118,8 @@ impl EbpfHandler {
         }
     }
 
-    pub fn handle_delete(&self, ip_list: IpList) -> anyhow::Result<()> {
-        let mut ebpf = self
-            .ebpf
-            .lock()
-            .map_err(|_| anyhow::anyhow!("ebpf get lock error."))?;
+    pub async fn handle_delete(&self, ip_list: IpList) -> anyhow::Result<()> {
+        let ebpf = &mut *self.ebpf.lock().await;
 
         let ip_data = ip_list
             .data
@@ -138,14 +130,14 @@ impl EbpfHandler {
         let (ipv4, ipv6) = self.parse_ip_entries(ip_data)?;
         match ip_list.item_type {
             1 => self.delete_maps(
-                &mut ebpf,
+                ebpf,
                 &ipv4,
                 &ipv6,
                 "WHITELIST_IPV4_CIDR",
                 "WHITELIST_IPV6_CIDR",
             ),
             2 => self.delete_maps(
-                &mut ebpf,
+                ebpf,
                 &ipv4,
                 &ipv6,
                 "BLOCKLIST_IPV4_CIDR",
@@ -167,24 +159,21 @@ impl EbpfHandler {
     /// Conversely, if IP whitelisting is disabled, the configuration center's IP address should be removed
     /// from the whitelist—although leaving it in place does not affect the gateway's operation.
     ///
-    pub fn handle_switch(
+    pub async fn handle_switch(
         &self,
         enable_white_list: bool,
         enable_block_list: bool,
     ) -> anyhow::Result<()> {
         //
-        let mut ebpf = self
-            .ebpf
-            .lock()
-            .map_err(|_| anyhow::anyhow!("ebpf get lock error."))?;
+        let ebpf = &mut *self.ebpf.lock().await;
 
         let mut map: HashMap<_, u32, u32> = HashMap::try_from(ebpf.map_mut("SWITCH").unwrap())?;
         let ip_list = self.get_address_ip_list()?;
         if enable_white_list {
-            self.handle_update(ip_list)?;
+            self.handle_update(ip_list).await?;
             map.insert(1, 1, 0)?;
         } else {
-            self.handle_delete(ip_list)?;
+            self.handle_delete(ip_list).await?;
             map.remove(&1)?;
         }
 

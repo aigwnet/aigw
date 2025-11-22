@@ -14,7 +14,7 @@ use tokio::{
         TcpStream,
         tcp::{OwnedReadHalf, OwnedWriteHalf},
     },
-    sync::{Mutex, RwLock, broadcast::Sender, mpsc},
+    sync::{RwLock, broadcast::Sender, mpsc},
     time::Instant,
 };
 use tracing::{error, info};
@@ -33,17 +33,12 @@ pub struct ConsoleClient {
     shutdown_tx: Arc<Sender<()>>,
     address: String,
     cluster: String,
-    sender: Arc<mpsc::Sender<Vec<u8>>>,
     crypto: Arc<RwLock<Option<CryptoCore>>>,
     signature: Arc<Signature>,
 }
 
 impl ConsoleClient {
-    pub fn new(
-        config: Arc<AigwConfig>,
-        shutdown_tx: Arc<Sender<()>>,
-        sender: Arc<mpsc::Sender<Vec<u8>>>,
-    ) -> Self {
+    pub fn new(config: Arc<AigwConfig>, shutdown_tx: Arc<Sender<()>>) -> Self {
         let signature = Arc::new(Signature::new(config.console().key()));
         let crypto = Arc::new(RwLock::new(None));
 
@@ -51,7 +46,6 @@ impl ConsoleClient {
             shutdown_tx,
             address: config.console().address().to_owned(),
             cluster: config.console().cluster().to_owned(),
-            sender,
             signature,
             crypto,
         }
@@ -61,15 +55,13 @@ impl ConsoleClient {
         &self.address
     }
 
-    pub async fn start(
-        &self,
-        rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>,
-        data_handler: Arc<DataFrameHandler>,
-    ) {
+    pub async fn start(&self, data_handler: Arc<DataFrameHandler>) {
         let addr = &self.address;
         let signature = &self.signature;
-        let sender = &self.sender;
         loop {
+            let (tx, rx) = mpsc::channel::<Vec<u8>>(1024);
+            let sender = Arc::new(tx);
+
             let socket_addrs = match addr.to_socket_addrs() {
                 Ok(addrs) => addrs.collect::<Vec<_>>(),
                 Err(e) => {
@@ -90,8 +82,8 @@ impl ConsoleClient {
                     let r = ConsoleClient::run(
                         data_handler.clone(),
                         self.shutdown_tx.clone(),
-                        sender,
-                        rx.clone(),
+                        sender.clone(),
+                        rx,
                         stream,
                         addr,
                         signature,
@@ -102,7 +94,7 @@ impl ConsoleClient {
                     match r {
                         Ok(exit) => {
                             if exit {
-                                let _ = self.close().await;
+                                let _ = self.close(&sender).await;
                                 break;
                             }
                         }
@@ -132,8 +124,8 @@ impl ConsoleClient {
     async fn run(
         data_handler: Arc<DataFrameHandler>,
         shutdown_tx: Arc<Sender<()>>,
-        sender: &Arc<mpsc::Sender<Vec<u8>>>,
-        rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>,
+        sender: Arc<mpsc::Sender<Vec<u8>>>,
+        rx: mpsc::Receiver<Vec<u8>>,
         stream: TcpStream,
         addr: &str,
         signature: &Signature,
@@ -255,7 +247,6 @@ impl ConsoleClient {
         tx: Arc<mpsc::Sender<Vec<u8>>>,
         crypto: Arc<RwLock<Option<CryptoCore>>>,
     ) {
-        // 如果本地没有任何同步点数据，建立连接的时候会去拉取全量，心跳包可以延迟发送，带全量数据拉取完整。
         if let Ok(log_points) = storage.load_log_points().await
             && log_points.is_empty()
         {
@@ -317,8 +308,7 @@ impl ConsoleClient {
         }
     }
 
-    async fn spawn_send_task(mut writer: OwnedWriteHalf, rx: Arc<Mutex<mpsc::Receiver<Vec<u8>>>>) {
-        let mut rx = rx.lock().await;
+    async fn spawn_send_task(mut writer: OwnedWriteHalf, mut rx: mpsc::Receiver<Vec<u8>>) {
         while let Some(msg) = rx.recv().await {
             if let Err(e) = writer.write_all(&msg).await {
                 error!("Failed to send message: {}", e);
@@ -386,7 +376,6 @@ impl ConsoleClient {
             }
             Frame::DATA => {
                 let data = parse_data(buffer, crypto)?;
-                info!(target:"console", "Received Data");
                 data_handler.handle(&data).await?;
 
                 if let Some(log_point) = data.log_point {
@@ -409,12 +398,12 @@ impl ConsoleClient {
         Ok(())
     }
 
-    pub async fn close(&self) -> anyhow::Result<()> {
+    pub async fn close(&self, sender: &mpsc::Sender<Vec<u8>>) -> anyhow::Result<()> {
         let crypto = &*self.crypto.read().await;
         if let Some(crypto) = crypto {
             let mut buffer = Buffer::new(32);
             build_close(&mut buffer, &Close {}, crypto)?;
-            self.sender.send(buffer.as_ref().to_vec()).await?;
+            sender.send(buffer.as_ref().to_vec()).await?;
         }
         info!(target:"console", "Send close to aigw console server.");
         Ok(())

@@ -1,6 +1,7 @@
-use std::{fs, sync::Arc};
+use std::sync::Arc;
 
 use aigw_core::{AcmeToken, Cluster, DataFrame, LogAction, LogType, Site};
+use tokio::fs;
 use tracing::info;
 
 use crate::server::storage::Storage;
@@ -33,21 +34,20 @@ impl DataFrameHandler {
 
                     let mut path = self.storage.data_dir.clone();
                     if !path.exists() {
-                        fs::create_dir_all(&path)?;
+                        fs::create_dir_all(&path).await?;
                     }
                     path.push("cluster.json");
 
                     let cluster_str = serde_json::to_string_pretty(&cluster)?;
-                    fs::write(path, cluster_str)?;
+                    fs::write(path, cluster_str).await?;
                     info!(target: "console", "{:?} cluster: {}", change_log.log_action, cluster.name);
 
                     #[cfg(target_os = "linux")]
                     {
                         if let Some(ebpf_handler) = &self.ebpf_handler {
-                            ebpf_handler.handle_switch(
-                                cluster.enable_white_list,
-                                cluster.enable_block_list,
-                            )?;
+                            ebpf_handler
+                                .handle_switch(cluster.enable_white_list, cluster.enable_block_list)
+                                .await?;
                         }
                     }
                     self.storage.store_cluster(Arc::new(cluster));
@@ -58,10 +58,10 @@ impl DataFrameHandler {
                         let mut path = self.storage.data_dir.clone();
                         path.push("site");
                         if !path.exists() {
-                            fs::create_dir_all(&path)?;
+                            fs::create_dir_all(&path).await?;
                         }
                         path.push(site.name.clone() + ".json");
-                        fs::write(path, serde_json::to_string_pretty(&site)?)?;
+                        fs::write(path, serde_json::to_string_pretty(&site)?).await?;
                         info!(target: "console", "{:?} site: {:?}", change_log.log_action, site.name);
                         self.storage.add_site(site)?;
                     }
@@ -104,14 +104,14 @@ impl DataFrameHandler {
                                 let ip_list_for_update: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
                                 if let Some(ebpf_handler) = &self.ebpf_handler {
-                                    ebpf_handler.handle_update(ip_list_for_update)?;
+                                    ebpf_handler.handle_update(ip_list_for_update).await?;
                                 }
                             }
                             LogAction::Delete => {
                                 let ip_list_for_delete: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
                                 if let Some(ebpf_handler) = &self.ebpf_handler {
-                                    ebpf_handler.handle_delete(ip_list_for_delete)?;
+                                    ebpf_handler.handle_delete(ip_list_for_delete).await?;
                                 }
                             }
                         }
