@@ -10,7 +10,7 @@ use aya::{
     programs::{Xdp, XdpFlags},
 };
 use ipnet::{Ipv4Net, Ipv6Net};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 pub struct EpbfConfig {
     pub iface: String,
@@ -58,7 +58,7 @@ pub fn run(config: &EpbfConfig, address: &str) -> anyhow::Result<EbpfHandler> {
     let program: &mut Xdp = ebpf.program_mut("aigw").unwrap().try_into()?;
     program.load()?;
     if let Err(e) = program.attach(&config.iface, XdpFlags::default()) {
-        eprintln!("Native XDP attach failed ({}), falling back to SKB mode", e);
+        error!("Native XDP attach failed ({}), falling back to SKB mode", e);
         program.attach(&config.iface, XdpFlags::SKB_MODE)?;
     }
 
