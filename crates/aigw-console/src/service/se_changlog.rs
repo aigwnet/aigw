@@ -5,7 +5,7 @@ use aigw_core::{Buffer, ChangeLog, DataFrame, LogAction, LogPoint, LogType, buil
 use rbatis::rbdc::DateTime;
 use rbatis::{PageRequest, RBatis};
 use tokio::sync::Mutex;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::server::connection::Connection;
 use crate::service::find_site_by_page;
@@ -104,6 +104,8 @@ pub async fn send_all_sites_to_aigw(
                     error!("Query error. {:?}", e);
                 }
             }
+        } else {
+            break;
         }
     }
 
@@ -115,6 +117,7 @@ pub async fn send_change_logs_to_aigw(
     rb: &RBatis,
     log_points: &Vec<LogPoint>,
 ) -> anyhow::Result<()> {
+    info!("Try to send change logs to aigw.");
     let mut map = HashMap::new();
     for p in log_points {
         map.insert(p.log_type, p.log_id);
@@ -174,6 +177,8 @@ pub async fn send_change_logs_to_aigw(
                         error!("Query error. {:?}", e);
                     }
                 }
+            } else {
+                break;
             }
         }
     }

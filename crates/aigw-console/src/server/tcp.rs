@@ -91,7 +91,7 @@ impl Handler {
     async fn handle(&self, data_type: u8, buffer: &mut Buffer) -> anyhow::Result<bool> {
         match data_type {
             Frame::HANDLESHAKE_REQ => {
-                debug!("Received handshake from: {}", &self.addr);
+                info!("Received handshake from: {}", &self.addr);
 
                 let provider = move |cluster: &str| {
                     let database_client = self.database_client.clone();
@@ -152,7 +152,7 @@ impl Handler {
             Frame::HEARTBEAT_PING => {
                 let mut log_points = vec![];
                 {
-                    let mut connection = self.connection.lock().await;
+                    let connection = &mut *self.connection.lock().await;
                     let crypto = &connection.crypto;
                     if let Some(crypto) = crypto {
                         let ping = parse_ping(buffer, crypto)?;
@@ -164,7 +164,8 @@ impl Handler {
                         build_pong(buffer, crypto, ts as i64)?;
                         connection.write(buffer.as_ref()).await?;
 
-                        // save ping
+                        info!("Write pong to: {}", &self.addr);
+
                         if let Some(cluster) = &connection.cluster {
                             let ip = connection
                                 .ip
@@ -173,6 +174,7 @@ impl Handler {
 
                             save_ping(&self.database_client.rb, cluster.to_string(), ip, ping)
                                 .await?;
+                            info!("Saved heartbeat data: {}", &self.addr);
                         }
                     }
                 }
