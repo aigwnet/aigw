@@ -20,6 +20,10 @@ static WHITELIST_IPV4_CIDR: LpmTrie<[u8; 4], u32> = LpmTrie::with_max_entries(65
 static BLOCKLIST_IPV6_CIDR: LpmTrie<[u8; 16], u32> = LpmTrie::with_max_entries(65536, 0);
 #[map]
 static WHITELIST_IPV6_CIDR: LpmTrie<[u8; 16], u32> = LpmTrie::with_max_entries(65536, 0);
+#[map]
+static WHITELIST_IPV4: HashMap<u32, u32> = HashMap::<u32, u32>::with_max_entries(64, 0);
+#[map]
+static WHITELIST_IPV6: HashMap<u128, u32> = HashMap::<u128, u32>::with_max_entries(16, 0);
 #[xdp]
 pub fn aigw(ctx: XdpContext) -> u32 {
     match xdp::try_xdp(ctx) {

@@ -39,8 +39,8 @@ impl DataFrameHandler {
                     path.push("cluster.json");
 
                     let cluster_str = serde_json::to_string_pretty(&cluster)?;
-                    fs::write(path, cluster_str).await?;
-                    info!(target: "console", "{:?} cluster: {}", change_log.log_action, cluster.name);
+                    fs::write(path, &cluster_str).await?;
+                    info!(target: "console", "{:?} cluster: {} ==> {}", change_log.log_action, cluster.name, &cluster_str);
 
                     #[cfg(target_os = "linux")]
                     {

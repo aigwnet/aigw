@@ -1,12 +1,11 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs};
+use std::net::{IpAddr, ToSocketAddrs};
 
-use aigw_core::{IpItem, IpList};
+use aigw_core::IpList;
 use aya::{
     Ebpf,
     maps::{HashMap, LpmTrie, lpm_trie::Key},
     programs::{Xdp, XdpFlags},
 };
-use ipnet::{Ipv4Net, Ipv6Net};
 use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
 
@@ -60,15 +59,11 @@ pub fn run(config: &EpbfConfig, address: &str) -> anyhow::Result<EbpfHandler> {
         program.attach(&config.iface, XdpFlags::SKB_MODE)?;
     }
 
-    Ok(EbpfHandler {
-        ebpf: Mutex::new(ebpf),
-        address: address.to_owned(),
-    })
+    Ok(EbpfHandler::new(ebpf, address)?)
 }
 
 pub struct EbpfHandler {
     ebpf: Mutex<Ebpf>,
-    address: String,
 }
 
 type Ipv4AndV6Iptems = (
@@ -77,13 +72,51 @@ type Ipv4AndV6Iptems = (
 );
 
 impl EbpfHandler {
+    pub fn new(mut ebpf: Ebpf, address: &str) -> anyhow::Result<Self> {
+        let addrs = address.to_socket_addrs()?.collect::<Vec<_>>();
+
+        {
+            let mut map_ipv4: HashMap<_, u32, u32> =
+                HashMap::try_from(ebpf.map_mut("WHITELIST_IPV4").unwrap())?;
+
+            for addr in &addrs {
+                match addr.ip() {
+                    IpAddr::V4(ipv4_addr) => {
+                        info!(target: "console",
+                            "Add ip {:?} to WHITELIST_IPV4  list",ipv4_addr
+                        );
+                        let ip = u32::from_be_bytes(ipv4_addr.octets());
+                        map_ipv4.insert(ip, 1, 0)?;
+                    }
+                    IpAddr::V6(_) => {}
+                }
+            }
+        }
+
+        {
+            let mut map_ipv6: HashMap<_, u128, u32> =
+                HashMap::try_from(ebpf.map_mut("WHITELIST_IPV6").unwrap())?;
+            for addr in &addrs {
+                match addr.ip() {
+                    IpAddr::V4(_) => {}
+                    IpAddr::V6(ipv6_addr) => {
+                        info!(target: "console",
+                            "Add ip {:?} to WHITELIST_IPV6  list",ipv6_addr
+                        );
+                        let ip = u128::from_be_bytes(ipv6_addr.octets());
+                        map_ipv6.insert(ip, 1, 0)?;
+                    }
+                }
+            }
+        }
+
+        Ok(Self {
+            ebpf: Mutex::new(ebpf),
+        })
+    }
+
     ///
     /// Updating the IP list is a hazardous operation.
-    ///
-    /// When updating the IP blacklist, must strictly verify whether the configuration
-    /// center's IP address is included in the blacklist. If it is present, that entry must be skipped.
-    /// Failing to skip it will disrupt communication between the gateway and the configuration center,
-    /// rendering all subsequent control commands from the configuration center ineffective.
     ///
     pub async fn handle_update(&self, ip_list: IpList) -> anyhow::Result<()> {
         let ip_data = ip_list
@@ -96,7 +129,6 @@ impl EbpfHandler {
         match ip_list.item_type {
             1 => {
                 //
-                let (ipv4, ipv6) = self.filter_address_ip(ipv4, ipv6)?;
                 self.update_maps(&ipv4, &ipv6, "WHITELIST_IPV4_CIDR", "WHITELIST_IPV6_CIDR")
                     .await
             }
@@ -132,14 +164,6 @@ impl EbpfHandler {
     ///
     /// When enabling IP whitelisting, it is extremely dangerous—
     /// you must ensure uninterrupted communication between the gateway and the configuration center.
-    /// Therefore, the IP address of the configuration center must be added to the whitelist.
-    /// If it is not included, any misconfiguration that disrupts communication between the configuration center
-    /// and the gateway will prevent you from making further changes via the configuration center.
-    /// In such a case, the only recovery option is to log in directly to the machine where the gateway is
-    /// running and perform manual operations—such as stopping the gateway—to restore connectivity.
-    ///
-    /// Conversely, if IP whitelisting is disabled, the configuration center's IP address should be removed
-    /// from the whitelist—although leaving it in place does not affect the gateway's operation.
     ///
     pub async fn handle_switch(
         &self,
@@ -147,28 +171,19 @@ impl EbpfHandler {
         enable_block_list: bool,
     ) -> anyhow::Result<()> {
         //
-        {
-            let ip_list = self.get_address_ip_list()?;
-            if enable_white_list {
-                self.handle_update(ip_list).await?;
-            } else {
-                self.handle_delete(ip_list).await?;
-            }
-        }
-
         let ebpf = &mut *self.ebpf.lock().await;
         let mut map: HashMap<_, u32, u32> = HashMap::try_from(ebpf.map_mut("SWITCH").unwrap())?;
 
         if enable_white_list {
             map.insert(1, 1, 0)?;
         } else {
-            map.remove(&1)?;
+            let _ = map.remove(&1);
         }
 
         if enable_block_list {
             map.insert(2, 1, 0)?;
         } else {
-            map.remove(&2)?;
+            let _ = map.remove(&2);
         }
         Ok(())
     }
@@ -236,7 +251,7 @@ impl EbpfHandler {
                 LpmTrie::try_from(ebpf.map_mut(ipv4_map_name).unwrap())?;
             for &(prefix_len, addr) in ipv4_entries {
                 let key = Key::new(prefix_len, addr.octets());
-                map.remove(&key)?;
+                let _ = map.remove(&key);
 
                 info!(target: "console",
                     "Removed ip {:?}/{} from {} list",addr, prefix_len, ipv4_map_name
@@ -249,7 +264,7 @@ impl EbpfHandler {
                 LpmTrie::try_from(ebpf.map_mut(ipv6_map_name).unwrap())?;
             for &(prefix_len, addr) in ipv6_entries {
                 let key = Key::new(prefix_len, addr.octets());
-                map.remove(&key)?;
+                let _ = map.remove(&key);
 
                 info!(target: "console",
                     "Removed ip {:?}/{} from {} list",addr, prefix_len, ipv6_map_name
@@ -258,86 +273,5 @@ impl EbpfHandler {
         }
 
         Ok(())
-    }
-
-    fn filter_address_ip(
-        &self,
-        ipv4: Vec<(u32, Ipv4Addr)>,
-        ipv6: Vec<(u32, Ipv6Addr)>,
-    ) -> anyhow::Result<Ipv4AndV6Iptems> {
-        let resolved_ips: Vec<IpAddr> = self.address.to_socket_addrs()?.map(|sa| sa.ip()).collect();
-        if resolved_ips.is_empty() {
-            return Ok((ipv4, ipv6));
-        }
-
-        let ipv4_nets: Vec<(u32, Ipv4Addr, Ipv4Net)> = ipv4
-            .into_iter()
-            .map(|(prefix, ip)| {
-                let net = Ipv4Net::new(ip, prefix as u8)?;
-                Ok((prefix, ip, net))
-            })
-            .collect::<anyhow::Result<_>>()?;
-
-        let ipv6_nets: Vec<(u32, Ipv6Addr, Ipv6Net)> = ipv6
-            .into_iter()
-            .map(|(prefix, ip)| {
-                let net = Ipv6Net::new(ip, prefix as u8)?;
-                Ok((prefix, ip, net))
-            })
-            .collect::<anyhow::Result<_>>()?;
-
-        let filtered_ipv4 = ipv4_nets
-            .into_iter()
-            .filter(|(_, _, net)| {
-                !resolved_ips.iter().any(|ip| match ip {
-                    IpAddr::V4(v4) => net.contains(v4),
-                    IpAddr::V6(_) => false,
-                })
-            })
-            .map(|(prefix, ip, _)| (prefix, ip))
-            .collect();
-
-        let filtered_ipv6 = ipv6_nets
-            .into_iter()
-            .filter(|(_, _, net)| {
-                !resolved_ips.iter().any(|ip| match ip {
-                    IpAddr::V4(_) => false,
-                    IpAddr::V6(v6) => net.contains(v6),
-                })
-            })
-            .map(|(prefix, ip, _)| (prefix, ip))
-            .collect();
-
-        Ok((filtered_ipv4, filtered_ipv6))
-    }
-
-    fn get_address_ip_list(&self) -> anyhow::Result<IpList> {
-        let mut ip_list = IpList {
-            item_type: 1,
-            data: vec![],
-        };
-        let addrs = self.address.to_socket_addrs()?.collect::<Vec<_>>();
-        if addrs.is_empty() {
-            return Err(anyhow::anyhow!(
-                "Failed to read the IP address of the configuration center server."
-            ));
-        }
-        for addr in addrs {
-            match addr.ip() {
-                IpAddr::V4(ipv4_addr) => {
-                    ip_list.data.push(IpItem {
-                        prefix_len: 32,
-                        data: ipv4_addr.to_string(),
-                    });
-                }
-                IpAddr::V6(ipv6_addr) => {
-                    ip_list.data.push(IpItem {
-                        prefix_len: 128,
-                        data: ipv6_addr.to_string(),
-                    });
-                }
-            }
-        }
-        Ok(ip_list)
     }
 }
