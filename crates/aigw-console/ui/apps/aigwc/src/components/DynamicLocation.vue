@@ -65,9 +65,11 @@ const getFieldPath = (index: number, fieldName: string) => {
 <template>
 
     <div class="w-full">
-        <Button type="primary" v-if="canAdd" dashed @click="addItem" class="mb-4 ">
-            <Plus /> {{ $t('page.add') }}
-        </Button>
+        <div class="flex justify-end mb-4">
+            <Button v-if="canAdd" dashed @click="addItem" class="mb-4 ">
+                <Plus /> {{ $t('page.add') }}
+            </Button>
+        </div>
         <Card v-for="(item, index) in modelValue" :key="index" class="mb-4 p-4">
             <Row>
                 <Col :span="24" class="flex justify-between items-center mb-4">

@@ -3,7 +3,7 @@ import type { VxeTableGridOptions, VxeGridPropTypes } from '#/adapter/vxe-table'
 import { useRouter } from 'vue-router';
 import { $t } from '#/locales';
 import { confirm, Page } from '@vben/common-ui';
-import { watch, ref, shallowRef, nextTick } from 'vue';
+import { watch, ref, shallowRef, nextTick, computed } from 'vue';
 import { message, Button, Tabs, TabPane } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -33,7 +33,7 @@ interface RowType {
 
 const baseColumns: VxeGridPropTypes.Columns<RowType> = [
     { title: 'No', type: 'seq', width: 50 },
-    { slots: { default: 'ip' }, title: 'IP', align: 'left', width: 320 },
+    { slots: { default: 'ip' }, type: 'checkbox', title: 'IP', align: 'left', width: 320 },
     { slots: { default: 'cluster_name' }, align: 'left', title: $t('page.cluster.name') },
     { field: 'start_time', title: $t('page.security.startTime') },
     { field: 'end_time', title: $t('page.security.endTime') },
@@ -134,6 +134,63 @@ const onDelete = async (row: RowType) => {
 
 };
 
+const hasSelected = computed(() => currentSelectedRows.value.length > 0);
+const selectedRowsWhite = ref<RowType[]>([]);
+const selectedRowsBlock = ref<RowType[]>([]);
+const currentSelectedRows = computed(() => {
+    return activeKey.value === '1' ? selectedRowsWhite.value : selectedRowsBlock.value;
+});
+const onCheckboxChangeWhite = ({ records }: { records: RowType[] }) => {
+    selectedRowsWhite.value = records;
+};
+
+const onCheckboxChangeBlock = ({ records }: { records: RowType[] }) => {
+    selectedRowsBlock.value = records;
+};
+
+const onCheckboxAllWhite = ({ records }: { records: RowType[] }) => {
+    selectedRowsWhite.value = records;
+};
+
+const onCheckboxAllBlock = ({ records }: { records: RowType[] }) => {
+    selectedRowsBlock.value = records;
+};
+
+const onBatchDelete = async () => {
+    if (currentSelectedRows.value.length === 0) {
+        message.warning($t('common.pleaseSelectData'));
+        return;
+    }
+
+    const ids = currentSelectedRows.value.map(item => item.id);
+
+    confirm({
+        beforeClose({ isConfirm }) {
+            if (!isConfirm) return;
+            //return batchDeleteClusterIpApi(ids);
+            return true;
+        },
+        centered: false,
+        content: $t('page.batchDeleteConfirm', { count: currentSelectedRows.value.length }),
+        icon: 'question',
+    })
+        .then(() => {
+            message.success({
+                content: $t('page.security.cluster.batchDeleteSuccess'),
+            });
+            // 清空选中状态
+            if (activeKey.value === '1') {
+                selectedRowsWhite.value = [];
+            } else {
+                selectedRowsBlock.value = [];
+            }
+            currentGridApi.value?.reload();
+        })
+        .catch(() => {
+            // cancel
+        });
+};
+
 watch(
     () => clusterAccess.current,
     (newCluster, oldCluster) => {
@@ -148,7 +205,7 @@ watch(
 </script>
 
 <template>
-        <Page auto-content-height content-class="flex flex-col gap-4" :title="$t('page.security.cluster.list')">
+    <Page auto-content-height content-class="flex flex-col gap-4" :title="$t('page.security.cluster.list')">
         <template #description>
             <div class="text-muted-foreground">
                 <p>
@@ -167,10 +224,14 @@ watch(
 
                 </template>
 
-                <GridWhite :table-title="$t('page.security.cluster.ipWhiteList')">
+                <GridWhite :table-title="$t('page.security.cluster.ipWhiteList')" @checkbox-all="onCheckboxAllWhite"
+                    @checkbox-change="onCheckboxChangeWhite">
                     <template #toolbar-tools>
                         <Button class="mr-2" type="primary" @click="onAdd()">
                             {{ $t('page.add') }}
+                        </Button>
+                        <Button class="mr-2" type="primary" danger :disabled="!hasSelected" @click="onBatchDelete">
+                            {{ $t('page.deleteSelected') }}
                         </Button>
                     </template>
                     <template #cluster_name="{ row }">
@@ -192,10 +253,14 @@ watch(
                     </span>
 
                 </template>
-                <GridBlock :table-title="$t('page.security.cluster.ipBlockList')">
+                <GridBlock :table-title="$t('page.security.cluster.ipBlockList')" @checkbox-all="onCheckboxAllBlock"
+                    @checkbox-change="onCheckboxChangeBlock">
                     <template #toolbar-tools>
                         <Button class="mr-2" type="primary" @click="onAdd()">
                             {{ $t('page.add') }}
+                        </Button>
+                        <Button class="mr-2" type="primary" danger :disabled="!hasSelected" @click="onBatchDelete">
+                            {{ $t('page.deleteSelected') }}
                         </Button>
                     </template>
                     <template #cluster_name="{ row }">

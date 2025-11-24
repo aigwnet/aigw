@@ -3,6 +3,7 @@
   "add": "Add",
   "edit": "Edit",
   "delete": "Delete",
+  "deleteSelected": "Delete Selected",
   "modifiedTime": "Modified Time",
   "createTime": "Create Time",
   "operation": "Operation",
