@@ -51,10 +51,6 @@ impl ConsoleClient {
         }
     }
 
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
     pub async fn start(&self, data_handler: Arc<DataFrameHandler>) {
         let addr = &self.address;
         let signature = &self.signature;

@@ -13,6 +13,8 @@
   "deleteConfirm": "Are you sure to delete this item?",
   "enabled": "Enabled",
   "disabled": "Disabled",
+  "copy": "Copy",
+  "copySuccess": "Copy Successfully!",
   "auth": {
     "login": "Login",
     "register": "Register",
@@ -64,7 +66,8 @@
     "secLayer4": "Layer 4 Network Protection",
     "secLayer4Wihte": "Enable IP Whitelist",
     "secLayer4Block": "Enable IP Blocklist",
-    "secLayer4Disable": "Disable"
+    "secLayer4Disable": "Disable",
+    "tip": "Cluster management, such as enabling the cluster, enabling the default site, enabling Layer 4 network protection, and so on."
   },
   "site": {
     "title": "Manage Sites",
@@ -126,7 +129,8 @@
       "newIp": "Add New IP List",
       "editIp": "Edit IP",
       "addSuccess": "Add IP List successfully!",
-      "deleteSuccess": "Delete IP List successfully!"
+      "deleteSuccess": "Delete IP List successfully!",
+      "tip": "Manage Layer 4 IP blacklist and whitelist for the cluster. The lists take effect only after Layer 4 network protection is enabled in cluster settings."
     },
     "startTime": "Start Time",
     "endTime": "End Time"

@@ -3,7 +3,7 @@ import type { VxeTableGridOptions, VxeGridPropTypes } from '#/adapter/vxe-table'
 import { useRouter } from 'vue-router';
 import { $t } from '#/locales';
 import { confirm, Page } from '@vben/common-ui';
-import { watch, ref, shallowRef } from 'vue';
+import { watch, ref, shallowRef, nextTick } from 'vue';
 import { message, Button, Tabs, TabPane } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -15,6 +15,7 @@ import {
 } from '@vben/icons';
 const Shield = createIconifyIcon('lucide:shield');
 const ShieldBan = createIconifyIcon('lucide:shield-ban');
+const DeleteIcon = createIconifyIcon('ant-design:delete-outlined');
 
 let clusterAccess = clusterStore();
 
@@ -85,9 +86,19 @@ const [GridBlock, gridApiBlock] = useVbenVxeGrid({
 
 const currentGridApi = shallowRef(gridApiWhite);
 
+const safeReload = () => {
+    if (currentGridApi.value?.reload && typeof currentGridApi.value.reload === 'function') {
+        currentGridApi.value.reload();
+    }
+};
+
+
 watch(activeKey, (newKey) => {
     currentGridApi.value = newKey === '1' ? gridApiWhite : gridApiBlock;
-    currentGridApi.value?.reload();
+    nextTick(() => {
+        safeReload();
+    });
+
 });
 
 const router = useRouter();
@@ -137,7 +148,14 @@ watch(
 </script>
 
 <template>
-    <Page auto-content-height>
+        <Page auto-content-height content-class="flex flex-col gap-4" :title="$t('page.security.cluster.list')">
+        <template #description>
+            <div class="text-muted-foreground">
+                <p>
+                    {{ $t('page.security.cluster.tip') }}
+                </p>
+            </div>
+        </template>
 
         <Tabs v-model:activeKey="activeKey">
             <TabPane key="1" type="card">
@@ -184,7 +202,9 @@ watch(
                         <Button type="link" @click="onClusterEdit(row)">{{ row.cluster_name }}</Button>
                     </template>
                     <template #action="{ row }">
-                        <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
+                        <Button shape="circle" size="small" danger @click="onDelete(row)" :title="$t('page.delete')">
+                            <DeleteIcon />
+                        </Button>
                     </template>
                     <template #ip="{ row }">
                         {{ row.ip }}/{{ row.prefix_len }}

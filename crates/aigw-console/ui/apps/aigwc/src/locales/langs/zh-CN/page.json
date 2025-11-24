@@ -1,5 +1,5 @@
 {
-  "new": "创建",
+  "new": "新建",
   "add": "添加",
   "edit": "编辑",
   "delete": "删除",
@@ -13,6 +13,8 @@
   "deleteConfirm": "确定要删除该内容吗？",
   "enabled": "已启用",
   "disabled": "已禁用",
+  "copy": "复制",
+  "copySuccess": "复制成功",
   "auth": {
     "login": "登录",
     "register": "注册",
@@ -64,7 +66,8 @@
     "secLayer4": "网络4层防护",
     "secLayer4Wihte": "开启IP白名单",
     "secLayer4Block": "开启IP黑名单",
-    "secLayer4Disable": "禁用"
+    "secLayer4Disable": "禁用",
+    "tip": "集群管理，如启用集群、启用默认站点以及启用网络4层防护等等。"
   },
   "site": {
     "title": "站点管理",
@@ -126,7 +129,8 @@
       "newIp": "添加IP名单",
       "editIp": "修改IP名单",
       "addSuccess": "添加IP名单成功！",
-      "deleteSuccess": "删除IP名单成功！"
+      "deleteSuccess": "删除IP名单成功！",
+      "tip": "管理集群网络4层IP黑名单、白名单，名单需要在集群管理中启用网络4层防护才能生效。"
     },
     "startTime": "起始时间",
     "endTime": "结束时间"

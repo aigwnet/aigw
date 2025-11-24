@@ -28,7 +28,7 @@ watch(
             localFields.value = [...(newVal || [])]
         }
     },
-    { deep: true }
+    { deep: true, immediate: true }
 )
 
 watch(
@@ -39,7 +39,6 @@ watch(
     { deep: true }
 )
 
-// 添加新项
 const addItem = () => {
     if (localFields.value.length >= props.max) return
     localFields.value.push({
@@ -48,13 +47,11 @@ const addItem = () => {
     })
 }
 
-// 删除项
 const removeItem = (index: number) => {
     if (localFields.value.length <= props.min) return
     localFields.value.splice(index, 1)
 }
 
-// 确保最小数量
 const ensureMinFields = () => {
     while (localFields.value.length < props.min) {
         localFields.value.push({
@@ -64,7 +61,6 @@ const ensureMinFields = () => {
     }
 }
 
-// 初始化
 ensureMinFields()
 
 const getFieldPath = (index: number, fieldName: string) => {
@@ -80,15 +76,13 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
 
                 <FormItem :colon="false" :label="label" :label-col="{ span: 3 }">
-                    <InputGroup>
+                    <InputGroup compact>
                         <Input style="width: 200px;" v-model:value="localFields[index].name"
                             placeholder="Example: Connection" :name="getFieldPath(index, 'name')" />
                         <Input style="width: 200px;" v-model:value="localFields[index].value"
                             placeholder="Example: upgrade" :name="getFieldPath(index, 'value')" />
-
                         <Button v-if="localFields.length < max" primary @click="addItem" :icon="h(Plus)" />
                         <Button v-if="localFields.length > min" danger :icon="h(X)" @click="removeItem(index)" />
-
                     </InputGroup>
                 </FormItem>
 

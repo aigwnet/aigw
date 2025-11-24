@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, h } from 'vue'
-import { Card, Row, Col, FormItem, Input, Select, InputNumber, Switch, RadioGroup, Radio, Textarea, Button, Divider } from 'ant-design-vue'
+import { Card, Row, Col, FormItem, Input, Select, InputNumber, Switch, RadioGroup, RadioButton, Textarea, Button, Divider } from 'ant-design-vue'
 import { Plus, X } from '@vben/icons'
 import DynamicHeader from './DynamicHeader.vue'
 
@@ -68,13 +68,11 @@ const addItem = () => {
     })
 }
 
-// 删除项
 const removeItem = (index: number) => {
     if (localFields.value.length <= props.min) return
     localFields.value.splice(index, 1)
 }
 
-// 确保最小数量
 const ensureMinFields = () => {
     while (localFields.value.length < props.min) {
         localFields.value.push({
@@ -98,7 +96,6 @@ const ensureMinFields = () => {
     }
 }
 
-// 初始化
 ensureMinFields()
 
 const getFieldPath = (index: number, fieldName: string) => {
@@ -141,9 +138,10 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.protocol')" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'protocol')">
-                    <RadioGroup :name="`protocol-${index}`" v-model:value="localFields[index].protocol">
-                        <Radio value="http">http</Radio>
-                        <Radio value="https">https</Radio>
+                    <RadioGroup :id="`protocol-${index}`" :name="`protocol-${index}`"
+                        v-model:value="localFields[index].protocol">
+                        <RadioButton value="http">http</RadioButton>
+                        <RadioButton value="https">https</RadioButton>
                     </RadioGroup>
                 </FormItem>
                 </Col>
@@ -152,7 +150,11 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.connectionTimeout')" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'connection_timeout')">
-                    <InputNumber v-model:value="localFields[index].connection_timeout" placeholder="5" />
+                    <InputNumber v-model:value="localFields[index].connection_timeout" placeholder="5">
+                        <template #addonAfter>
+                            s
+                        </template>
+                    </InputNumber>
                 </FormItem>
                 </Col>
             </Row>
@@ -160,7 +162,11 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.readTimeout')" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'read_timeout')">
-                    <InputNumber v-model:value="localFields[index].read_timeout" placeholder="5" />
+                    <InputNumber v-model:value="localFields[index].read_timeout" placeholder="5">
+                        <template #addonAfter>
+                            s
+                        </template>
+                    </InputNumber>
                 </FormItem>
                 </Col>
             </Row>
@@ -168,7 +174,11 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.writeTimeout')" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'write_timeout')">
-                    <InputNumber v-model:value="localFields[index].write_timeout" placeholder="5" />
+                    <InputNumber v-model:value="localFields[index].write_timeout" placeholder="5">
+                        <template #addonAfter>
+                            s
+                        </template>
+                    </InputNumber>
                 </FormItem>
                 </Col>
             </Row>
@@ -176,7 +186,11 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.idleTimeout')" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'idle_timeout')">
-                    <InputNumber v-model:value="localFields[index].idle_timeout" placeholder="30" />
+                    <InputNumber v-model:value="localFields[index].idle_timeout" placeholder="30">
+                        <template #addonAfter>
+                            s
+                        </template>
+                    </InputNumber>
                 </FormItem>
                 </Col>
             </Row>
@@ -192,7 +206,11 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.cmbs')" :label-col="{ span: 3 }"
                     :name="getFieldPath(index, 'client_max_body_size')" :extra="$t('page.site.cmbsTip')">
-                    <InputNumber v-model:value="localFields[index].client_max_body_size" placeholder="0" />
+                    <InputNumber v-model:value="localFields[index].client_max_body_size" placeholder="0">
+                        <template #addonAfter>
+                            B
+                        </template>
+                    </InputNumber>
                 </FormItem>
                 </Col>
             </Row>
@@ -207,7 +225,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Row v-show="localFields[index].proxy">
                 <Col :span="24">
                 <FormItem :colon="false" :label="$t('page.site.httpVersion')" :label-col="{ span: 3 }"
-                    :name="getFieldPath(index, 'rewrite')">
+                    :name="getFieldPath(index, 'http_version')">
                     <Select v-model:value="localFields[index].http_version" :options="httpVersionOptions" />
                 </FormItem>
                 </Col>

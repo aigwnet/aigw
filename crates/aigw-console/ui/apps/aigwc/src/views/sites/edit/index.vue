@@ -195,7 +195,7 @@ const [Form, formApi] = useVbenForm({
             componentProps: {
                 min: 1,
                 max: 10,
-                namePath: ['locations'],
+                namePath: 'locations',
             },
         },
     ],

@@ -4,12 +4,15 @@ import { useRouter } from 'vue-router';
 import { $t } from '#/locales';
 import { watch } from 'vue';
 import { confirm, Page } from '@vben/common-ui';
-
+import { createIconifyIcon } from '@vben/icons';
 import { message, Button } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { getSiteTableApi, deleteSiteApi } from '#/api';
 import { clusterStore } from '#/store';
+
+const EditIcon = createIconifyIcon('ant-design:edit-outlined');
+const DeleteIcon = createIconifyIcon('ant-design:delete-outlined');
 
 let clusterAccess = clusterStore();
 
@@ -144,8 +147,12 @@ watch(
                     {{ row.tls_cert_start_date }} - {{ row.tls_cert_end_date }}
                 </template>
                 <template #action="{ row }">
-                    <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
-                    <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
+                    <Button shape="circle" size="small" @click="onEdit(row)" :title="$t('page.edit')">
+                        <EditIcon />
+                    </Button>
+                    <Button shape="circle" size="small" danger @click="onDelete(row)" :title="$t('page.delete')">
+                        <DeleteIcon />
+                    </Button>
                 </template>
             </Grid>
         </div>
