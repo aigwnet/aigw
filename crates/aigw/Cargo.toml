@@ -17,7 +17,7 @@ dashmap = {workspace = true}
 dyn-fmt = {version = "0.4.3"}
 hex = {workspace = true}
 hostname = {version = "0.4"}
-http = {version = "1"}
+http = {workspace = true}
 httpdate = {version = "1"}
 itoa = {version = "1"}
 lazy_static = {workspace = true}

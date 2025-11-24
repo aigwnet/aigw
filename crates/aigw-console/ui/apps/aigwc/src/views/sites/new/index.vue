@@ -5,6 +5,7 @@ import { Page, Loading } from '@vben/common-ui';
 import { $t } from '#/locales';
 import { addSiteApi, getAllClustersApi } from '#/api';
 
+import { defaultLocationItem } from '#/types';
 import DynamicLocation from '#/components/DynamicLocation.vue';
 const RawDynamicLocation = markRaw(DynamicLocation);
 
@@ -179,29 +180,7 @@ const [Form, formApi] = useVbenForm({
             fieldName: 'locations',
             hideLabel: true,
             formItemClass: '',
-            defaultValue: [{
-                path: '',
-                proxy: false,
-                protocol: 'http',
-                connection_timeout: 5,
-                read_timeout: 5,
-                write_timeout: 5,
-                idle_timeout: 30,
-                sni: "",
-                client_max_body_size: 0,
-                rewrite: "",
-                upstream: "",
-                root_dir: "",
-                auto_index: false,
-                proxy_add_headers: [{
-                    name: "",
-                    value: "",
-                }],
-                proxy_set_headers: [{
-                    name: "",
-                    value: "",
-                }],
-            }],
+            defaultValue: [defaultLocationItem()],
             componentProps: {
                 min: 1,
                 max: 10,

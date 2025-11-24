@@ -4,8 +4,10 @@ use std::{
 };
 
 use aigw_core::{
-    ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey, convert_headers, convert_headers_to_string, date_format_local, new_path_selector, new_rewrite
+    ChangeLog, DynamicCert, HttpVersion, LogAction, LogType, ProxyLocation, Site, TlsPrivateKey,
+    convert_headers, convert_headers_to_string, date_format_local, new_path_selector, new_rewrite,
 };
+use http::HeaderName;
 use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 
@@ -259,6 +261,19 @@ async fn convert_tb_site(
             proxy_set_headers: location.set_headers.and_then(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
+                } else {
+                    None
+                }
+            }),
+            proxy_remove_headers: location.remove_headers.and_then(|s| {
+                if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
+                    let mut r = vec![];
+                    for h in &headers {
+                        if let Ok(h) = HeaderName::from_lowercase(h.to_lowercase().as_bytes()) {
+                            r.push(h);
+                        }
+                    }
+                    Some(r)
                 } else {
                     None
                 }
@@ -598,6 +613,10 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
             } else {
                 None
             }
+        }),
+        remove_headers: location.proxy_remove_headers.as_ref().and_then(|items| {
+            let headers = items.iter().map(|h| h.as_str()).collect::<Vec<_>>();
+            serde_json::to_string(&headers).ok()
         }),
         rewrite: location
             .rewrite

@@ -3,44 +3,10 @@ import { ref, watch, h, onMounted, computed } from 'vue'
 import { Card, Row, Col, FormItem, Input, Select, InputNumber, Switch, RadioGroup, RadioButton, Textarea, Button, Divider } from 'ant-design-vue'
 import { Plus, createIconifyIcon } from '@vben/icons'
 import DynamicHeader from './DynamicHeader.vue'
-const DeleteIcon = createIconifyIcon('ant-design:delete-outlined');
-export interface LocationItem {
-    path: string
-    proxy: boolean
-    protocol: string
-    connection_timeout: number
-    read_timeout: number
-    write_timeout: number
-    idle_timeout: number
-    sni: string
-    client_max_body_size: number
-    rewrite: string
-    http_version: string
-    upstream: string
-    root_dir: string
-    auto_index: boolean
-    proxy_add_headers: Array<{ name: string; value: string }>
-    proxy_set_headers: Array<{ name: string; value: string }>
-}
+import RemoveHeader from './RemoveHeader.vue'
 
-const createDefaultItem = (): LocationItem => ({
-    path: '',
-    proxy: false,
-    protocol: 'http',
-    connection_timeout: 5,
-    read_timeout: 5,
-    write_timeout: 5,
-    idle_timeout: 30,
-    sni: "",
-    client_max_body_size: 0,
-    rewrite: "",
-    http_version: "",
-    upstream: "",
-    root_dir: "",
-    auto_index: false,
-    proxy_add_headers: [{ name: "", value: "" }],
-    proxy_set_headers: [{ name: "", value: "" }],
-})
+import { type LocationItem, defaultLocationItem } from '#/types';
+const DeleteIcon = createIconifyIcon('ant-design:delete-outlined');
 
 const props = withDefaults(defineProps<{
     min?: number
@@ -70,7 +36,7 @@ const canRemove = computed(() => modelValue.value.length > props.min)
 const addItem = () => {
     if (!canAdd.value)
         return;
-    modelValue.value.push(createDefaultItem());
+    modelValue.value.push(defaultLocationItem());
 }
 
 const removeItem = (index: number) => {
@@ -81,7 +47,7 @@ const removeItem = (index: number) => {
 
 const ensureMinFields = () => {
     while (modelValue.value.length < props.min) {
-        modelValue.value.push(createDefaultItem());
+        modelValue.value.push(defaultLocationItem());
     }
 }
 
@@ -106,7 +72,8 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Row>
                 <Col :span="24" class="flex justify-between items-center mb-4">
                 <h4 class="text-base font-medium text-blue-600">Location {{ index + 1 }}</h4>
-                <Button v-if="canRemove" danger shape="circle" :icon="h(DeleteIcon)" size="small" @click="removeItem(index)" />
+                <Button v-if="canRemove" danger shape="circle" :icon="h(DeleteIcon)" size="small"
+                    @click="removeItem(index)" />
                 </Col>
             </Row>
             <Row>
@@ -259,6 +226,15 @@ const getFieldPath = (index: number, fieldName: string) => {
                 <Col :span="24">
                 <DynamicHeader :label="$t('page.site.setHeaders')" :min="1" :max="10"
                     :namePath="getFieldPath(index, 'proxy_set_headers')" v-model:modelValue="item.proxy_set_headers" />
+                </Col>
+            </Row>
+
+            <Divider v-show="item.proxy" />
+            <Row v-show="item.proxy">
+                <Col :span="24">
+                <RemoveHeader :label="$t('page.site.removeHeaders')" :min="1" :max="10"
+                    :namePath="getFieldPath(index, 'proxy_remove_headers')"
+                    v-model:modelValue="item.proxy_remove_headers" />
                 </Col>
             </Row>
 

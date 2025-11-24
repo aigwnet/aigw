@@ -102,6 +102,7 @@
     "httpVersion": "Http Version",
     "addHeaders": "Add Headers",
     "setHeaders": "Set Headers",
+    "removeHeaders": "Remove Headers",
     "addSuccess": "Add site successfully!",
     "updateSuccess": "Upadte site successfully!",
     "limiting": "Rate Limiting",

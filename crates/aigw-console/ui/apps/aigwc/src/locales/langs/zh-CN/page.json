@@ -102,6 +102,7 @@
     "httpVersion": "Http版本",
     "addHeaders": "添加HTTP头",
     "setHeaders": "设置HTTP头",
+    "removeHeaders": "删除HTTP头",
     "addSuccess": "添加站点信息成功！",
     "updateSuccess": "更新站点信息成功！",
     "limiting": "限流配置",

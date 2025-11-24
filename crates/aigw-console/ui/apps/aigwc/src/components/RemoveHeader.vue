@@ -6,7 +6,6 @@ const DeleteIcon = createIconifyIcon('ant-design:delete-outlined');
 
 interface HeaderField {
     name: string
-    value: string
 }
 
 const props = withDefaults(defineProps<{
@@ -27,11 +26,10 @@ const modelValue = defineModel<HeaderField[]>({
 const canAdd = computed(() => modelValue.value.length < props.max)
 const canRemove = computed(() => modelValue.value.length > props.min)
 
+
 const createDefaultField = (): HeaderField => ({
     name: "",
-    value: "",
 })
-
 
 const addItem = () => {
     if (!canAdd.value)
@@ -72,8 +70,6 @@ const getFieldPath = (index: number, fieldName: string) => {
                     <InputGroup compact>
                         <Input style="width: 200px;" v-model:value="item.name" placeholder="Example: Connection"
                             :name="getFieldPath(index, 'name')" />
-                        <Input style="width: 200px;" v-model:value="item.value" placeholder="Example: upgrade"
-                            :name="getFieldPath(index, 'value')" />
                         <Button v-if="canAdd && index === 0" primary @click="addItem" :icon="h(Plus)" />
                         <Button v-if="canRemove" danger :icon="h(DeleteIcon)" @click="removeItem(index)" />
                     </InputGroup>

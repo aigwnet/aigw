@@ -16,7 +16,7 @@ bytes = {version = "1"}
 clap = {workspace = true}
 dashmap = {workspace = true}
 hex = {workspace = true}
-http = {version = "0.2"}
+http = {workspace = true}
 lazy_static = {workspace = true}
 local-ip-address = {version = "0.6"}
 md5 = {workspace = true}

@@ -25,7 +25,7 @@ use pingora_core::{
         grpc_web::{GrpcWeb, GrpcWebBridge},
     },
     prelude::HttpPeer,
-    protocols::{ALPN, Digest, TcpKeepalive, TimingDigest}
+    protocols::{ALPN, Digest, TcpKeepalive, TimingDigest},
 };
 use pingora_http::{RequestHeader, ResponseHeader};
 use pingora_proxy::{FailToProxy, ProxyHttp, Session};
@@ -38,10 +38,15 @@ use crate::{
     server::{
         acme::Http01Handler,
         runtime::{
-            GeoLite, error_page, file::StaticFilesHandler, get_hostname, http_header::{
+            GeoLite, error_page,
+            file::StaticFilesHandler,
+            get_hostname,
+            http_header::{
                 HTTP_HEADER_NAME_X_REQUEST_ID, convert_header_value, get_client_ip, get_host,
                 get_remote_addr,
-            }, new_internal_error, user_agent::{UserAgentType, classify_user_agent}
+            },
+            new_internal_error,
+            user_agent::{UserAgentType, classify_user_agent},
         },
         storage::Storage,
     },
@@ -576,6 +581,12 @@ impl ProxyHttp for AigwProxy {
             if let Some(arr) = &location.proxy_add_headers {
                 arr.iter().for_each(|(k, v)| set_header(k, v, true));
             }
+
+            if let Some(arr) = &location.proxy_remove_headers {
+                arr.iter().for_each(|name| {
+                    header.remove_header(name);
+                });
+            }
         }
 
         Ok(())
@@ -709,7 +720,7 @@ impl ProxyHttp for AigwProxy {
             Some(q) => session.req_header().uri.path().to_string() + "?" + q,
             None => session.req_header().uri.path().to_string(),
         };
-        info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
+         info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
             path, host, ua);
     }

@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use http::HeaderName;
 use pingora_http::RequestHeader;
 use pingora_load_balancing::{LoadBalancer, selection::Consistent};
 use regex::Regex;
@@ -249,6 +250,17 @@ pub struct ProxyLocation {
         deserialize_with = "deserialize_http_headers"
     )]
     pub proxy_set_headers: Option<Vec<HttpHeader>>,
+
+    /// Headers to set on proxied requests
+    /// These override any existing headers with the same name
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_http_header_name",
+        deserialize_with = "deserialize_http_header_name"
+    )]
+    pub proxy_remove_headers: Option<Vec<HeaderName>>,
+
     pub auto_index: bool,
     // root dir
     pub root_dir: Option<PathBuf>,
@@ -468,6 +480,49 @@ where
     } else {
         let r = convert_headers(&headers)
             .map_err(|_| serde::de::Error::custom("Convert headers error"))?;
+        Ok(Some(r))
+    }
+}
+
+fn serialize_http_header_name<S>(
+    value: &Option<Vec<HeaderName>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let mut headers = vec![];
+    if let Some(h) = value {
+        for name in h {
+            let mut map = HashMap::new();
+            map.insert("name", name.as_str());
+
+            headers.push(map);
+        }
+    }
+
+    serializer.collect_seq(headers)
+}
+
+fn deserialize_http_header_name<'de, D>(
+    deserializer: D,
+) -> Result<Option<Vec<HeaderName>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let headers: Vec<HashMap<String, String>> = Vec::deserialize(deserializer)?;
+    if headers.is_empty() {
+        Ok(None)
+    } else {
+        let mut r = vec![];
+        for s in headers {
+            if let Some(name) = s.get("name") {
+                r.push(
+                    HeaderName::from_lowercase(name.to_lowercase().as_bytes())
+                        .map_err(|_| serde::de::Error::custom("Convert headers error"))?,
+                );
+            }
+        }
         Ok(Some(r))
     }
 }

@@ -18,6 +18,7 @@ pub struct TbLocation {
     pub http_version: Option<String>,
     pub set_headers: Option<String>,
     pub add_headers: Option<String>,
+    pub remove_headers: Option<String>,
     pub root_dir: Option<String>,
     pub auto_index: i8,
     pub gmt_create: Option<DateTime>,
