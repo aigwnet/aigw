@@ -145,7 +145,7 @@ const [Form, formApi] = useVbenForm({
             component: 'InputNumber',
             componentProps: {
                 placeholder: '0',
-                addonAfter: '/s', 
+                addonAfter: '/s',
             },
             fieldName: 'rate_limit',
             label: $t('page.site.limitingValue'),
@@ -156,7 +156,7 @@ const [Form, formApi] = useVbenForm({
             component: 'InputNumber',
             componentProps: {
                 placeholder: '1000',
-                addonAfter: 'ms', 
+                addonAfter: 'ms',
             },
             fieldName: 'rate_limit_unit',
             label: $t('page.site.limitingUnit'),
@@ -193,8 +193,14 @@ const [Form, formApi] = useVbenForm({
                 upstream: "",
                 root_dir: "",
                 auto_index: false,
-                proxy_add_headers: [],
-                proxy_set_headers: [],
+                proxy_add_headers: [{
+                    name: "",
+                    value: "",
+                }],
+                proxy_set_headers: [{
+                    name: "",
+                    value: "",
+                }],
             }],
             componentProps: {
                 min: 1,

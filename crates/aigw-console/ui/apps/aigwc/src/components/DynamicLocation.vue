@@ -62,8 +62,14 @@ const addItem = () => {
         upstream: "",
         root_dir: "",
         auto_index: false,
-        proxy_add_headers: [],
-        proxy_set_headers: [],
+        proxy_add_headers: [{
+            name: "",
+            value: "",
+        }],
+        proxy_set_headers: [{
+            name: "",
+            value: "",
+        }],
     })
 }
 
@@ -89,8 +95,14 @@ const ensureMinFields = () => {
             upstream: "",
             root_dir: "",
             auto_index: false,
-            proxy_add_headers: [],
-            proxy_set_headers: [],
+            proxy_add_headers: [{
+                name: "",
+                value: "",
+            }],
+            proxy_set_headers: [{
+                name: "",
+                value: "",
+            }],
         })
     }
 }

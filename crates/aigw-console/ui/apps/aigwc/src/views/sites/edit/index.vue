@@ -25,7 +25,6 @@ setTabTitle(`${index.value} - ` + $t('page.details'));
 
 const submitting = ref(true);
 
-const defaultValue = ref([]);
 let defaultFormValue: Record<string, any> | undefined = undefined;
 
 const [Form, formApi] = useVbenForm({
@@ -226,8 +225,8 @@ const fetchData = async () => {
         }] : location.proxy_set_headers,
     }))
 
-    defaultValue.value = site.locations;
-    defaultFormValue = site;
+    // Deep clone
+    defaultFormValue = JSON.parse(JSON.stringify(site));
     formApi.setValues(site);
     submitting.value = false;
 }
@@ -284,7 +283,6 @@ function onSubmit(values: Record<string, any>) {
 
 function onReset() {
     if (defaultFormValue) {
-        console.log(JSON.stringify(defaultFormValue))
         formApi.setValues(defaultFormValue);
     }
 }
