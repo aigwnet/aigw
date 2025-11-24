@@ -516,7 +516,9 @@ where
     } else {
         let mut r = vec![];
         for s in headers {
-            if let Some(name) = s.get("name") {
+            if let Some(name) = s.get("name")
+                && !name.is_empty()
+            {
                 r.push(
                     HeaderName::from_lowercase(name.to_lowercase().as_bytes())
                         .map_err(|_| serde::de::Error::custom("Convert headers error"))?,
