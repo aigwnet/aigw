@@ -3,7 +3,7 @@
   "add": "Add",
   "edit": "Edit",
   "delete": "Delete",
-  "deleteBatch": "Delete Selected",
+  "deleteBatch": "Batch Delete",
   "pleaseSelectData": "Please select data!",
   "modifiedTime": "Modified Time",
   "createTime": "Create Time",
