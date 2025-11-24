@@ -71,7 +71,7 @@ impl DataFrameHandler {
                         path.push("site");
                         path.push(site.name.clone() + ".json");
                         info!(target: "console", "Remove site: {:?}", site.name);
-                        let _ = fs::remove_file(path);
+                        let _ = fs::remove_file(path).await;
                         self.storage.remove_site(&site);
                     }
                 },

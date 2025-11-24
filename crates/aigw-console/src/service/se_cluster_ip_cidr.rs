@@ -103,7 +103,7 @@ pub async fn find_ip_cidr_by_page(
 pub async fn delete_cluster_ip(rb: &RBatis, id: u64) -> anyhow::Result<ChangeLog> {
     let ip = TbClusterIpCidr::select_by_id(rb, id)
         .await?
-        .map_or(Err(anyhow::anyhow!("ClusterIpCidr not found.")), |i| Ok(i))?;
+        .ok_or(anyhow::anyhow!("ClusterIpCidr not found."))?;
     let _ = TbClusterIpCidr::delete_by_id(rb, id).await?;
 
     let data = IpList {
