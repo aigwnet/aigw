@@ -14,6 +14,7 @@ use pingora_core::{
 use crate::server::{AigwConfig, Storage};
 
 pub struct AigwConsoleService {
+    config: Arc<AigwConfig>,
     storage: Arc<Storage>,
     console_client: Arc<ConsoleClient>,
     #[cfg(target_os = "linux")]
@@ -30,6 +31,7 @@ impl AigwConsoleService {
         let console_client = Arc::new(ConsoleClient::new(config.clone(), shutdown_tx.clone()));
 
         Self {
+            config,
             storage,
             console_client,
             #[cfg(target_os = "linux")]
@@ -47,7 +49,7 @@ impl Service for AigwConsoleService {
         _listeners_per_fd: usize,
     ) {
         #[cfg(target_os = "linux")]
-        let ebpf_handler = super::epbf::run(&self.epbf_config, self.console_client.address())
+        let ebpf_handler = super::epbf::run(&self.epbf_config, self.config.console().address())
             .ok()
             .map(Arc::new);
         let data_handler = Arc::new(DataFrameHandler::new(
