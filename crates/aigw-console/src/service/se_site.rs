@@ -623,6 +623,7 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
             .as_ref()
             .map(|(r, s)| "".to_owned() + r.as_str() + " " + s),
         http_version: location.http_version.as_ref().map(|v| v.to_string()),
+        upstream: serde_json::to_string(&location.upstream).ok(),
         root_dir: location.root_dir.as_ref().map(|item| unsafe {
             String::from_utf8_unchecked(item.as_os_str().as_encoded_bytes().to_vec())
         }),

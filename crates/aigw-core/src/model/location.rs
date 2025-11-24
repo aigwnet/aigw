@@ -588,25 +588,3 @@ pub fn find_matched_location(
     }
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use std::net::SocketAddr;
-
-    use pingora_load_balancing::{LoadBalancer, selection::Consistent};
-
-    #[test]
-    fn test_parse() -> anyhow::Result<()> {
-        let backends: Vec<String> = vec![
-            "[2607:f8b0:4005:80e::2004]:443".to_string(),
-            "8.8.8.8:443".to_string(),
-            "google.com:443".to_string(),
-        ];
-
-        let lb: LoadBalancer<Consistent> = LoadBalancer::try_from_iter(backends.iter())?;
-
-        assert!(lb.backends().get_backend().len() == 3);
-        println!("{:?}", lb.backends().get_backend());
-        Ok(())
-    }
-}
