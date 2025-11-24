@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, h, onMounted, computed } from 'vue'
 import { Card, Row, Col, FormItem, Input, Select, InputNumber, Switch, RadioGroup, RadioButton, Textarea, Button, Divider } from 'ant-design-vue'
-import { Plus, X } from '@vben/icons'
+import { Plus, createIconifyIcon } from '@vben/icons'
 import DynamicHeader from './DynamicHeader.vue'
-
+const DeleteIcon = createIconifyIcon('ant-design:delete-outlined');
 export interface LocationItem {
     path: string
     proxy: boolean
@@ -106,7 +106,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Row>
                 <Col :span="24" class="flex justify-between items-center mb-4">
                 <h4 class="text-base font-medium text-blue-600">Location {{ index + 1 }}</h4>
-                <Button v-if="canRemove" danger shape="circle" :icon="h(X)" size="small" @click="removeItem(index)" />
+                <Button v-if="canRemove" danger shape="circle" :icon="h(DeleteIcon)" size="small" @click="removeItem(index)" />
                 </Col>
             </Row>
             <Row>

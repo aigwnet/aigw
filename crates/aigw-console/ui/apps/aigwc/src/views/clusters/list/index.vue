@@ -147,7 +147,7 @@ const copySecurityKey = async (key: string) => {
             <template #action="{ row }">
                 <Button shape="circle" size="small" @click="onEdit(row)" :title="$t('page.edit')">
                     <EditIcon />
-                </Button>
+                </Button> &nbsp;
                 <Button shape="circle" size="small" danger @click="onDelete(row)" :title="$t('page.delete')">
                     <DeleteIcon />
                 </Button>
