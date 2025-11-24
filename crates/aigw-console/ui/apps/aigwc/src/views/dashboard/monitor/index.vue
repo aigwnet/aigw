@@ -147,9 +147,6 @@ const onClickServer = (row: RowType) => {
                 </p>
             </div>
         </template>
-        <template #extra>
-            <ClusterForm class="mb-2" />
-        </template>
 
         <div class="w-full md:flex">
             <AnalysisChartCard class="mt-5 md:mr-4 md:mt-0 md:w-1/2" title="CPU">

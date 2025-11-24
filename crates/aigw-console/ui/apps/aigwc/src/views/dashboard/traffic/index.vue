@@ -96,9 +96,6 @@ const chartTabs: TabOption[] = [
                 </p>
             </div>
         </template>
-        <template #extra>
-            <ClusterForm class="mb-2" />
-        </template>
 
         <div v-if="isTrafficLoaded">
             <AnalysisChartsTabs :tabs="chartTabs">
