@@ -16,6 +16,13 @@ export async function addClusterIpApi(params: Object) {
     return requestClient.post<BasicResult>('/security/ip', params);
 }
 
-export async function deleteClusterIpApi(id: number) {
-  return requestClient.delete(`/security/ip/${id}`);
+export async function deleteClusterIpApi(ids: number | number[]) {
+    if (!Array.isArray(ids)) {
+        return requestClient.delete(`/security/ip/${ids}`);
+    } else {
+        const idList = [ids];
+        const params = new URLSearchParams();
+        idList.forEach(id => params.append('ids', id.toString()));
+        return requestClient.delete(`/security/ip?${params.toString()}`);
+    }
 }

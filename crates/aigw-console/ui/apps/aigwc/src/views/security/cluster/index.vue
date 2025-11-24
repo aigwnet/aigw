@@ -3,7 +3,7 @@ import type { VxeTableGridOptions, VxeGridPropTypes } from '#/adapter/vxe-table'
 import { useRouter } from 'vue-router';
 import { $t } from '#/locales';
 import { confirm, Page } from '@vben/common-ui';
-import { watch, ref, shallowRef, nextTick, computed } from 'vue';
+import { watch, ref, shallowRef, nextTick } from 'vue';
 import { message, Button, Tabs, TabPane } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -45,6 +45,9 @@ function createGridOptions(type: '1' | '2') {
     return {
         columns: baseColumns,
         exportConfig: {},
+        checkboxConfig: {
+            highlight: true,
+        },
         height: '',
         keepSource: true,
         proxyConfig: {
@@ -92,7 +95,6 @@ const safeReload = () => {
     }
 };
 
-
 watch(activeKey, (newKey) => {
     currentGridApi.value = newKey === '1' ? gridApiWhite : gridApiBlock;
     nextTick(() => {
@@ -134,70 +136,46 @@ const onDelete = async (row: RowType) => {
 
 };
 
-const hasSelected = computed(() => currentSelectedRows.value.length > 0);
-const selectedRowsWhite = ref<RowType[]>([]);
-const selectedRowsBlock = ref<RowType[]>([]);
-const currentSelectedRows = computed(() => {
-    return activeKey.value === '1' ? selectedRowsWhite.value : selectedRowsBlock.value;
-});
-const onCheckboxChangeWhite = ({ records }: { records: RowType[] }) => {
-    selectedRowsWhite.value = records;
-};
-
-const onCheckboxChangeBlock = ({ records }: { records: RowType[] }) => {
-    selectedRowsBlock.value = records;
-};
-
-const onCheckboxAllWhite = ({ records }: { records: RowType[] }) => {
-    selectedRowsWhite.value = records;
-};
-
-const onCheckboxAllBlock = ({ records }: { records: RowType[] }) => {
-    selectedRowsBlock.value = records;
-};
-
 const onBatchDelete = async () => {
-    if (currentSelectedRows.value.length === 0) {
-        message.warning($t('common.pleaseSelectData'));
+    const $grid = currentGridApi.value.grid;
+    if (!$grid)
+        return;
+    const selectRecords = $grid.getCheckboxRecords();
+    if (selectRecords.length === 0) {
+        message.warning($t('page.pleaseSelectData'));
         return;
     }
 
-    const ids = currentSelectedRows.value.map(item => item.id);
 
     confirm({
         beforeClose({ isConfirm }) {
             if (!isConfirm) return;
-            //return batchDeleteClusterIpApi(ids);
-            return true;
+            const ids = selectRecords.map((record: RowType) => record.id);
+            return deleteClusterIpApi(ids);
         },
         centered: false,
-        content: $t('page.batchDeleteConfirm', { count: currentSelectedRows.value.length }),
+        content: $t('page.deleteBatchConfirm', { count: selectRecords.length }),
         icon: 'question',
     })
         .then(() => {
             message.success({
-                content: $t('page.security.cluster.batchDeleteSuccess'),
+                content: $t('page.security.cluster.deleteSuccess'),
             });
-            // 清空选中状态
-            if (activeKey.value === '1') {
-                selectedRowsWhite.value = [];
-            } else {
-                selectedRowsBlock.value = [];
-            }
             currentGridApi.value?.reload();
         })
         .catch(() => {
             // cancel
         });
-};
+
+
+}
+
 
 watch(
     () => clusterAccess.current,
-    (newCluster, oldCluster) => {
-        if (newCluster !== oldCluster) {
-            if (oldCluster !== undefined || newCluster !== null) {
-                currentGridApi.value?.reload();
-            }
+    (newCluster, _oldCluster) => {
+        if (newCluster) {
+            currentGridApi.value?.reload();
         }
     }
 );
@@ -224,14 +202,13 @@ watch(
 
                 </template>
 
-                <GridWhite :table-title="$t('page.security.cluster.ipWhiteList')" @checkbox-all="onCheckboxAllWhite"
-                    @checkbox-change="onCheckboxChangeWhite">
+                <GridWhite :table-title="$t('page.security.cluster.ipWhiteList')">
                     <template #toolbar-tools>
                         <Button class="mr-2" type="primary" @click="onAdd()">
                             {{ $t('page.add') }}
                         </Button>
-                        <Button class="mr-2" type="primary" danger :disabled="!hasSelected" @click="onBatchDelete">
-                            {{ $t('page.deleteSelected') }}
+                        <Button class="mr-2" type="primary" danger @click="onBatchDelete">
+                            {{ $t('page.deleteBatch') }}
                         </Button>
                     </template>
                     <template #cluster_name="{ row }">
@@ -253,14 +230,13 @@ watch(
                     </span>
 
                 </template>
-                <GridBlock :table-title="$t('page.security.cluster.ipBlockList')" @checkbox-all="onCheckboxAllBlock"
-                    @checkbox-change="onCheckboxChangeBlock">
+                <GridBlock :table-title="$t('page.security.cluster.ipBlockList')">
                     <template #toolbar-tools>
                         <Button class="mr-2" type="primary" @click="onAdd()">
                             {{ $t('page.add') }}
                         </Button>
-                        <Button class="mr-2" type="primary" danger :disabled="!hasSelected" @click="onBatchDelete">
-                            {{ $t('page.deleteSelected') }}
+                        <Button class="mr-2" type="primary" danger @click="onBatchDelete">
+                            {{ $t('page.deleteBatch') }}
                         </Button>
                     </template>
                     <template #cluster_name="{ row }">

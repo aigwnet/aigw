@@ -147,6 +147,10 @@ pub async fn run(
             post(HttpApiSecurity::add_cluster_ip_list).layer(auth_layer.clone()),
         )
         .route(
+            "/api/v1/security/ip",
+            delete(HttpApiSecurity::delete_batch).layer(auth_layer.clone()),
+        )
+        .route(
             "/api/v1/security/ip/{id}",
             delete(HttpApiSecurity::delete).layer(auth_layer.clone()),
         )

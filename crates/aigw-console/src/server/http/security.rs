@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 use rbatis::PageRequest;
+use serde::{Deserialize, Deserializer};
 
 use crate::{
     server::http::{ApiContext, ApiData, ApiError, ApiResponseResult, Pagination},
@@ -13,6 +14,22 @@ use crate::{
 };
 
 pub(crate) struct HttpApiSecurity {}
+
+#[derive(Deserialize)]
+pub struct DeleteBatch {
+    #[serde(deserialize_with = "deserialize_ids")]
+    pub ids: Vec<u64>,
+}
+
+fn deserialize_ids<'de, D>(deserializer: D) -> Result<Vec<u64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    s.split(',')
+        .map(|x| x.parse::<u64>().map_err(serde::de::Error::custom))
+        .collect()
+}
 
 impl HttpApiSecurity {
     pub async fn add_cluster_ip_list(
@@ -52,6 +69,20 @@ impl HttpApiSecurity {
             .await
             .map_err(ApiError::from)?;
         let _ = context.sender.send(change_log).await;
+        Ok(ApiData(Some(true)))
+    }
+
+    pub async fn delete_batch(
+        Query(q): Query<DeleteBatch>,
+        State(context): State<ApiContext>,
+    ) -> ApiResponseResult<bool> {
+        for id in q.ids {
+            let change_log = delete_cluster_ip(&context.database_client.rb, id)
+                .await
+                .map_err(ApiError::from)?;
+            let _ = context.sender.send(change_log).await;
+        }
+
         Ok(ApiData(Some(true)))
     }
 }
