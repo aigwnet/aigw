@@ -14,141 +14,141 @@ import { clusterStore } from '#/store';
 let clusterAccess = clusterStore();
 
 interface RowType {
-  name: string;
-  root_dir: string;
-  alt_names: string;
-  tls_on: boolean;
-  tls_cert_start_date: string;
-  tls_cert_end_date: string;
+    name: string;
+    root_dir: string;
+    alt_names: string;
+    tls_on: boolean;
+    tls_cert_start_date: string;
+    tls_cert_end_date: string;
 }
 
 const gridOptions: VxeGridProps<RowType> = {
-  columns: [
-    { title: 'No', type: 'seq', width: 50 },
-    { field: 'name', title: $t('page.site.name'), align: "left", width: 160 },
-    { field: 'alt_names', align: "left", title: $t('page.site.alternativeNames') },
-    { field: 'root_dir', align: "left", title: $t('page.site.rootDir') },
-    { field: 'tls_on', cellRender: { name: 'CellTag' }, title: $t('page.site.tlsOn') },
-    { slots: { default: 'tls_cert_date' }, title: $t('page.site.tlsCertDate') },
-    { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
-  ],
-  exportConfig: {},
-  keepSource: true,
-  proxyConfig: {
-    ajax: {
-      query: async ({ page, sort }) => {
-        var cluster = clusterAccess.current!;
-        let data = await getSiteTableApi(cluster, {
-          page: page.currentPage,
-          page_size: page.pageSize,
-          sort_by: sort.field,
-          sort_order: sort.order,
-        });
+    columns: [
+        { title: 'No', type: 'seq', width: 50 },
+        { field: 'name', title: $t('page.site.name'), align: "left", width: 160 },
+        { field: 'alt_names', align: "left", title: $t('page.site.alternativeNames') },
+        { field: 'root_dir', align: "left", title: $t('page.site.rootDir') },
+        { field: 'tls_on', cellRender: { name: 'CellTag' }, title: $t('page.site.tlsOn') },
+        { slots: { default: 'tls_cert_date' }, title: $t('page.site.tlsCertDate') },
+        { slots: { default: 'action' }, title: $t('page.operation'), width: 160 },
+    ],
+    exportConfig: {},
+    keepSource: true,
+    proxyConfig: {
+        ajax: {
+            query: async ({ page, sort }) => {
+                var cluster = clusterAccess.current!;
+                let data = await getSiteTableApi(cluster, {
+                    page: page.currentPage,
+                    page_size: page.pageSize,
+                    sort_by: sort.field,
+                    sort_order: sort.order,
+                });
 
-        return data;
-      },
+                return data;
+            },
+        },
+        sort: true,
     },
-    sort: true,
-  },
-  sortConfig: {
-    defaultSort: { field: 'category', order: 'desc' },
-    remote: true,
-  },
-  toolbarConfig: {
-    custom: true,
-    export: true,
-    refresh: true,
-    refreshOptions: { code: 'query' },
-    zoom: true,
-  },
+    sortConfig: {
+        defaultSort: { field: 'category', order: 'desc' },
+        remote: true,
+    },
+    toolbarConfig: {
+        custom: true,
+        export: true,
+        refresh: true,
+        refreshOptions: { code: 'query' },
+        zoom: true,
+    },
 };
 
 const [Grid, gridApi] = useVbenVxeGrid({
-  gridOptions,
+    gridOptions,
 });
 
 
 const router = useRouter();
 
 const onAdd = () => {
-  router.push('/sites/add');
+    router.push('/sites/add');
 };
 
 const onEdit = (row: RowType) => {
-  router.push('/sites/edit/' + row.name);
+    router.push('/sites/edit/' + row.name);
 };
 
 const onDelete = async (row: RowType) => {
 
-  confirm({
-    beforeClose({ isConfirm }) {
-      if (!isConfirm) return;
-      return deleteSiteApi(row.name);
-    },
-    centered: false,
-    content: $t('page.deleteConfirm'),
-    icon: 'question',
-  })
-    .then(() => {
-
-      message.success({
-        content: $t('page.site.deleteSuccess'),
-      });
-      gridApi.reload()
+    confirm({
+        beforeClose({ isConfirm }) {
+            if (!isConfirm) return;
+            return deleteSiteApi(row.name);
+        },
+        centered: false,
+        content: $t('page.deleteConfirm'),
+        icon: 'question',
     })
-    .catch(() => {
-      // cancel
-    });
+        .then(() => {
+
+            message.success({
+                content: $t('page.site.deleteSuccess'),
+            });
+            gridApi.reload()
+        })
+        .catch(() => {
+            // cancel
+        });
 
 
 
 };
 
 watch(
-  () => clusterAccess.current,
-  (newCluster, oldCluster) => {
-    if (newCluster !== oldCluster) {
-      if (oldCluster !== undefined || newCluster !== null) {
-        gridApi?.reload(); 
-      }
+    () => clusterAccess.current,
+    (newCluster, oldCluster) => {
+        if (newCluster !== oldCluster) {
+            if (oldCluster !== undefined || newCluster !== null) {
+                gridApi?.reload();
+            }
+        }
     }
-  }
 );
 
 </script>
 
 <template>
-  <Page auto-content-height content-class="flex flex-col gap-4" :title="$t('page.site.list')">
-    <template #description>
-      <div class="text-muted-foreground">
-        <p>
-          {{ $t('page.site.tip') }}
-        </p>
-      </div>
-    </template>
+    <Page auto-content-height content-class="flex flex-col gap-4" :title="$t('page.site.list')">
+        <template #description>
+            <div class="text-muted-foreground">
+                <p>
+                    {{ $t('page.site.tip') }}
+                </p>
+            </div>
+        </template>
 
-    <div v-if="clusterAccess.current">
-      <Grid :table-title="$t('page.site.list')">
-        <template #toolbar-tools>
-          <Button class="mr-2" type="primary" @click="onAdd()">
-            {{ $t('page.new') }}
-          </Button>
-          <Button class="mr-2" type="primary" @click="() => gridApi.query()">
-            {{ $t('page.refreshCurrentPage') }}
-          </Button>
-          <Button type="primary" @click="() => gridApi.reload()">
-            {{ $t('page.refreshAndReturnFirst') }}
-          </Button>
-        </template>
-        <template #tls_cert_date="{ row }">
-          {{ row.tls_cert_start_date }} - {{ row.tls_cert_end_date }}
-        </template>
-        <template #action="{ row }">
-          <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
-          <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
-        </template>
-      </Grid>
-    </div>
+        <div v-if="clusterAccess.current">
+            <Grid :table-title="$t('page.site.list')">
+                <template #toolbar-tools>
+                    <Button class="mr-2" type="primary" @click="onAdd()">
+                        {{ $t('page.new') }}
+                    </Button>
+                    <Button class="mr-2" type="primary" @click="() => gridApi.query()">
+                        {{ $t('page.refreshCurrentPage') }}
+                    </Button>
+                    <Button type="primary" @click="() => gridApi.reload()">
+                        {{ $t('page.refreshAndReturnFirst') }}
+                    </Button>
+                </template>
+                <template #tls_cert_date="{ row }">
+                    {{ row.tls_cert_start_date }} - {{ row.tls_cert_end_date }}
+                </template>
+                <template #action="{ row }">
+                    <Button type="link" @click="onEdit(row)">{{ $t('page.edit') }}</Button>
+                    <Button type="link" @click="onDelete(row)">{{ $t('page.delete') }}</Button>
+                </template>
+            </Grid>
+        </div>
 
-  </Page>
+    </Page>
 </template>

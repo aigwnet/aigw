@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import {
     Page, AnalysisChartCard
 } from '@vben/common-ui';
@@ -18,16 +18,14 @@ import MonitorRt from './monitor-rt.vue';
 import MonitorError from './monitor-error.vue';
 
 const route = useRoute();
-
-
 const { setTabTitle } = useTabs();
-
 const ip = computed(() => {
     return route.params?.ip;
 });
 const cluster = computed(() => {
     return route.params?.cluster;
 });
+let refreshInterval: number | null = null;
 
 setTabTitle(`${ip.value} - ` + $t('page.details'));
 
@@ -37,7 +35,24 @@ async function loadAnalyticsMonitor() {
     const items = await getAnalyticsMonitorServerApi(cluster.value as string, ip.value as string);
     analyticsMonitor.value = items;
 };
-loadAnalyticsMonitor();
+async function reloadAllData() {
+    await Promise.all([
+        loadAnalyticsMonitor()
+    ]);
+}
+onMounted(() => {
+    reloadAllData();
+
+    refreshInterval = window.setInterval(() => {
+        reloadAllData();
+    }, 30_000);
+});
+onBeforeUnmount(() => {
+    if (refreshInterval !== null) {
+        window.clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+});
 </script>
 
 <template>

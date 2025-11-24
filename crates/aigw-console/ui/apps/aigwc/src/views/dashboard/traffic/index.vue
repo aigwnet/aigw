@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import {
     Page, AnalysisChartCard, AnalysisChartsTabs
 } from '@vben/common-ui';
@@ -16,11 +16,10 @@ import TrafficSource from './traffic-source.vue';
 
 const isTrafficLoaded = ref(false);
 const isTrafficExtLoaded = ref(false);
-
-let clusterAccess = clusterStore();
-
+const clusterAccess = clusterStore();
 const analyticsTraffic = ref<AnalyticsApi.AnalyticsTraffic>();
 const analyticsTrafficExt = ref<AnalyticsApi.ExtInfo>();
+let refreshInterval: number | null = null;
 
 async function loadAnalyticsTraffic(cluster: string) {
     const data = await getAnalyticsTraffic(cluster);
@@ -34,8 +33,28 @@ async function loadAnalyticsTrafficExt(cluster: string) {
     analyticsTrafficExt.value = data;
 };
 
-loadAnalyticsTraffic(clusterAccess.current!);
-loadAnalyticsTrafficExt(clusterAccess.current!);
+async function reloadAllData() {
+    const cluster = clusterAccess.current;
+    if (!cluster) return;
+    await Promise.all([
+        loadAnalyticsTraffic(cluster),
+        loadAnalyticsTrafficExt(cluster)
+    ]);
+}
+
+onMounted(() => {
+    reloadAllData();
+
+    refreshInterval = window.setInterval(() => {
+        reloadAllData();
+    }, 30_000);
+});
+onBeforeUnmount(() => {
+    if (refreshInterval !== null) {
+        window.clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+});
 
 
 watch(
@@ -43,8 +62,7 @@ watch(
     (newCluster, oldCluster) => {
         if (newCluster !== oldCluster) {
             if (oldCluster !== undefined || newCluster !== null) {
-                loadAnalyticsTraffic(clusterAccess.current!);
-                loadAnalyticsTrafficExt(clusterAccess.current!);
+                reloadAllData();
             }
         }
     }
