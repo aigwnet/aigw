@@ -24,7 +24,13 @@ const emit = defineEmits<{
 watch(
     () => props.modelValue,
     (newVal) => {
-        if (JSON.stringify(newVal) !== JSON.stringify(localFields.value)) {
+        if (newVal.length == 0 && localFields.value.length == 0) {
+            localFields.value.push({
+                name: "",
+                value: "",
+            })
+        }
+        else if (newVal.length > 0 && JSON.stringify(newVal) !== JSON.stringify(localFields.value)) {
             localFields.value = [...(newVal || [])]
         }
     },
@@ -34,7 +40,7 @@ watch(
 watch(
     localFields,
     (newVal) => {
-        emit('update:modelValue', newVal)
+        emit('update:modelValue', newVal);
     },
     { deep: true }
 )

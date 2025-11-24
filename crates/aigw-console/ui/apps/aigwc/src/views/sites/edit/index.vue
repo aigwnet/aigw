@@ -26,9 +26,11 @@ setTabTitle(`${index.value} - ` + $t('page.details'));
 const submitting = ref(true);
 
 const defaultValue = ref([]);
+let defaultFormValue: Record<string, any> | undefined = undefined;
 
 const [Form, formApi] = useVbenForm({
     handleSubmit: onSubmit,
+    handleReset: onReset,
     schema: [
         {
             component: 'ApiSelect',
@@ -191,7 +193,6 @@ const [Form, formApi] = useVbenForm({
             fieldName: 'locations',
             hideLabel: true,
             formItemClass: '',
-            defaultValue: defaultValue,
             componentProps: {
                 min: 1,
                 max: 10,
@@ -226,6 +227,7 @@ const fetchData = async () => {
     }))
 
     defaultValue.value = site.locations;
+    defaultFormValue = site;
     formApi.setValues(site);
     submitting.value = false;
 }
@@ -278,6 +280,13 @@ function onSubmit(values: Record<string, any>) {
         console.error('Submit error:', error);
     });
 
+}
+
+function onReset() {
+    if (defaultFormValue) {
+        console.log(JSON.stringify(defaultFormValue))
+        formApi.setValues(defaultFormValue);
+    }
 }
 
 onMounted(() => {

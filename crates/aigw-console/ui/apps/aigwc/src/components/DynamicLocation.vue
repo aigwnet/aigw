@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
     modelValue?: any[]
     min?: number
     max?: number
-    namePath: string
+    namePath: string | string[]
 }>(), {
     modelValue: () => [],
     min: 1,
@@ -45,7 +45,6 @@ const httpVersionOptions = ref([
     { label: 'HTTP/2 Over HTTP/1.1', value: 'H2H1' },
 ]);
 
-// 添加新项
 const addItem = () => {
     if (localFields.value.length >= props.max) return
     localFields.value.push({
@@ -99,7 +98,7 @@ const ensureMinFields = () => {
 ensureMinFields()
 
 const getFieldPath = (index: number, fieldName: string) => {
-    return props.namePath + "_" + index + "_" + fieldName
+    return (Array.isArray(props.namePath)) ? props.namePath.join('_') : props.namePath + "_" + index + "_" + fieldName
 }
 </script>
 
