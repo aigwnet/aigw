@@ -130,7 +130,7 @@ pub struct AigwCtx {
     /// Statistics about response compression
     pub compression_stat: Option<CompressionStat>,
     /// Custom variables map for request processing
-    pub variables: Option<AHashMap<String, String>>,
+    pub variables: AHashMap<String, String>,
     pub rate: Option<Arc<RateLimit>>,
 }
 
@@ -150,13 +150,7 @@ impl AigwCtx {
     #[inline]
     pub fn add_variable(&mut self, key: &str, value: &str) {
         let key = format!("${key}");
-        if let Some(variables) = self.variables.as_mut() {
-            variables.insert(key, value.to_string());
-        } else {
-            let mut variables = AHashMap::new();
-            variables.insert(key, value.to_string());
-            self.variables = Some(variables);
-        }
+        self.variables.insert(key, value.to_string());
     }
 
     /// Returns the upstream response time if it's less than one hour, otherwise None.

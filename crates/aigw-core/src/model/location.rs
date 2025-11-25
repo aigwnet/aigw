@@ -323,15 +323,13 @@ impl ProxyLocation {
     pub fn rewrite(
         &self,
         header: &mut RequestHeader,
-        variables: Option<&AHashMap<String, String>>,
+        variables: &AHashMap<String, String>,
     ) -> bool {
         if let Some((re, value)) = &self.rewrite {
             let mut replace_value = value.to_string();
             // replace variables for rewrite value
-            if let Some(variables) = variables {
-                for (k, v) in variables.iter() {
-                    replace_value = replace_value.replace(k, v);
-                }
+            for (k, v) in variables.iter() {
+                replace_value = replace_value.replace(k, v);
             }
             let path = header.uri.path();
             let mut new_path = if re.to_string() == ".*" {

@@ -10,6 +10,7 @@ use std::{
 use aigw_core::{BanckedProtocol, HttpHeader, convert_headers, find_matched_location};
 use async_trait::async_trait;
 use bytes::Bytes;
+use cookie_rs::Cookie;
 use http::{
     HeaderName, HeaderValue, StatusCode,
     header::{self, UPGRADE, USER_AGENT},
@@ -327,9 +328,19 @@ impl ProxyHttp for AigwProxy {
             for (key, value) in variables.iter() {
                 ctx.add_variable(key, value);
             }
+
+            let sni: &str = {
+                if location.sni.is_empty() || location.sni.eq("$host") {
+                    host
+                } else {
+                    &location.sni
+                }
+            };
+            ctx.add_variable("sni", sni);
         }
 
         ctx.add_variable("hostname", get_hostname());
+        ctx.add_variable("host", host);
         debug!("variables: {:?}", ctx.variables);
 
         if let Some((_, location)) = &ctx.location {
@@ -373,8 +384,10 @@ impl ProxyHttp for AigwProxy {
         }
         let path = session.req_header().uri.path();
         if path.starts_with(ACME_PATH) {
-            let host = get_host(session.req_header());
-            if let Some(host) = host {
+            let host = ctx.variables.get("host");
+            if let Some(host) = host
+                && !host.is_empty()
+            {
                 let token = path.substring(ACME_PATH.len(), path.len());
                 let r = self.http01_handler.handle(host, token);
                 if let Some(r) = r {
@@ -442,7 +455,7 @@ impl ProxyHttp for AigwProxy {
         }
 
         let header = session.req_header_mut();
-        location.rewrite(header, ctx.variables.as_ref());
+        location.rewrite(header, &ctx.variables);
         Ok(false)
     }
 
@@ -456,14 +469,12 @@ impl ProxyHttp for AigwProxy {
             && let Ok(lb) = location.lb()
             && let Some(b) = lb.select(client_ip.as_bytes(), 5)
         {
-            let sni = {
-                if location.sni.is_empty() || location.sni.eq("$host") {
-                    get_host(session.req_header()).map_or("", |h| h).to_owned()
-                } else {
-                    location.sni.clone()
-                }
-            };
-            let mut peer = HttpPeer::new(b.addr, location.protocol == BanckedProtocol::Https, sni);
+            let sni = ctx.variables.get("sni").map_or("", |s| s);
+            let mut peer = HttpPeer::new(
+                b.addr,
+                location.protocol == BanckedProtocol::Https,
+                sni.to_string(),
+            );
 
             peer.options.connection_timeout =
                 Some(Duration::from_secs(location.connection_timeout.into()));
@@ -548,14 +559,8 @@ impl ProxyHttp for AigwProxy {
         debug!("upstream request filter");
 
         if let Some((_, location)) = &ctx.location {
-            let origin_host = get_host(session.req_header()).map_or("", |h| h).to_owned();
-            let host = {
-                if location.sni.is_empty() || location.sni.eq("$host") {
-                    &origin_host
-                } else {
-                    &location.sni
-                }
-            };
+            let origin_host = ctx.variables.get("host").map_or("", |s| s);
+            let host = ctx.variables.get("sni").map_or(origin_host, |s| s);
             let _ = header.insert_header("Host", host);
 
             // Helper closure to avoid code duplication
@@ -592,8 +597,10 @@ impl ProxyHttp for AigwProxy {
             // Process referer
             if let Some(referer) = header.headers.get("referer") {
                 info!(target: "access", "referer =====> {:?}", referer.to_str());
-                if let Ok(referer) = referer.to_str() {
-                    let new_referer = referer.replacen(&origin_host, &host, 1);
+                if let Ok(referer) = referer.to_str()
+                    && !origin_host.eq(host)
+                {
+                    let new_referer = referer.replacen(origin_host, host, 1);
                     let _ = header.insert_header("referer", &new_referer);
                     info!(target: "access", "new referer =====> {:?}", new_referer);
                 }
@@ -607,13 +614,48 @@ impl ProxyHttp for AigwProxy {
         &self,
         session: &mut Session,
         upstream_response: &mut ResponseHeader,
-        _ctx: &mut Self::CTX,
+        ctx: &mut Self::CTX,
     ) -> Result<()>
     where
         Self::CTX: Send + Sync,
     {
         debug!("response filter");
         let _ = upstream_response.insert_header(header::SERVER, SERVER);
+
+        let host = ctx.variables.get("host").map_or("", |s| s);
+        let sni = ctx.variables.get("sni").map_or("", |s| s);
+
+        let mut new_cookies = vec![];
+        if !sni.is_empty() && !sni.eq(host) {
+            let cookie_strings: Vec<String> = upstream_response
+                .headers
+                .get_all("set-cookie")
+                .into_iter()
+                .filter_map(|val| val.to_str().ok().map(|s| s.to_owned()))
+                .collect();
+
+            let mut changed = false;
+            for cookie in cookie_strings {
+                if let Ok(mut cookie) = Cookie::parse(cookie) {
+                    if let Some(domain) = cookie.domain()
+                        && !domain.eq(host)
+                    {
+                        cookie.set_domain(host);
+                        changed = true;
+                    }
+                    new_cookies.push(cookie);
+                }
+            }
+
+            if changed {
+                upstream_response.remove_header("set-cookie");
+                for cookie in &new_cookies {
+                    if let Ok(h) = HeaderValue::from_str(cookie.value()) {
+                        let _ = upstream_response.append_header("set-cookie", h);
+                    }
+                }
+            }
+        }
 
         if session.cache.enabled() {
             // ignore insert header error
@@ -731,7 +773,6 @@ impl ProxyHttp for AigwProxy {
             Some(q) => session.req_header().uri.path().to_string() + "?" + q,
             None => session.req_header().uri.path().to_string(),
         };
-
         info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
             path, host, ua);
