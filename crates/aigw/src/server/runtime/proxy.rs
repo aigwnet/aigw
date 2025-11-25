@@ -548,11 +548,12 @@ impl ProxyHttp for AigwProxy {
         debug!("upstream request filter");
 
         if let Some((_, location)) = &ctx.location {
+            let origin_host = get_host(session.req_header()).map_or("", |h| h).to_owned();
             let host = {
                 if location.sni.is_empty() || location.sni.eq("$host") {
-                    get_host(session.req_header()).map_or("", |h| h).to_owned()
+                    &origin_host
                 } else {
-                    location.sni.clone()
+                    &location.sni
                 }
             };
             let _ = header.insert_header("Host", host);
@@ -590,7 +591,12 @@ impl ProxyHttp for AigwProxy {
             }
             // Process referer
             if let Some(referer) = header.headers.get("referer") {
-                info!(target: "access", "=====> {:?}", referer.to_str());
+                info!(target: "access", "referer =====> {:?}", referer.to_str());
+                if let Ok(referer) = referer.to_str() {
+                    let new_referer = referer.replacen(&origin_host, &host, 1);
+                    let _ = header.insert_header("referer", &new_referer);
+                    info!(target: "access", "new referer =====> {:?}", new_referer);
+                }
             }
         }
 
