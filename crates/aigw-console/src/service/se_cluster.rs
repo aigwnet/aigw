@@ -1,11 +1,9 @@
-use aigw_core::{ChangeLog, Cluster, LogAction, LogType};
-use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
-use time::OffsetDateTime;
-
 use crate::{
     service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT, do_build_change_log},
     storage::tb_cluster::TbCluster,
 };
+use aigw_core::{ChangeLog, Cluster, LogAction, LogType, date_format_local};
+use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 
 pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<ChangeLog> {
     let now = DateTime::utc();
@@ -118,14 +116,10 @@ pub async fn find_cluster_by_page(
 }
 
 fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
-    let gmt_modified = cluster.gmt_modified.as_ref().and_then(|s| {
-        OffsetDateTime::from_unix_timestamp(s.unix_timestamp())
-            .ok()
-            .map(|t| {
-                t.format(YYYY_MM_DD_HH_MM_SS_FORMAT)
-                    .map_or("".to_string(), |s| s)
-            })
-    });
+    let gmt_modified = cluster
+        .gmt_modified
+        .as_ref()
+        .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
     Cluster {
         id: cluster.id,
         name: cluster.name.clone().map_or("".to_string(), |name| name),
