@@ -248,21 +248,21 @@ async fn convert_tb_site(
                 .http_version
                 .as_ref()
                 .and_then(|s| HttpVersion::try_from(s.as_str()).ok()),
-            proxy_add_headers: location.add_headers.and_then(|s| {
+            proxy_add_headers: location.proxy_add_headers.and_then(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
                 } else {
-                    None
+                    Some(vec![])
                 }
             }),
-            proxy_set_headers: location.set_headers.and_then(|s| {
+            proxy_set_headers: location.proxy_set_headers.and_then(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
                     convert_headers(&headers).ok()
                 } else {
-                    None
+                    Some(vec![])
                 }
             }),
-            proxy_remove_headers: location.remove_headers.and_then(|s| {
+            proxy_remove_headers: location.proxy_remove_headers.and_then(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
                     let mut r = vec![];
                     for h in &headers {
@@ -272,7 +272,34 @@ async fn convert_tb_site(
                     }
                     Some(r)
                 } else {
-                    None
+                    Some(vec![])
+                }
+            }),
+            response_add_headers: location.response_add_headers.and_then(|s| {
+                if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
+                    convert_headers(&headers).ok()
+                } else {
+                    Some(vec![])
+                }
+            }),
+            response_set_headers: location.response_set_headers.and_then(|s| {
+                if let Ok(headers) = serde_json::from_str::<Vec<HashMap<String, String>>>(&s) {
+                    convert_headers(&headers).ok()
+                } else {
+                    Some(vec![])
+                }
+            }),
+            response_remove_headers: location.response_remove_headers.and_then(|s| {
+                if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
+                    let mut r = vec![];
+                    for h in &headers {
+                        if let Ok(h) = HeaderName::from_lowercase(h.to_lowercase().as_bytes()) {
+                            r.push(h);
+                        }
+                    }
+                    Some(r)
+                } else {
+                    Some(vec![])
                 }
             }),
             root_dir: location.root_dir.map(|item| item.into()),
@@ -597,21 +624,39 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
         gmt_modified: Some(now.clone()),
         sni: Some(location.sni.clone()),
         client_max_body_size: Some(location.client_max_body_size),
-        set_headers: location.proxy_set_headers.as_ref().and_then(|item| {
+        proxy_set_headers: location.proxy_set_headers.as_ref().and_then(|item| {
             if let Ok(headers) = convert_headers_to_string(item) {
                 serde_json::to_string(&headers).ok()
             } else {
                 None
             }
         }),
-        add_headers: location.proxy_add_headers.as_ref().and_then(|item| {
+        proxy_add_headers: location.proxy_add_headers.as_ref().and_then(|item| {
             if let Ok(headers) = convert_headers_to_string(item) {
                 serde_json::to_string(&headers).ok()
             } else {
                 None
             }
         }),
-        remove_headers: location.proxy_remove_headers.as_ref().and_then(|items| {
+        proxy_remove_headers: location.proxy_remove_headers.as_ref().and_then(|items| {
+            let headers = items.iter().map(|h| h.as_str()).collect::<Vec<_>>();
+            serde_json::to_string(&headers).ok()
+        }),
+        response_set_headers: location.response_set_headers.as_ref().and_then(|item| {
+            if let Ok(headers) = convert_headers_to_string(item) {
+                serde_json::to_string(&headers).ok()
+            } else {
+                None
+            }
+        }),
+        response_add_headers: location.response_add_headers.as_ref().and_then(|item| {
+            if let Ok(headers) = convert_headers_to_string(item) {
+                serde_json::to_string(&headers).ok()
+            } else {
+                None
+            }
+        }),
+        response_remove_headers: location.response_remove_headers.as_ref().and_then(|items| {
             let headers = items.iter().map(|h| h.as_str()).collect::<Vec<_>>();
             serde_json::to_string(&headers).ok()
         }),

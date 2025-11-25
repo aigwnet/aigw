@@ -218,7 +218,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Divider v-show="item.proxy" />
             <Row v-show="item.proxy">
                 <Col :span="24">
-                <DynamicHeader :label="$t('page.site.addHeaders')" :min="1" :max="10"
+                <DynamicHeader :label="$t('page.site.addProxyHeaders')" :min="1" :max="10"
                     :namePath="getFieldPath(index, 'proxy_add_headers')" v-model:modelValue="item.proxy_add_headers" />
                 </Col>
             </Row>
@@ -226,7 +226,7 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Divider v-show="item.proxy" />
             <Row v-show="item.proxy">
                 <Col :span="24">
-                <DynamicHeader :label="$t('page.site.setHeaders')" :min="1" :max="10"
+                <DynamicHeader :label="$t('page.site.setProxyHeaders')" :min="1" :max="10"
                     :namePath="getFieldPath(index, 'proxy_set_headers')" v-model:modelValue="item.proxy_set_headers" />
                 </Col>
             </Row>
@@ -234,9 +234,35 @@ const getFieldPath = (index: number, fieldName: string) => {
             <Divider v-show="item.proxy" />
             <Row v-show="item.proxy">
                 <Col :span="24">
-                <RemoveHeader :label="$t('page.site.removeHeaders')" :min="1" :max="10"
+                <RemoveHeader :label="$t('page.site.removeProxyHeaders')" :min="1" :max="10"
                     :namePath="getFieldPath(index, 'proxy_remove_headers')"
                     v-model:modelValue="item.proxy_remove_headers" />
+                </Col>
+            </Row>
+            <Divider />
+            <Row>
+                <Col :span="24">
+                <DynamicHeader :label="$t('page.site.addResponseHeaders')" :min="1" :max="10"
+                    :namePath="getFieldPath(index, 'response_add_headers')"
+                    v-model:modelValue="item.response_add_headers" />
+                </Col>
+            </Row>
+
+            <Divider />
+            <Row>
+                <Col :span="24">
+                <DynamicHeader :label="$t('page.site.setResponseHeaders')" :min="1" :max="10"
+                    :namePath="getFieldPath(index, 'response_set_headers')"
+                    v-model:modelValue="item.response_set_headers" />
+                </Col>
+            </Row>
+
+            <Divider />
+            <Row>
+                <Col :span="24">
+                <RemoveHeader :label="$t('page.site.removeResponseHeaders')" :min="1" :max="10"
+                    :namePath="getFieldPath(index, 'response_remove_headers')"
+                    v-model:modelValue="item.response_remove_headers" />
                 </Col>
             </Row>
 

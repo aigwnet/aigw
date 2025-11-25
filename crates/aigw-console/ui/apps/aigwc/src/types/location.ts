@@ -16,6 +16,9 @@ export interface LocationItem {
     proxy_add_headers: Array<{ name: string; value: string }>
     proxy_set_headers: Array<{ name: string; value: string }>
     proxy_remove_headers: Array<{ name: string }>
+    response_add_headers: Array<{ name: string; value: string }>
+    response_set_headers: Array<{ name: string; value: string }>
+    response_remove_headers: Array<{ name: string }>
 }
 
 export const defaultLocationItem = (): LocationItem => ({
@@ -36,4 +39,7 @@ export const defaultLocationItem = (): LocationItem => ({
     proxy_add_headers: [{ name: "", value: "" }],
     proxy_set_headers: [{ name: "", value: "" }],
     proxy_remove_headers: [{ name: "" }],
+    response_add_headers: [{ name: "", value: "" }],
+    response_set_headers: [{ name: "", value: "" }],
+    response_remove_headers: [{ name: "" }],
 });

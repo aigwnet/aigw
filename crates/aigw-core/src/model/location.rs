@@ -264,6 +264,32 @@ pub struct ProxyLocation {
     )]
     pub proxy_remove_headers: Option<Vec<HeaderName>>,
 
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_http_headers",
+        deserialize_with = "deserialize_http_headers"
+    )]
+    pub response_add_headers: Option<Vec<HttpHeader>>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_http_headers",
+        deserialize_with = "deserialize_http_headers"
+    )]
+    pub response_set_headers: Option<Vec<HttpHeader>>,
+
+    /// Headers to set on proxied requests
+    /// These override any existing headers with the same name
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_http_header_name",
+        deserialize_with = "deserialize_http_header_name"
+    )]
+    pub response_remove_headers: Option<Vec<HeaderName>>,
+
     pub auto_index: bool,
     // root dir
     pub root_dir: Option<PathBuf>,
