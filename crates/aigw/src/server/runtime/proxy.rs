@@ -588,6 +588,10 @@ impl ProxyHttp for AigwProxy {
                     header.remove_header(name);
                 });
             }
+            // Process referer
+            if let Some(referer) = header.headers.get("referer") {
+                info!(target: "access", "=====> {:?}", referer.to_str());
+            }
         }
 
         Ok(())
