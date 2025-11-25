@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
 
 use aigw_core::{
@@ -8,7 +8,6 @@ use aigw_core::{
     convert_headers, convert_headers_to_string, date_format_local, new_path_selector, new_rewrite,
 };
 use http::HeaderName;
-use pingora_load_balancing::LoadBalancer;
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 
 use crate::{
@@ -231,14 +230,12 @@ async fn convert_tb_site(
             backends_array.push(b);
         }
 
-        let lb = Arc::new(LoadBalancer::try_from_iter(backends_array.iter())?);
-
         let p_location = ProxyLocation {
             id: Some(location_id),
             path: Arc::new(new_path_selector(&location.location.unwrap())?),
             proxy: location.proxy == 1,
             protocol: location.protocol.unwrap().as_str().try_into()?,
-            lb,
+            lb: OnceLock::new(),
             upstream: backends_array,
             connection_timeout: location.connection_timeout.map_or(5, |t| t),
             read_timeout: location.read_timeout.map_or(5, |t| t),
@@ -623,7 +620,6 @@ fn convert_location(site_id: u64, location: &ProxyLocation, now: &DateTime) -> T
             .as_ref()
             .map(|(r, s)| "".to_owned() + r.as_str() + " " + s),
         http_version: location.http_version.as_ref().map(|v| v.to_string()),
-        upstream: serde_json::to_string(&location.upstream).ok(),
         root_dir: location.root_dir.as_ref().map(|item| unsafe {
             String::from_utf8_unchecked(item.as_os_str().as_encoded_bytes().to_vec())
         }),

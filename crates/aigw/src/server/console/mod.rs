@@ -14,6 +14,7 @@ use pingora_core::{
 use crate::server::{AigwConfig, Storage};
 
 pub struct AigwConsoleService {
+    #[cfg(target_os = "linux")]
     config: Arc<AigwConfig>,
     storage: Arc<Storage>,
     console_client: Arc<ConsoleClient>,
@@ -31,6 +32,7 @@ impl AigwConsoleService {
         let console_client = Arc::new(ConsoleClient::new(config.clone(), shutdown_tx.clone()));
 
         Self {
+            #[cfg(target_os = "linux")]
             config,
             storage,
             console_client,

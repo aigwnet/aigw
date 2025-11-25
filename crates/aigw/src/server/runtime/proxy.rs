@@ -453,7 +453,8 @@ impl ProxyHttp for AigwProxy {
     ) -> Result<Box<HttpPeer>> {
         if let Some((_, location)) = &ctx.location
             && let Some(client_ip) = &ctx.client_ip
-            && let Some(b) = location.lb.select(client_ip.as_bytes(), 5)
+            && let Ok(lb) = location.lb()
+            && let Some(b) = lb.select(client_ip.as_bytes(), 5)
         {
             let sni = {
                 if location.sni.is_empty() || location.sni.eq("$host") {
@@ -720,7 +721,8 @@ impl ProxyHttp for AigwProxy {
             Some(q) => session.req_header().uri.path().to_string() + "?" + q,
             None => session.req_header().uri.path().to_string(),
         };
-         info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
+
+        info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
             path, host, ua);
     }

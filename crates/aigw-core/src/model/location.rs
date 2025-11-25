@@ -4,7 +4,12 @@ use pingora_http::RequestHeader;
 use pingora_load_balancing::{LoadBalancer, selection::Consistent};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    path::PathBuf,
+    sync::{Arc, OnceLock},
+};
 use substring::Substring;
 use thiserror::Error;
 use tracing::error;
@@ -199,8 +204,6 @@ pub struct ProxyLocation {
     pub path: Arc<PathSelector>,
     pub proxy: bool,
     pub protocol: BanckedProtocol,
-    #[serde(serialize_with = "serialize_lb", deserialize_with = "deserialize_lb")]
-    pub lb: Arc<LoadBalancer<Consistent>>,
     pub upstream: Vec<String>,
     pub connection_timeout: u32,
     pub read_timeout: u32,
@@ -264,6 +267,8 @@ pub struct ProxyLocation {
     pub auto_index: bool,
     // root dir
     pub root_dir: Option<PathBuf>,
+    #[serde(skip)]
+    pub lb: OnceLock<anyhow::Result<Arc<LoadBalancer<Consistent>>>>,
 }
 
 impl ProxyLocation {
@@ -349,6 +354,16 @@ impl ProxyLocation {
         }
         false
     }
+
+    pub fn lb(&self) -> &anyhow::Result<Arc<LoadBalancer<Consistent>>> {
+        self.lb.get_or_init(|| {
+            let r = LoadBalancer::try_from_iter(self.upstream.iter());
+            match r {
+                Ok(lb) => Ok(Arc::new(lb)),
+                Err(e) => Err(anyhow::anyhow!(e)),
+            }
+        })
+    }
 }
 
 fn serialize_path<S>(value: &Arc<PathSelector>, serializer: S) -> Result<S::Ok, S::Error>
@@ -371,30 +386,6 @@ where
     let path = new_path_selector(&path)
         .map_err(|_| serde::de::Error::custom("PathSelector decode error"))?;
     Ok(Arc::new(path))
-}
-
-fn serialize_lb<S>(value: &Arc<LoadBalancer<Consistent>>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    let backends: Vec<String> = value
-        .backends()
-        .get_backend()
-        .iter()
-        .map(|b| b.addr.to_string())
-        .collect();
-    serializer.collect_seq(backends)
-}
-
-fn deserialize_lb<'de, D>(deserializer: D) -> Result<Arc<LoadBalancer<Consistent>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let backends: Vec<String> = Vec::deserialize(deserializer)?;
-    let lb: LoadBalancer<Consistent> = LoadBalancer::try_from_iter(backends.iter())
-        .map_err(|_| serde::de::Error::custom("LoadBalancer decode error"))?;
-
-    Ok(Arc::new(lb))
 }
 
 fn serialize_rewrite<S>(value: &Option<(Regex, String)>, serializer: S) -> Result<S::Ok, S::Error>
