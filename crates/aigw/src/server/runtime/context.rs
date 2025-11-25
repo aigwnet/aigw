@@ -159,7 +159,7 @@ impl AigwCtx {
     }
 
     pub fn get_variables(&self) -> &AHashMap<String, String> {
-        self.variables
+        &self.variables
     }
 
     /// Returns the upstream response time if it's less than one hour, otherwise None.
