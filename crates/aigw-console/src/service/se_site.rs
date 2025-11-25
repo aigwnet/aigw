@@ -488,31 +488,40 @@ async fn do_modify_site(
     let mut to_be_added = vec![];
     let mut to_be_updated = vec![];
 
-    let location_ids: HashSet<u64> = locations.iter().filter_map(|item| item.id).collect();
+    let db_locations: HashMap<u64, &TbLocation> = locations
+        .iter()
+        .filter_map(|loc| loc.id.map(|id| (id, loc)))
+        .collect();
+
+    let mut used_ids = HashSet::new();
 
     for l in &site.locations {
-        if let Some(id) = l.id {
-            if !location_ids.contains(&id) {
-                to_be_deleted.push(id);
+        match l.id {
+            Some(id) => {
+                if let Some(db_loc) = db_locations.get(&id) {
+                    to_be_updated.push((l, *db_loc));
+                    used_ids.insert(id);
+                }
             }
-        } else {
-            to_be_added.push(l);
-        }
-        for location in &locations {
-            if l.id == location.id {
-                to_be_updated.push((l, location));
+            None => {
+                to_be_added.push(l);
             }
         }
     }
 
+    to_be_deleted.extend(
+        db_locations
+            .keys()
+            .filter(|&id| !used_ids.contains(id))
+            .copied(),
+    );
+
     // update location
-    for l in to_be_updated {
-        let location = l.0;
-        // update location
+    for (location, tb_location) in to_be_updated {
         let location_id = location.id.ok_or(anyhow::anyhow!("Id is empty"))?;
 
         let mut new_location = convert_location(site_id, location, &now);
-        new_location.gmt_create = l.1.gmt_create.clone();
+        new_location.gmt_create = tb_location.gmt_create.clone();
         TbLocation::update_by_id(rb, &new_location, location_id).await?;
 
         let mut to_be_add: HashSet<(String, u16)> = location

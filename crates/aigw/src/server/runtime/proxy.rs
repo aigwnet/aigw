@@ -656,6 +656,27 @@ impl ProxyHttp for AigwProxy {
             }
         }
 
+        if let Some((_, location)) = &ctx.location {
+            if let Some(arr) = &location.response_set_headers {
+                arr.iter()
+                    .for_each(|(k, v)| {
+                        let _= upstream_response.insert_header(k, v);
+                    });
+            }
+            if let Some(arr) = &location.response_add_headers {
+                arr.iter()
+                    .for_each(|(k, v)| {
+                        let _= upstream_response.append_header(k, v);
+                    });
+            }
+
+            if let Some(arr) = &location.response_remove_headers {
+                arr.iter().for_each(|name| {
+                    upstream_response.remove_header(name);
+                });
+            }
+        }
+
         if session.cache.enabled() {
             // ignore insert header error
             let cache_status = session.cache.phase().as_str();
