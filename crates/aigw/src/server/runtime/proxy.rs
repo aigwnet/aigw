@@ -341,7 +341,6 @@ impl ProxyHttp for AigwProxy {
 
         ctx.add_variable("hostname", get_hostname());
         ctx.add_variable("host", host);
-        debug!("variables: {:?}", ctx.variables);
 
         if let Some((_, location)) = &ctx.location {
             location
@@ -384,7 +383,7 @@ impl ProxyHttp for AigwProxy {
         }
         let path = session.req_header().uri.path();
         if path.starts_with(ACME_PATH) {
-            let host = ctx.variables.get("host");
+            let host = ctx.get_variable("host");
             if let Some(host) = host
                 && !host.is_empty()
             {
@@ -455,7 +454,7 @@ impl ProxyHttp for AigwProxy {
         }
 
         let header = session.req_header_mut();
-        location.rewrite(header, &ctx.variables);
+        location.rewrite(header, ctx.get_variables());
         Ok(false)
     }
 
@@ -469,7 +468,7 @@ impl ProxyHttp for AigwProxy {
             && let Ok(lb) = location.lb()
             && let Some(b) = lb.select(client_ip.as_bytes(), 5)
         {
-            let sni = ctx.variables.get("sni").map_or("", |s| s);
+            let sni = ctx.get_variable("sni").map_or("", |s| s);
             let mut peer = HttpPeer::new(
                 b.addr,
                 location.protocol == BanckedProtocol::Https,
@@ -559,8 +558,8 @@ impl ProxyHttp for AigwProxy {
         debug!("upstream request filter");
 
         if let Some((_, location)) = &ctx.location {
-            let origin_host = ctx.variables.get("host").map_or("", |s| s);
-            let host = ctx.variables.get("sni").map_or(origin_host, |s| s);
+            let origin_host = ctx.get_variable("host").map_or("", |s| s);
+            let host = ctx.get_variable("sni").map_or(origin_host, |s| s);
             let _ = header.insert_header("Host", host);
 
             // Helper closure to avoid code duplication
@@ -622,8 +621,8 @@ impl ProxyHttp for AigwProxy {
         debug!("response filter");
         let _ = upstream_response.insert_header(header::SERVER, SERVER);
 
-        let host = ctx.variables.get("host").map_or("", |s| s);
-        let sni = ctx.variables.get("sni").map_or("", |s| s);
+        let host = ctx.get_variable("host").map_or("", |s| s);
+        let sni = ctx.get_variable("sni").map_or("", |s| s);
 
         let mut new_cookies = vec![];
         if !sni.is_empty() && !sni.eq(host) {
@@ -650,7 +649,7 @@ impl ProxyHttp for AigwProxy {
             if changed {
                 upstream_response.remove_header("set-cookie");
                 for cookie in &new_cookies {
-                    if let Ok(h) = HeaderValue::from_str(cookie.value()) {
+                    if let Ok(h) = HeaderValue::from_str(&cookie.to_string()) {
                         let _ = upstream_response.append_header("set-cookie", h);
                     }
                 }
