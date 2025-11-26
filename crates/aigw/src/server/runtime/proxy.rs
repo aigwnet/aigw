@@ -595,13 +595,11 @@ impl ProxyHttp for AigwProxy {
             }
             // Process referer
             if let Some(referer) = header.headers.get("referer") {
-                info!(target: "access", "referer =====> {:?}", referer.to_str());
                 if let Ok(referer) = referer.to_str()
                     && !origin_host.eq(host)
                 {
                     let new_referer = referer.replacen(origin_host, host, 1);
                     let _ = header.insert_header("referer", &new_referer);
-                    info!(target: "access", "new referer =====> {:?}", new_referer);
                 }
             }
         }
