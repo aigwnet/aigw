@@ -21,7 +21,7 @@ pub async fn do_build_change_log(
     data: Option<String>,
 ) -> anyhow::Result<ChangeLog> {
     // 0. delete expired items
-    let _r = tb_change_log::TbChangeLog::delete_by_expired(rb).await?;
+    let _r = tb_change_log::TbChangeLog::delete_expired(rb).await?;
 
     // 1. delete old change log
     let old_change_log =
