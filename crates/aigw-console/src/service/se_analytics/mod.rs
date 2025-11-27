@@ -4,7 +4,6 @@ mod traffic;
 pub use monitor::AnalyticsMonitorItem;
 pub use monitor::get_analytics_monitor;
 pub use monitor::get_analytics_monitor_server;
-use time::OffsetDateTime;
 pub use traffic::AnalyticsTrafficItem;
 pub use traffic::ExtInfo;
 pub use traffic::get_analytics_traffic;
@@ -12,14 +11,12 @@ pub use traffic::get_analytics_traffic_1day;
 pub use traffic::get_analytics_traffic_1month;
 pub use traffic::get_analytics_traffic_ext_info_1month;
 
-use crate::service::se_analytics::monitor::MonitorItem;
-use crate::service::se_analytics::monitor::analytics_monitor_hour;
-use crate::service::se_analytics::monitor::analytics_monitor_minute;
-use crate::service::se_analytics::traffic::TrafficItem;
-use crate::service::se_analytics::traffic::analytics_traffic_hour;
-use crate::service::se_analytics::traffic::analytics_traffic_minute;
 use crate::{
     service::{
+        se_analytics::{
+            monitor::{MonitorItem, analytics_monitor_hour, analytics_monitor_minute},
+            traffic::{TrafficItem, analytics_traffic_hour, analytics_traffic_minute},
+        },
         se_lock,
         se_task::{self, Task},
     },
@@ -35,6 +32,7 @@ use crate::{
 use aigw_core::{LOCAL_IP, Ping};
 use rbatis::{RBatis, executor::RBatisTxExecutor, rbdc::DateTime};
 use std::{sync::Arc, time::Duration};
+use time::OffsetDateTime;
 use tokio::time::interval;
 use tracing::{debug, error};
 
@@ -189,12 +187,12 @@ async fn do_start_analytics_minute(rb: &RBatis) -> anyhow::Result<()> {
             new_end_time = task.end_time + Duration::from_secs(60);
         }
 
-        // 删除锁
+        // Release lock
         se_lock::release_lock(rb, &lock_key).await;
     }
 
     let one_mounth_ago = DateTime::utc().add_sub_sec(-2592000);
-    // 清理一个月以前的记录
+    // Clean up records older than one month.
     let _ = TbAnalyticsMonitor::delete_by_gmt_create(rb, one_mounth_ago.clone()).await;
     let _ = TbAnalyticsTraffic::delete_by_gmt_create(rb, one_mounth_ago).await;
     Ok(())
@@ -211,7 +209,7 @@ async fn do_start_analytics_hour(rb: &RBatis) -> anyhow::Result<()> {
         let lock_key = "analytics_hour_".to_string() + &cluster_name;
 
         let host = &LOCAL_IP;
-        // 乐观锁
+        // Optimistic Locking
         let r = se_lock::try_acquire_lock(rb, &lock_key, host, 120).await;
         if !r {
             continue;
