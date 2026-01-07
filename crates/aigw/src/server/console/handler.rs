@@ -53,7 +53,7 @@ impl DataFrameHandler {
                     self.storage.store_cluster(Arc::new(cluster));
                 }
                 LogType::Site => match change_log.log_action {
-                    LogAction::Add | LogAction::Update => {
+                    LogAction::Create | LogAction::Update => {
                         let site: Site = serde_json::from_slice(&change_log.data)?;
                         let mut path = self.storage.data_dir.clone();
                         path.push("site");
@@ -78,7 +78,7 @@ impl DataFrameHandler {
                 LogType::Acme => {
                     let acme_token: AcmeToken = serde_json::from_slice(&change_log.data)?;
                     match change_log.log_action {
-                        LogAction::Add | LogAction::Update => {
+                        LogAction::Create | LogAction::Update => {
                             info!(target: "console",
                                 "Add acme token: {},{},{}",
                                 acme_token.host, acme_token.token, acme_token.proof

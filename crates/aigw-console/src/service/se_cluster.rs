@@ -5,7 +5,7 @@ use crate::{
 use aigw_core::{ChangeLog, Cluster, LogAction, LogType, date_format_local};
 use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 
-pub async fn add_new_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<ChangeLog> {
+pub async fn add_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<ChangeLog> {
     let now = DateTime::utc();
     TbCluster::insert(
         rb,

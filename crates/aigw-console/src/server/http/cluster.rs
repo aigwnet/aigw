@@ -8,7 +8,7 @@ use rbatis::PageRequest;
 use crate::{
     server::http::{ApiContext, ApiData, ApiError, ApiResponseResult, Pagination},
     service::{
-        Page, add_new_cluster, delete_cluster, find_all, find_cluster, find_cluster_by_page,
+        Page, add_cluster, delete_cluster, find_all, find_cluster, find_cluster_by_page,
         modify_cluster,
     },
 };
@@ -20,7 +20,7 @@ impl HttpApiCluster {
         State(context): State<ApiContext>,
         Json(cluster): Json<Cluster>,
     ) -> ApiResponseResult<()> {
-        let change_log = add_new_cluster(&context.database_client.rb, &cluster)
+        let change_log = add_cluster(&context.database_client.rb, &cluster)
             .await
             .map_err(ApiError::from)?;
         let _ = context.sender.send(change_log).await;

@@ -138,7 +138,7 @@ pub async fn apply_cert(
             rb,
             cluster.clone(),
             LogType::Acme,
-            LogAction::Add,
+            LogAction::Create,
             OffsetDateTime::now_utc().unix_timestamp() as u64,
             300,
             Some(data),

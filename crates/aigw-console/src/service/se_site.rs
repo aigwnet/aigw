@@ -414,7 +414,7 @@ async fn do_add_new_site(
         rb,
         site.cluster.clone(),
         LogType::Site,
-        LogAction::Add,
+        LogAction::Create,
         id,
         0,
         Some(s),

@@ -33,7 +33,7 @@ pub(crate) use se_analytics::start_analytics_minute;
 pub(crate) use se_changlog::do_build_change_log;
 pub(crate) use se_changlog::send_all_sites_to_aigw;
 pub(crate) use se_changlog::send_change_logs_to_aigw;
-pub(crate) use se_cluster::add_new_cluster;
+pub(crate) use se_cluster::add_cluster;
 pub(crate) use se_cluster::delete_cluster;
 pub(crate) use se_cluster::find_all;
 pub(crate) use se_cluster::find_cluster;

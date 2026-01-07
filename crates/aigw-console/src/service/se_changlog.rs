@@ -11,6 +11,27 @@ use crate::server::connection::Connection;
 use crate::service::find_site_by_page;
 use crate::storage::tb_change_log::{self, TbChangeLog};
 
+/// Asynchronously builds a change log entry.
+///
+/// This function creates a new change log record in the database with the specified parameters.
+/// It supports different log types (Site, Cluster, Acme, IpLayer4) and actions (Create, Update, Delete).
+/// For Cluster type logs, only the most recent entry is retained (single entry), while Site type logs
+/// can contain multiple entries. The log entry will automatically expire after the specified duration.
+///
+/// # Parameters
+/// - `rb`: Database executor for performing database operations
+/// - `cluster_name`: Name of the cluster where the change occurred
+/// - `log_type`: Type of log entry (Site, Cluster, Acme, or IpLayer4)
+/// - `log_action`: Action performed (Create, Update, or Delete)
+/// - `data_id`: Unique identifier of the data being logged
+/// - `expire_second`: Expiration time in seconds after which the log entry will be automatically cleaned up
+/// - `data`: Optional JSON string containing the actual data content (can be None for delete operations)
+///
+/// # Returns
+/// - `ChangeLog`: The created change log entry with generated ID, timestamps, and other metadata
+///
+/// # Errors
+/// Returns an error if database operations fail or if required parameters are invalid.
 pub async fn do_build_change_log(
     rb: &dyn rbatis::executor::Executor,
     cluster_name: String,
@@ -84,7 +105,7 @@ pub async fn send_all_sites_to_aigw(
                             log_id: item.id.unwrap(),
                             cluster: item.cluster,
                             log_type: LogType::Site,
-                            log_action: LogAction::Add,
+                            log_action: LogAction::Create,
                             data_id: item.id.unwrap(),
                             data: json.into_bytes(),
                         });

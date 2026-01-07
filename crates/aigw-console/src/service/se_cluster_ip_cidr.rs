@@ -76,7 +76,7 @@ pub async fn add_new_cluster_ip(
         rb,
         list.cluster_name.clone(),
         LogType::IpLayer4,
-        LogAction::Add,
+        LogAction::Create,
         0,
         0,
         Some(s),
