@@ -130,11 +130,11 @@ impl Handler {
                     connection.write(buf.as_ref()).await?;
                 }
 
-                // save current server
+                // save current aigw
                 if let Err(e) =
                     update_or_insert_aigw(&self.database_client.rb, handshake_request.info).await
                 {
-                    error!("Save server error: {:?}", e);
+                    error!("Save aigw error: {:?}", e);
                 }
 
                 //

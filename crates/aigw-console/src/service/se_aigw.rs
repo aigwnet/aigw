@@ -7,6 +7,18 @@ use crate::{
     storage::tb_aigw::TbAigw,
 };
 
+/// Asynchronously updates an existing AIGW or inserts a new one based on the handshake information.
+///
+/// # Parameters
+/// - `rb`: Reference to the RBatis instance for database operations
+/// - `info`: HandshakeInfo containing the AIGW data to be stored or updated
+///
+/// # Returns
+/// - `Ok(())` on successful update/insert operation
+/// - `Err(anyhow::Error)` if database operations fail, serialization errors occur, or constraints are violated
+///
+/// # Errors
+/// Returns an error if database operations fail or if required parameters are invalid.
 pub async fn update_or_insert_aigw(rb: &rbatis::RBatis, info: HandshakeInfo) -> anyhow::Result<()> {
     let now = DateTime::utc();
     let item = TbAigw::select_by_cluster_name_and_ip(rb, &info.cluster, &info.ip).await?;
