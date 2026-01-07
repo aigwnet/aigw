@@ -4,15 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT},
-    storage::tb_server::TbServer,
+    storage::tb_aigw::TbAigw,
 };
 
-pub async fn update_or_insert_server(
-    rb: &rbatis::RBatis,
-    info: HandshakeInfo,
-) -> anyhow::Result<()> {
+pub async fn update_or_insert_aigw(rb: &rbatis::RBatis, info: HandshakeInfo) -> anyhow::Result<()> {
     let now = DateTime::utc();
-    let item = TbServer::select_by_cluster_name_and_ip(rb, &info.cluster, &info.ip).await?;
+    let item = TbAigw::select_by_cluster_name_and_ip(rb, &info.cluster, &info.ip).await?;
     // update last_active_time
     if let Some(mut item) = item {
         item.version = Some(info.version);
@@ -24,11 +21,11 @@ pub async fn update_or_insert_server(
         item.cpu_frequency = Some(info.cpu_frequency);
         item.cpu_nums = Some(info.cpu_nums);
         item.gmt_modified = Some(now);
-        let _r = TbServer::update_by_id(rb, &item, item.id.unwrap()).await;
+        let _r = TbAigw::update_by_id(rb, &item, item.id.unwrap()).await;
     }
     // insert new item
     else {
-        let item = TbServer {
+        let item = TbAigw {
             id: None,
             cluster_name: Some(info.cluster),
             ip: Some(info.ip),
@@ -43,28 +40,27 @@ pub async fn update_or_insert_server(
             gmt_create: Some(now.clone()),
             gmt_modified: Some(now),
         };
-        let _ = TbServer::insert(rb, &item).await?;
+        let _ = TbAigw::insert(rb, &item).await?;
     }
 
     Ok(())
 }
 
-pub async fn find_server_by_page(
+pub async fn find_aigw_by_page(
     rb: &RBatis,
     page_request: &dyn IPageRequest,
     cluster_name: &str,
 ) -> anyhow::Result<Page<Server>> {
-    let r: rbatis::Page<TbServer> =
-        TbServer::select_by_page(rb, page_request, cluster_name).await?;
+    let r: rbatis::Page<TbAigw> = TbAigw::select_by_page(rb, page_request, cluster_name).await?;
     let mut page = Page::new(r.page_no, r.page_size, r.total, vec![]);
     for tb_server in r.records {
-        let server = convert_tb_server(&tb_server);
+        let server = convert_tb_aigw(&tb_server);
         page.items.push(server);
     }
     Ok(page)
 }
 
-fn convert_tb_server(server: &TbServer) -> Server {
+fn convert_tb_aigw(server: &TbAigw) -> Server {
     let gmt_create = server
         .gmt_create
         .as_ref()

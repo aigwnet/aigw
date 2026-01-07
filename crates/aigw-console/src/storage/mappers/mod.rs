@@ -1,4 +1,5 @@
 use serde::{Deserialize, Deserializer, Serializer};
+pub(crate) mod tb_aigw;
 #[allow(clippy::too_many_arguments)]
 pub(crate) mod tb_analytics_monitor;
 #[allow(clippy::too_many_arguments)]
@@ -19,7 +20,6 @@ pub(crate) mod tb_cluster_ip_cidr;
 pub(crate) mod tb_console;
 pub(crate) mod tb_location;
 pub(crate) mod tb_lock;
-pub(crate) mod tb_server;
 pub(crate) mod tb_session;
 pub(crate) mod tb_site;
 pub(crate) mod tb_task;

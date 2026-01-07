@@ -17,7 +17,7 @@ use crate::{
     DatabaseClient,
     service::{
         find_cluster_by_name, save_ping, send_all_sites_to_aigw, send_change_logs_to_aigw,
-        update_or_insert_server,
+        update_or_insert_aigw,
     },
 };
 
@@ -132,7 +132,7 @@ impl Handler {
 
                 // save current server
                 if let Err(e) =
-                    update_or_insert_server(&self.database_client.rb, handshake_request.info).await
+                    update_or_insert_aigw(&self.database_client.rb, handshake_request.info).await
                 {
                     error!("Save server error: {:?}", e);
                 }
