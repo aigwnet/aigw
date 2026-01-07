@@ -77,62 +77,30 @@ pub async fn do_build_change_log(
     })
 }
 
-pub async fn send_all_sites_to_aigw(
-    connection: &Arc<Mutex<Connection>>,
-    rb: &RBatis,
-) -> anyhow::Result<()> {
-    let mut page_no = 1;
-    let mut page_request = PageRequest::default();
-    page_request = page_request.set_page_size(20);
-    let mut buffer = Buffer::new(32);
-
-    loop {
-        let mut connection = connection.lock().await;
-        if let Some(cluster) = &connection.cluster
-            && let Some(crypto) = &connection.crypto
-        {
-            let r = find_site_by_page(rb, &page_request, cluster).await;
-            match r {
-                Ok(page) => {
-                    if page.items.is_empty() {
-                        break;
-                    }
-
-                    let mut logs = vec![];
-                    for item in page.items {
-                        let json = serde_json::to_string_pretty(&item)?;
-                        logs.push(ChangeLog {
-                            log_id: item.id.unwrap(),
-                            cluster: item.cluster,
-                            log_type: LogType::Site,
-                            log_action: LogAction::Create,
-                            data_id: item.id.unwrap(),
-                            data: json.into_bytes(),
-                        });
-                    }
-                    let log_point = logs.last().map(|last| LogPoint {
-                        log_id: last.log_id,
-                        log_type: LogType::Site,
-                    });
-                    let data: DataFrame = DataFrame { logs, log_point };
-                    build_data(&mut buffer, data, crypto)?;
-                    connection.write(&buffer).await?;
-
-                    page_no += 1;
-                    page_request = page_request.set_page_no(page_no);
-                }
-                Err(e) => {
-                    error!("Query error. {:?}", e);
-                }
-            }
-        } else {
-            break;
-        }
-    }
-
-    Ok(())
-}
-
+/// Asynchronously sends change logs to the AIGW (AI Gateway).
+///
+/// This function processes a batch of log points and transmits them to the AIGW
+/// through the provided connection. It handles the serialization and transmission of
+/// change log data, ensuring reliable delivery to the gateway for further processing.
+///
+/// # Parameters
+/// - `connection`: Thread-safe reference to the active connection to the AIGW,
+///   wrapped in Arc<Mutex<>> for concurrent access protection
+/// - `rb`: Reference to the RBatis instance for any required database operations
+///   during the transmission process (e.g., status updates, acknowledgments)
+/// - `log_points`: Vector of LogPoint structures containing the change log entries
+///   to be transmitted to the AIGW
+///
+/// # Returns
+/// - `Ok(())` on successful transmission of all log points
+/// - `Err(anyhow::Error)` if transmission fails, connection errors occur, or data processing encounters issues
+///
+/// # Errors
+/// This function may return errors in cases such as:
+/// - Connection to AIGW fails or is interrupted
+/// - Serialization of log points fails
+/// - Network timeout or communication errors
+/// - Database operations during transmission fail
 pub async fn send_change_logs_to_aigw(
     connection: &Arc<Mutex<Connection>>,
     rb: &RBatis,
@@ -158,48 +126,99 @@ pub async fn send_change_logs_to_aigw(
             if let Some(cluster) = &connection.cluster
                 && let Some(crypto) = &connection.crypto
             {
-                let r = TbChangeLog::select_by_type(
-                    rb,
-                    &page_request,
-                    cluster,
-                    log_type.code(),
-                    log_id,
-                )
-                .await;
-                match r {
-                    Ok(page) => {
-                        if page.records.is_empty() {
-                            break;
-                        }
+                if log_type == LogType::Site && log_id == 0 {
+                    let r = find_site_by_page(rb, &page_request, cluster).await;
+                    match r {
+                        Ok(page) => {
+                            if page.items.is_empty() {
+                                break;
+                            }
 
-                        let mut logs = vec![];
-                        for item in page.records {
-                            logs.push(ChangeLog {
-                                log_id: item.id.unwrap(),
-                                cluster: item.cluster_name.unwrap_or_default(),
-                                log_type,
-                                log_action: item.log_action.unwrap().try_into()?,
-                                data_id: item.data_id.unwrap(),
-                                data: item.data.map_or(vec![], |data| data.into_bytes()),
-                            });
-                        }
-                        let log_point = logs.last().map(|last| LogPoint {
-                            log_id: last.log_id,
-                            log_type,
-                        });
-                        let data: DataFrame = DataFrame { logs, log_point };
-                        build_data(&mut buffer, data, crypto)?;
-                        connection.write(&buffer).await?;
+                            let mut logs = vec![];
+                            for item in page.items {
+                                let json = serde_json::to_string_pretty(&item)?;
+                                logs.push(ChangeLog {
+                                    log_id: 0,
+                                    cluster: item.cluster,
+                                    log_type: LogType::Site,
+                                    log_action: LogAction::Create,
+                                    data_id: item.id.unwrap(),
+                                    data: json.into_bytes(),
+                                });
+                            }
 
-                        page_no += 1;
-                        page_request = page_request.set_page_no(page_no);
+                            let log_id = if let Some(last) = logs.last() {
+                                let change_log =
+                                    tb_change_log::TbChangeLog::select_by_data_id_and_type(
+                                        rb,
+                                        log_type.code(),
+                                        last.data_id,
+                                    )
+                                    .await?;
+                                change_log.map_or(0, |c| c.id.unwrap_or_default())
+                            } else {
+                                0
+                            };
+
+                            let data: DataFrame = DataFrame {
+                                logs,
+                                log_point: Some(LogPoint {
+                                    log_id,
+                                    log_type: LogType::Site,
+                                }),
+                            };
+                            build_data(&mut buffer, data, crypto)?;
+                            connection.write(&buffer).await?;
+
+                            page_no += 1;
+                            page_request = page_request.set_page_no(page_no);
+                        }
+                        Err(e) => {
+                            error!("Query error. {:?}", e);
+                        }
                     }
-                    Err(e) => {
-                        error!("Query error. {:?}", e);
+                } else {
+                    let r = TbChangeLog::select_by_type(
+                        rb,
+                        &page_request,
+                        cluster,
+                        log_type.code(),
+                        log_id,
+                    )
+                    .await;
+                    match r {
+                        Ok(page) => {
+                            if page.records.is_empty() {
+                                break;
+                            }
+
+                            let mut logs = vec![];
+                            for item in page.records {
+                                logs.push(ChangeLog {
+                                    log_id: item.id.unwrap(),
+                                    cluster: item.cluster_name.unwrap_or_default(),
+                                    log_type,
+                                    log_action: item.log_action.unwrap().try_into()?,
+                                    data_id: item.data_id.unwrap(),
+                                    data: item.data.map_or(vec![], |data| data.into_bytes()),
+                                });
+                            }
+                            let log_point = logs.last().map(|last| LogPoint {
+                                log_id: last.log_id,
+                                log_type,
+                            });
+                            let data: DataFrame = DataFrame { logs, log_point };
+                            build_data(&mut buffer, data, crypto)?;
+                            connection.write(&buffer).await?;
+
+                            page_no += 1;
+                            page_request = page_request.set_page_no(page_no);
+                        }
+                        Err(e) => {
+                            error!("Query error. {:?}", e);
+                        }
                     }
                 }
-            } else {
-                break;
             }
         }
     }

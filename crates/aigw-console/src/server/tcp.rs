@@ -15,10 +15,7 @@ use tracing::{debug, error, info};
 
 use crate::{
     DatabaseClient,
-    service::{
-        find_cluster_by_name, save_ping, send_all_sites_to_aigw, send_change_logs_to_aigw,
-        update_or_insert_aigw,
-    },
+    service::{find_cluster_by_name, save_ping, send_change_logs_to_aigw, update_or_insert_aigw},
 };
 
 use super::{Connections, connection::Connection};
@@ -137,17 +134,12 @@ impl Handler {
                     error!("Save aigw error: {:?}", e);
                 }
 
-                //
-                if handshake_request.log_points.is_empty() {
-                    send_all_sites_to_aigw(&self.connection, &self.database_client.rb).await?;
-                } else {
-                    send_change_logs_to_aigw(
-                        &self.connection,
-                        &self.database_client.rb,
-                        &handshake_request.log_points,
-                    )
-                    .await?;
-                }
+                send_change_logs_to_aigw(
+                    &self.connection,
+                    &self.database_client.rb,
+                    &handshake_request.log_points,
+                )
+                .await?;
             }
             Frame::HEARTBEAT_PING => {
                 let mut log_points = vec![];

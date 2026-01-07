@@ -17,5 +17,5 @@ impl_insert!(TbChangeLog {});
 impl_delete!(TbChangeLog{delete_by_id(log_id: u64) => "`WHERE id = #{log_id}`"});
 impl_delete!(TbChangeLog{delete_expired() => "`WHERE expire_second != 0 and TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) > expire_second`"});
 impl_delete!(TbChangeLog{delete_by_data_id(data_id: u64) => "`WHERE data_id = #{data_id}`"});
-impl_select!(TbChangeLog{select_by_data_id_and_type(log_type: u32, data_id: u64) -> Option => "`WHERE log_type = #{log_type} AND data_id = #{data_id} and (expire_second = 0 or TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) <= expire_second)`"});
-impl_select_page!(TbChangeLog{select_by_type(cluster_name: &str, log_type: u32, log_id: u64) => "`WHERE cluster_name=#{cluster_name} AND log_type = #{log_type} AND id > #{log_id}`"});
+impl_select!(TbChangeLog{select_by_data_id_and_type(log_type: u32, data_id: u64) -> Option => "`WHERE log_type = #{log_type} AND data_id = #{data_id} AND (expire_second = 0 or TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) <= expire_second)`"});
+impl_select_page!(TbChangeLog{select_by_type(cluster_name: &str, log_type: u32, log_id: u64) => "`WHERE cluster_name=#{cluster_name} AND log_type = #{log_type} AND id > #{log_id} AND (expire_second = 0 or TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) <= expire_second)`"});
