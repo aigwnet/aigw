@@ -100,7 +100,7 @@ impl DataFrameHandler {
                     #[cfg(target_os = "linux")]
                     {
                         match change_log.log_action {
-                            LogAction::Add | LogAction::Update => {
+                            LogAction::Create | LogAction::Update => {
                                 let ip_list_for_update: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
                                 self.storage.add_ip_cidr(&ip_list_for_update).await?;
