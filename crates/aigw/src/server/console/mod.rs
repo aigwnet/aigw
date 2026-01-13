@@ -54,6 +54,19 @@ impl Service for AigwConsoleService {
         let ebpf_handler = super::epbf::run(&self.epbf_config, self.config.console().address())
             .ok()
             .map(Arc::new);
+
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(data) = self.storage.load_ip_cidr(1).await {
+                let ip_list_for_update = aigw_core::IpList { item_type: 1, data };
+                ebpf_handler.handle_update(ip_list_for_update).await?;
+            }
+            if let Ok(data) = self.storage.load_ip_cidr(2).await {
+                let ip_list_for_update = aigw_core::IpList { item_type: 2, data };
+                ebpf_handler.handle_update(ip_list_for_update).await?;
+            }
+        }
+
         let data_handler = Arc::new(DataFrameHandler::new(
             self.storage.clone(),
             #[cfg(target_os = "linux")]

@@ -290,6 +290,51 @@ impl Storage {
         Ok(res)
     }
 
+    #[cfg(target_os = "linux")]
+    pub async fn add_ip_cidr(&self, list: &aigw_core::IpList) -> anyhow::Result<()> {
+        let conn = self.sqlite_conn.lock().await;
+        for ip in &list.data {
+            conn.execute(
+                "INSERT INTO cluster_ip_cidr (ip, prefix_len, type) VALUES(?,?,?)",
+                params![ip.data, ip.prefix_len, list.item_type],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    pub async fn remove_ip_cidr(&self, list: &aigw_core::IpList) -> anyhow::Result<()> {
+        let conn = self.sqlite_conn.lock().await;
+        for ip in &list.data {
+            conn.execute(
+                "DELETE FROM cluster_ip_cidr WHERE ip=? AND prefix_len=? AND type=?",
+                params![ip.data, ip.prefix_len, list.item_type],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    pub async fn load_ip_cidr(&self, r#type: i32) -> anyhow::Result<Vec<aigw_core::IpItem>> {
+        let conn = self.sqlite_conn.lock().await;
+
+        let mut stmt = conn.prepare("SELECT ip, prefix_len FROM cluster_ip_cidr WHERE type=?")?;
+
+        let mut res = vec![];
+        let mut rows = stmt.query(params![r#type])?;
+        while let Some(row) = rows.next()? {
+            let ip = row.get(0)?;
+            let prefix_len: u32 = row.get(1)?;
+            res.push(aigw_core::IpItem {
+                data: ip,
+                prefix_len,
+            });
+        }
+        Ok(res)
+    }
+
     fn fill_certified_key(&self, site: &mut Site) -> anyhow::Result<()> {
         if let Some(key) = &site.tls_private_key
             && let Some(c) = &site.tls_cert
@@ -450,20 +495,41 @@ impl Storage {
         data
     }
 }
-const INIT_SQL: &str = r#"
+const INIT_SQL_LOG_POINT: &str = r#"
 CREATE TABLE IF NOT EXISTS log_point (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     log_id INTEGER,         
     log_type INTEGER       
 );
 "#;
-const INIT_IDX: &str = r#"
+const INIT_IDX_LOG_POINT: &str = r#"
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_type ON log_point(log_type);
 "#;
+
+#[cfg(target_os = "linux")]
+const INIT_SQL_IP_CIDR: &str = r#"
+CREATE TABLE IF NOT EXISTS cluster_ip_cidr (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT,
+    prefix_len INTEGER,
+    type INTEGER
+);
+"#;
+#[cfg(target_os = "linux")]
+const INIT_IDX_IP_CIDR: &str = r#"
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_type_ip ON cluster_ip_cidr(type, ip, prefix_len);
+"#;
+
 fn init_sqlit(path: &PathBuf) -> anyhow::Result<Connection> {
     let conn = Connection::open(path)?;
-    conn.execute(INIT_SQL, ())?;
-    conn.execute(INIT_IDX, ())?;
+    conn.execute(INIT_SQL_LOG_POINT, ())?;
+    conn.execute(INIT_IDX_LOG_POINT, ())?;
+    #[cfg(target_os = "linux")]
+    {
+        conn.execute(INIT_SQL_IP_CIDR, ())?;
+        conn.execute(INIT_IDX_IP_CIDR, ())?;
+    }
+
     Ok(conn)
 }
 

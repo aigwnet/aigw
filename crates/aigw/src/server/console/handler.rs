@@ -103,6 +103,7 @@ impl DataFrameHandler {
                             LogAction::Add | LogAction::Update => {
                                 let ip_list_for_update: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
+                                self.storage.add_ip_cidr(&ip_list_for_update).await?;
                                 if let Some(ebpf_handler) = &self.ebpf_handler {
                                     ebpf_handler.handle_update(ip_list_for_update).await?;
                                 }
@@ -110,6 +111,7 @@ impl DataFrameHandler {
                             LogAction::Delete => {
                                 let ip_list_for_delete: aigw_core::IpList =
                                     serde_json::from_slice(&change_log.data)?;
+                                self.storage.remove_ip_cidr(&ip_list_for_delete).await?;
                                 if let Some(ebpf_handler) = &self.ebpf_handler {
                                     ebpf_handler.handle_delete(ip_list_for_delete).await?;
                                 }
