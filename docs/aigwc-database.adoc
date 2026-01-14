@@ -828,25 +828,25 @@ image::images/database.svg[]
 |
 
 |enable
-|tinyint
+|TINYINT
 |
 |Yes
 |
 
 |enable_default_site
-|tinyint
+|TINYINT
 |
 |Yes
 |
 
 |enable_white_list
-|tinyint
+|TINYINT
 |
 |Yes
 |
 
 |enable_block_list
-|tinyint
+|TINYINT
 |
 |Yes
 |
@@ -907,7 +907,7 @@ image::images/database.svg[]
 |
 
 |type
-|tinyint
+|TINYINT
 |
 |Yes
 |
