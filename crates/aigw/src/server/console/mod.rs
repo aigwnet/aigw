@@ -76,7 +76,7 @@ impl Service for AigwConsoleService {
 
 impl AigwConsoleService {
     #[cfg(target_os = "linux")]
-    async fn init_epbf(&self) -> Option<super::epbf::EbpfHandler> {
+    async fn init_epbf(&self) -> Option<Arc<super::epbf::EbpfHandler>> {
         use tracing::error;
         use tracing::info;
 
