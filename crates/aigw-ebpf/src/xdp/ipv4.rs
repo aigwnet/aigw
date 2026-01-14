@@ -14,6 +14,13 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv4Hdr) -> Result<u32, i64> {
     let src_addr = u32::from_be_bytes(unsafe { (*ip_hdr).src_addr });
     let dst_addr = u32::from_be_bytes(unsafe { (*ip_hdr).dst_addr });
 
+    info!(
+        &ctx,
+        "{} -> {}.",
+        Ipv4Addr::from_bits(src_addr),
+        Ipv4Addr::from_bits(dst_addr),
+    );
+
     let action = unsafe {
         if WHITELIST_IPV4.get(&src_addr).is_some() || WHITELIST_IPV4.get(&dst_addr).is_some() {
             XDP_PASS
