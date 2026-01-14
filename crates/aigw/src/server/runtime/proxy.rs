@@ -251,7 +251,7 @@ impl ProxyHttp for AigwProxy {
             .headers
             .get(UPGRADE)
             .and_then(|v| v.to_str().map_or(None, |s| Some(s.to_owned())));
-        // 统计user-agent
+
         let user_agent = header
             .headers
             .get(USER_AGENT)
@@ -299,30 +299,6 @@ impl ProxyHttp for AigwProxy {
         ctx.rate = self.storage.find_rate(host);
         let path = header.uri.path();
 
-        if ctx.tls_version.is_none()
-            && site.tls_on
-            && site.tls_enforce
-            && !path.starts_with(ACME_PATH)
-        {
-            let mut uri = format!("https://{host}");
-            let port = self.config.basic().https();
-            if port != 443 {
-                uri = format!("{uri}:{port}");
-            }
-            uri = format!("{uri}{path}");
-            if let Some(query) = header.uri.query() {
-                uri = format!("{uri}?{query}");
-            }
-
-            let mut header = ResponseHeader::build(StatusCode::PERMANENT_REDIRECT, Some(2))?;
-            header.insert_header(http::header::LOCATION, uri)?;
-            header.insert_header(header::CONTENT_LENGTH, 0.to_string())?;
-            session
-                .write_response_header(Box::new(header), false)
-                .await?;
-            return Ok(());
-        }
-
         if let Some((location, variables)) = find_matched_location(&site.locations, path) {
             ctx.location = Some((path.to_string(), location.clone()));
             for (key, value) in variables.iter() {
@@ -364,6 +340,7 @@ impl ProxyHttp for AigwProxy {
     where
         Self::CTX: Send + Sync,
     {
+        // rate limit 
         if let Some(rate) = &ctx.rate
             && rate.max_request > 0
         {
@@ -381,6 +358,7 @@ impl ProxyHttp for AigwProxy {
                 return Ok(true);
             }
         }
+        // acme
         let path = session.req_header().uri.path();
         if path.starts_with(ACME_PATH) {
             let host = ctx.get_variable("host");
@@ -423,6 +401,34 @@ impl ProxyHttp for AigwProxy {
         let Some(site) = &ctx.site else {
             return Ok(true);
         };
+
+        if ctx.tls_version.is_none()
+            && site.tls_on
+            && site.tls_enforce
+        {
+            let host = ctx.get_variable("host");
+            if let Some(host) = host
+                && !host.is_empty()
+            {
+                let mut uri = format!("https://{host}");
+                let port = self.config.basic().https();
+                if port != 443 {
+                    uri = format!("{uri}:{port}");
+                }
+                uri = format!("{uri}{path}");
+                if let Some(query) = session.req_header().uri.query() {
+                    uri = format!("{uri}?{query}");
+                }
+
+                let mut header = ResponseHeader::build(StatusCode::PERMANENT_REDIRECT, Some(2))?;
+                header.insert_header(http::header::LOCATION, uri)?;
+                header.insert_header(header::CONTENT_LENGTH, 0.to_string())?;
+                session
+                    .write_response_header(Box::new(header), false)
+                    .await?;
+                return Ok(true);
+            }
+        }
 
         let Some((_, location)) = &ctx.location else {
             StaticFilesHandler::handle(
@@ -656,16 +662,14 @@ impl ProxyHttp for AigwProxy {
 
         if let Some((_, location)) = &ctx.location {
             if let Some(arr) = &location.response_set_headers {
-                arr.iter()
-                    .for_each(|(k, v)| {
-                        let _= upstream_response.insert_header(k, v);
-                    });
+                arr.iter().for_each(|(k, v)| {
+                    let _ = upstream_response.insert_header(k, v);
+                });
             }
             if let Some(arr) = &location.response_add_headers {
-                arr.iter()
-                    .for_each(|(k, v)| {
-                        let _= upstream_response.append_header(k, v);
-                    });
+                arr.iter().for_each(|(k, v)| {
+                    let _ = upstream_response.append_header(k, v);
+                });
             }
 
             if let Some(arr) = &location.response_remove_headers {

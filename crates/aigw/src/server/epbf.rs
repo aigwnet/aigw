@@ -83,7 +83,7 @@ impl EbpfHandler {
                 match addr.ip() {
                     IpAddr::V4(ipv4_addr) => {
                         info!(target: "console",
-                            "Add ip {:?} to WHITELIST_IPV4  list",ipv4_addr
+                            "Add ip {:?} to WHITELIST_IPV4 list",ipv4_addr
                         );
                         let ip = u32::from_be_bytes(ipv4_addr.octets());
                         map_ipv4.insert(ip, 1, 0)?;
@@ -101,7 +101,7 @@ impl EbpfHandler {
                     IpAddr::V4(_) => {}
                     IpAddr::V6(ipv6_addr) => {
                         info!(target: "console",
-                            "Add ip {:?} to WHITELIST_IPV6  list",ipv6_addr
+                            "Add ip {:?} to WHITELIST_IPV6 list",ipv6_addr
                         );
                         let ip = u128::from_be_bytes(ipv6_addr.octets());
                         map_ipv6.insert(ip, 1, 0)?;
