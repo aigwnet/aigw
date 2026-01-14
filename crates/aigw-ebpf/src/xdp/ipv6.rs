@@ -26,7 +26,7 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
             XDP_PASS
         } else {
             let key = Key::<[u8; 16]> {
-                prefix_len: 64,
+                prefix_len: 128,
                 data: (*ip_hdr).src_addr,
             };
 
