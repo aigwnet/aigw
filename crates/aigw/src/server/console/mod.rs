@@ -91,6 +91,11 @@ impl AigwConsoleService {
                     let ip_list_for_update = aigw_core::IpList { item_type: 2, data };
                     let _ = ebpf_handler.handle_update(ip_list_for_update).await;
                 }
+
+                let cluster = self.storage.cluster();
+                ebpf_handler
+                    .handle_switch(cluster.enable_white_list, cluster.enable_block_list)
+                    .await?;
                 info!("Init epbf successfully.");
                 Some(Arc::new(ebpf_handler))
             }
