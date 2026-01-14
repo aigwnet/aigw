@@ -92,7 +92,7 @@ impl AigwConsoleService {
                     let _ = ebpf_handler.handle_update(ip_list_for_update).await;
                 }
                 info!("Init epbf successfully.");
-                Some(ebpf_handler)
+                Some(Arc::new(ebpf_handler))
             }
             Err(err) => {
                 error!("Init epbf error. {}", err);
