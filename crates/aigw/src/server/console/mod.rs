@@ -93,9 +93,9 @@ impl AigwConsoleService {
                 }
 
                 let cluster = self.storage.cluster();
-                ebpf_handler
+                let _ = ebpf_handler
                     .handle_switch(cluster.enable_white_list, cluster.enable_block_list)
-                    .await?;
+                    .await;
                 info!("Init epbf successfully.");
                 Some(Arc::new(ebpf_handler))
             }
