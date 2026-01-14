@@ -420,7 +420,7 @@ impl ProxyHttp for AigwProxy {
                     uri = format!("{uri}?{query}");
                 }
 
-                let mut header = ResponseHeader::build(StatusCode::PERMANENT_REDIRECT, Some(2))?;
+                let mut header = ResponseHeader::build(StatusCode::PERMANENT_REDIRECT, Some(3))?;
                 header.insert_header(http::header::LOCATION, uri)?;
                 header.insert_header(header::CONTENT_LENGTH, 0.to_string())?;
                 header.insert_header(header::SERVER, SERVER)?;
