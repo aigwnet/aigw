@@ -13,13 +13,6 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
     let dst_addr = u128::from_be_bytes(unsafe { (*ip_hdr).dst_addr });
     let src_addr = u128::from_be_bytes(unsafe { (*ip_hdr).src_addr });
 
-    info!(
-        &ctx,
-        "{} -> {}.",
-        Ipv6Addr::from_bits(src_addr),
-        Ipv6Addr::from_bits(dst_addr),
-    );
-
     //
     let action = unsafe {
         if WHITELIST_IPV6.get(&src_addr).is_some() || WHITELIST_IPV6.get(&dst_addr).is_some() {
