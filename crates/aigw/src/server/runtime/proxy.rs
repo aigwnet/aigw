@@ -423,6 +423,7 @@ impl ProxyHttp for AigwProxy {
                 let mut header = ResponseHeader::build(StatusCode::PERMANENT_REDIRECT, Some(2))?;
                 header.insert_header(http::header::LOCATION, uri)?;
                 header.insert_header(header::CONTENT_LENGTH, 0.to_string())?;
+                header.insert_header(header::SERVER, SERVER)?;
                 session
                     .write_response_header(Box::new(header), false)
                     .await?;
