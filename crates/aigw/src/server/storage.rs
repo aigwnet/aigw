@@ -85,7 +85,7 @@ impl Storage {
                 description: None,
                 gmt_modified: None,
             })),
-            sqlite_conn: Arc::new(Mutex::new(init_sqlit(&db_path)?)),
+            sqlite_conn: Arc::new(Mutex::new(init_sqlite(&db_path)?)),
             sites: arc_swap::ArcSwap::new(Default::default()),
             rates: arc_swap::ArcSwap::new(Default::default()),
             default_tls_site: arc_swap::ArcSwap::new(Default::default()),
@@ -520,7 +520,7 @@ const INIT_IDX_IP_CIDR: &str = r#"
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_type_ip ON cluster_ip_cidr(type, ip, prefix_len);
 "#;
 
-fn init_sqlit(path: &PathBuf) -> anyhow::Result<Connection> {
+fn init_sqlite(path: &PathBuf) -> anyhow::Result<Connection> {
     let conn = Connection::open(path)?;
     conn.execute(INIT_SQL_LOG_POINT, ())?;
     conn.execute(INIT_IDX_LOG_POINT, ())?;
