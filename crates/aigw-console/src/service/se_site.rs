@@ -262,7 +262,7 @@ async fn convert_tb_site(
                     Some(vec![])
                 }
             }),
-            proxy_remove_headers: location.proxy_remove_headers.and_then(|s| {
+            proxy_remove_headers: location.proxy_remove_headers.map(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
                     let mut r = vec![];
                     for h in &headers {
@@ -270,9 +270,9 @@ async fn convert_tb_site(
                             r.push(h);
                         }
                     }
-                    Some(r)
+                    r
                 } else {
-                    Some(vec![])
+                    vec![]
                 }
             }),
             response_add_headers: location.response_add_headers.and_then(|s| {
@@ -289,7 +289,7 @@ async fn convert_tb_site(
                     Some(vec![])
                 }
             }),
-            response_remove_headers: location.response_remove_headers.and_then(|s| {
+            response_remove_headers: location.response_remove_headers.map(|s| {
                 if let Ok(headers) = serde_json::from_str::<Vec<String>>(&s) {
                     let mut r = vec![];
                     for h in &headers {
@@ -297,9 +297,9 @@ async fn convert_tb_site(
                             r.push(h);
                         }
                     }
-                    Some(r)
+                    r
                 } else {
-                    Some(vec![])
+                    vec![]
                 }
             }),
             root_dir: location.root_dir.map(|item| item.into()),

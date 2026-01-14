@@ -340,7 +340,7 @@ impl ProxyHttp for AigwProxy {
     where
         Self::CTX: Send + Sync,
     {
-        // rate limit 
+        // rate limit
         if let Some(rate) = &ctx.rate
             && rate.max_request > 0
         {
@@ -402,10 +402,7 @@ impl ProxyHttp for AigwProxy {
             return Ok(true);
         };
 
-        if ctx.tls_version.is_none()
-            && site.tls_on
-            && site.tls_enforce
-        {
+        if ctx.tls_version.is_none() && site.tls_on && site.tls_enforce {
             let host = ctx.get_variable("host");
             if let Some(host) = host
                 && !host.is_empty()
@@ -601,13 +598,12 @@ impl ProxyHttp for AigwProxy {
                 });
             }
             // Process referer
-            if let Some(referer) = header.headers.get("referer") {
-                if let Ok(referer) = referer.to_str()
-                    && !origin_host.eq(host)
-                {
-                    let new_referer = referer.replacen(origin_host, host, 1);
-                    let _ = header.insert_header("referer", &new_referer);
-                }
+            if let Some(referer) = header.headers.get("referer")
+                && let Ok(referer) = referer.to_str()
+                && !origin_host.eq(host)
+            {
+                let new_referer = referer.replacen(origin_host, host, 1);
+                let _ = header.insert_header("referer", &new_referer);
             }
         }
 
