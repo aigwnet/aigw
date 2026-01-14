@@ -29,35 +29,36 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
                 prefix_len: 64,
                 data: (*ip_hdr).src_addr,
             };
-            // use white list
-            if SWITCH.get(&1).is_some() {
-                if WHITELIST_IPV6_CIDR.get(key).is_some() {
-                    XDP_PASS
-                } else {
-                    info!(
-                        &ctx,
-                        "black list, SRC: {} -> {} droped.",
-                        Ipv6Addr::from_bits(src_addr),
-                        Ipv6Addr::from_bits(dst_addr),
-                    );
-                    XDP_DROP
+
+            let mode = SWITCH.get(&0).copied().unwrap_or(0);
+            match mode {
+                1 => {
+                    if WHITELIST_IPV6_CIDR.get(key).is_some() {
+                        XDP_PASS
+                    } else {
+                        info!(
+                            &ctx,
+                            "not in whitelist (CIDR), dropping: {} -> {}.",
+                            Ipv6Addr::from_bits(src_addr),
+                            Ipv6Addr::from_bits(dst_addr),
+                        );
+                        XDP_DROP
+                    }
                 }
-            }
-            // use black list
-            else if SWITCH.get(&2).is_some() {
-                if BLOCKLIST_IPV6_CIDR.get(key).is_some() {
-                    info!(
-                        &ctx,
-                        "black list, SRC: {} -> {} droped.",
-                        Ipv6Addr::from_bits(src_addr),
-                        Ipv6Addr::from_bits(dst_addr),
-                    );
-                    XDP_DROP
-                } else {
-                    XDP_PASS
+                2 => {
+                    if BLOCKLIST_IPV6_CIDR.get(key).is_some() {
+                        info!(
+                            &ctx,
+                            "in blacklist (CIDR), dropping: {} -> {}.",
+                            Ipv6Addr::from_bits(src_addr),
+                            Ipv6Addr::from_bits(dst_addr),
+                        );
+                        XDP_DROP
+                    } else {
+                        XDP_PASS
+                    }
                 }
-            } else {
-                XDP_PASS
+                _ => XDP_PASS,
             }
         }
     };

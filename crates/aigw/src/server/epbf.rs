@@ -175,15 +175,11 @@ impl EbpfHandler {
         let mut map: HashMap<_, u32, u32> = HashMap::try_from(ebpf.map_mut("SWITCH").unwrap())?;
 
         if enable_white_list {
-            map.insert(1, 1, 0)?;
+            map.insert(0, 1, 0)?;
+        } else if enable_block_list {
+            map.insert(0, 2, 0)?;
         } else {
-            let _ = map.remove(&1);
-        }
-
-        if enable_block_list {
-            map.insert(2, 1, 0)?;
-        } else {
-            let _ = map.remove(&2);
+            let _ = map.remove(&0);
         }
         Ok(())
     }
