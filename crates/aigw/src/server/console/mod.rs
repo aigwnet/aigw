@@ -50,26 +50,10 @@ impl Service for AigwConsoleService {
         mut _shutdown: ShutdownWatch,
         _listeners_per_fd: usize,
     ) {
-        #[cfg(target_os = "linux")]
-        let ebpf_handler = super::epbf::run(&self.epbf_config, self.config.console().address())
-            .ok()
-            .map(Arc::new);
-
-        #[cfg(target_os = "linux")]
-        if let Some(ebpf_handler) = &ebpf_handler {
-            if let Ok(data) = self.storage.load_ip_cidr(1).await {
-                let ip_list_for_update = aigw_core::IpList { item_type: 1, data };
-                let _ = ebpf_handler.handle_update(ip_list_for_update).await;
-            }
-            if let Ok(data) = self.storage.load_ip_cidr(2).await {
-                let ip_list_for_update = aigw_core::IpList { item_type: 2, data };
-                let _ = ebpf_handler.handle_update(ip_list_for_update).await;
-            }
-        }
         let data_handler = Arc::new(DataFrameHandler::new(
             self.storage.clone(),
             #[cfg(target_os = "linux")]
-            ebpf_handler,
+            self.init_epbf().await,
         ));
 
         self.console_client.start(data_handler).await;
@@ -87,5 +71,33 @@ impl Service for AigwConsoleService {
     /// If `None`, the global setting will be used
     fn threads(&self) -> Option<usize> {
         Some(2)
+    }
+}
+
+impl AigwConsoleService {
+    #[cfg(target_os = "linux")]
+    async fn init_epbf(&self) -> Option<super::epbf::EbpfHandler> {
+        use tracing::error;
+        use tracing::info;
+
+        let ebpf_handler = super::epbf::run(&self.epbf_config, self.config.console().address());
+        match ebpf_handler {
+            Ok(ebpf_handler) => {
+                if let Ok(data) = self.storage.load_ip_cidr(1).await {
+                    let ip_list_for_update = aigw_core::IpList { item_type: 1, data };
+                    let _ = ebpf_handler.handle_update(ip_list_for_update).await;
+                }
+                if let Ok(data) = self.storage.load_ip_cidr(2).await {
+                    let ip_list_for_update = aigw_core::IpList { item_type: 2, data };
+                    let _ = ebpf_handler.handle_update(ip_list_for_update).await;
+                }
+                info!("Init epbf successfully.");
+                Some(ebpf_handler)
+            }
+            Err(err) => {
+                error!("Init epbf error. {}", err);
+                None
+            }
+        }
     }
 }
