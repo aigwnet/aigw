@@ -42,7 +42,7 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv6Hdr) -> Result<u32, i64> {
                     if BLOCKLIST_IPV6_CIDR.get(key).is_some() {
                         info!(
                             &ctx,
-                            "in blacklist (CIDR), dropping: {} -> {}.",
+                            "in blocklist (CIDR), dropping: {} -> {}.",
                             Ipv6Addr::from_bits(src_addr),
                             Ipv6Addr::from_bits(dst_addr),
                         );
