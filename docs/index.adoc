@@ -8,6 +8,7 @@ v0.1, 2026-01-27
 :docinfo: shared
 :sectnums:
 :sectnumlevels: 5
+:imagesdir: images
 
 include::overview.adoc[leveloffset=+1]
 include::user-manual.adoc[leveloffset=+1]

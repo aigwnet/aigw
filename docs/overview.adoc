@@ -4,7 +4,7 @@
 
 AIGW is a high-performance AI gateway built on the Pingora framework. It enables dynamic hot-reloading of configurations through a concise TOML file and an intuitive web management interface, significantly simplifying operations and maintenance.
 
-image::./images/aigw.svg[Aigw]
+image::aigw.svg[Aigw]
 
 == Features
 

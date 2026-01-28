@@ -1,8 +1,5 @@
 = Database
 
-image::../images/database.svg[]  
-
-
 == tb_aigw
 
 [cols="1,1,1,1,2"]
