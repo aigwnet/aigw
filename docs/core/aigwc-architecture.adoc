@@ -2,6 +2,6 @@
 
 When a user initiates a change, the aigw console server that receives the change will broadcast the update to other aigw console servers. Each aigw console server will then push the change to all aigw servers connected to it.
 
-image::images/aigwc.svg[]  
+image::../images/aigwc.svg[]  
 
 == ChangeLog

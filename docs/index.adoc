@@ -1,0 +1,14 @@
+= Light AI Gateway
+Lee <aigwnet@gmail.com>
+v0.1, 2026-01-27
+:toc:
+:homepage: https://aigw.net
+:doctype: book
+:backend: html5
+:docinfo: shared
+:sectnums:
+:sectnumlevels: 5
+
+include::overview.adoc[leveloffset=+1]
+include::user-manual.adoc[leveloffset=+1]
+include::core.adoc[leveloffset=+1]

@@ -1,0 +1,143 @@
+= User Manual
+
+== Installation on Debian
+
+=== Downloading Sources
+
+[source,bash]
+----
+git clone https://github.com/aigwnet/aigw.git
+----
+
+=== Building Aigw from Sources
+
+[source,bash]
+----
+cargo deb -p aigw
+----
+
+
+=== Building Aigwc from Sources
+
+[source,bash]
+----
+cargo deb -p aigwc
+----
+
+== Aigw Configuration
+
+A configuration file is a list of Aigw settings in toml format.
+
+.Example
+----
+[basic]
+http=8080
+https=8443
+data_dir="tmp/data"
+
+[console]
+address="console.aigw.net:9527"
+key="xxxxxx"
+cluster="linode"
+----
+
+.Settings
+[cols="1,1,3,1"]
+|===
+|Section
+|Key
+|meaning
+|value type
+
+|basic
+|http
+|HTTP listening port for incoming API requests.   
+|integer
+
+|basic
+|https
+|HTTPS listening port (TLS enabled).    
+|integer
+
+|basic
+|data_dir
+|Directory to store runtime data (e.g., caches, logs). Must be writable. 
+|string
+
+|console
+|address
+|Endpoint of the AIGW Console service for telemetry and control. 
+|string
+
+|console
+|key
+|Authentication key for secure communication with the console. 
+|string
+
+|console
+|cluster
+|Logical cluster name used for grouping instances in the console. 
+|string
+|=== 
+
+== Aigwc Configuration
+
+A configuration file is a list of Aigwc settings in toml format.
+
+.Example
+----
+[database]
+url="mysql://mysql.xxx.xxxx:3306/aigw?multi_statements=true"
+user="xxx"
+password="xxxxxx"
+
+[server]
+tcp.port=9527
+tcp.max_connections=1024
+http.port=8066
+boradcast.port=6608
+----
+
+.Settings
+[cols="1,1,3,1"]
+|===
+|Section
+|Key
+|meaning
+|value type
+
+|database
+|url
+|JDBC-style connection URL for the MySQL database. 
+|string
+
+|database
+|user
+|Database username with read/write privileges on the schema. 
+|string
+
+|database
+|password
+|Password for the database user.
+|string
+
+|server
+|tcp.port
+|TCP port for the internal control protocol.    
+|integer
+
+|server
+|tcp.max_connections
+|Maximum number of concurrent TCP connections allowed.
+|integer
+
+|server
+|http.port
+|HTTP port for the management API and health checks.
+|integer
+
+|server
+|boradcast.port
+|UDP port used for broadcast. 
+|integer
+|=== 

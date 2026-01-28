@@ -1,6 +1,6 @@
 = Database
 
-image::images/database.svg[]  
+image::../images/database.svg[]  
 
 
 == tb_aigw

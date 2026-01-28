@@ -1,0 +1,8 @@
+= Core Technologies
+
+
+include::core/aigw-architecture.adoc[leveloffset=+1]
+include::core/protocol.adoc[leveloffset=+1]
+include::core/aigwc-architecture.adoc[leveloffset=+1]
+include::core/aigwc-api.adoc[leveloffset=+1]
+include::core/aigwc-database.adoc[leveloffset=+1]

@@ -1,0 +1,17 @@
+= Overview
+
+== What is AIGW?
+
+AIGW is a high-performance AI gateway built on the Pingora framework. It enables dynamic hot-reloading of configurations through a concise TOML file and an intuitive web management interface, significantly simplifying operations and maintenance.
+
+image::./images/aigw.svg[Aigw]
+
+== Features
+
+* High performance and reliability
+* Dynamic and Easy to Use
+** Automated HTTPS via Let's Encrypt (HTTP-01 challenge supported)
+* Security
+** Supports XDP-based security protection, enabling Layer 4 IP CIDR blocking and whitelisting.
+** Provides bot traffic protection based on JA4 traffic fingerprints and other behavioral characteristics.
+* Modern Observability
