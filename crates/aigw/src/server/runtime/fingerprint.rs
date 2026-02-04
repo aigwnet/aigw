@@ -45,7 +45,7 @@ pub unsafe extern "C" fn client_hello_cb(
 ///
 /// The end result is a fingerprint that looks like:
 /// t13d1516h2_8daaf6152771_b186095e22b6
-pub unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
+unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
     unsafe {
         let mut fingerprint = String::from("t");
 
