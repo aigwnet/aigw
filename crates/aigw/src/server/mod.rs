@@ -88,13 +88,13 @@ pub fn run(
     let dynamic_cert = DynamicTlsAccept::new(storage);
     let mut tls_settings = TlsSettings::with_callbacks(Box::new(dynamic_cert))?;
 
-    unsafe {
-        SSL_CTX_set_client_hello_cb(
-            tls_settings.as_ptr(),
-            Some(client_hello_cb),
-            std::ptr::null_mut(),
-        );
-    }
+    // unsafe {
+    //     SSL_CTX_set_client_hello_cb(
+    //         tls_settings.as_ptr(),
+    //         Some(client_hello_cb),
+    //         std::ptr::null_mut(),
+    //     );
+    // }
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
     tls_settings.set_min_proto_version(Some(SslVersion::TLS1_2))?;
     // TLS 1.2 requires setting cipher suites

@@ -22,8 +22,6 @@ pub unsafe extern "C" fn client_hello_cb(
 ) -> std::os::raw::c_int {
     unsafe {
         let (ja4_hash, ja4_origin) = ja4(ssl);
-        info!(target: "test", "ja4: {} ===> {}", &ja4_hash, &ja4_origin);
-
         let boxed = Box::new((ja4_hash, ja4_origin));
         SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _);
     }
@@ -47,7 +45,7 @@ pub unsafe extern "C" fn client_hello_cb(
 ///
 /// The end result is a fingerprint that looks like:
 /// t13d1516h2_8daaf6152771_b186095e22b6
-unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
+pub unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
     unsafe {
         let mut fingerprint = String::from("t");
 

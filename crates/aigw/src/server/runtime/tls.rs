@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 use aigw_core::{DynamicCert, Site, TlsPrivateKey};
 use async_trait::async_trait;
@@ -7,9 +7,9 @@ use pingora_core::{
     protocols::tls::TlsRef,
     tls::{pkey::PKey, ssl, x509::X509},
 };
-use tracing::error;
+use tracing::{error, info};
 
-use crate::server::storage::Storage;
+use crate::server::{runtime::fingerprint::ja4, storage::Storage};
 
 pub struct DynamicTlsAccept {
     storage: Arc<Storage>,
@@ -83,4 +83,27 @@ impl TlsAccept for DynamicTlsAccept {
             self.storage.error();
         }
     }
+
+    async fn handshake_complete_callback(
+        &self,
+        ssl: &TlsRef,
+    ) -> Option<Arc<dyn Any + Send + Sync>> {
+        use foreign_types::ForeignTypeRef;
+        unsafe {
+            let (ja4_hash, ja4_origin) = ja4(ssl.as_ptr());
+
+            let fp = FingerPrint {
+                ja4_hash,
+                ja4_origin,
+            };
+
+            info!(target: "test", "ja4: {} ===> {}", &fp.ja4_hash, &fp.ja4_origin);
+            Some(Arc::new(fp))
+        }
+    }
+}
+
+pub(crate) struct FingerPrint {
+    pub ja4_hash: String,
+    pub ja4_origin: String,
 }

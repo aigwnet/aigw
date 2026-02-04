@@ -1,4 +1,4 @@
-mod cert;
+mod tls;
 mod conf;
 mod context;
 mod error_page;
@@ -11,7 +11,7 @@ mod proxy;
 mod user_agent;
 mod util;
 
-pub(crate) use cert::DynamicTlsAccept;
+pub(crate) use tls::DynamicTlsAccept;
 pub(crate) use conf::AigwConfig;
 pub(crate) use fingerprint::client_hello_cb;
 pub(crate) use geo_lite::GeoLite;

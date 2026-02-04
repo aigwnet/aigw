@@ -16,6 +16,7 @@ clap = {workspace = true}
 cookie-rs = {version = "0.4"}
 dashmap = {workspace = true}
 dyn-fmt = {version = "0.4.3"}
+foreign-types = {version = "0.3"}
 hex = {workspace = true}
 hostname = {version = "0.4"}
 http = {workspace = true}
