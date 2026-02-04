@@ -9,8 +9,6 @@ use sha::{
     utils::{Digest, DigestExt},
 };
 
-use tracing::info;
-
 pub static JA4_INDEX: once_cell::sync::Lazy<i32> = once_cell::sync::Lazy::new(|| unsafe {
     SSL_get_ex_new_index(0, std::ptr::null_mut(), None, None, None)
 });
@@ -50,7 +48,6 @@ unsafe fn ja4(ssl: *mut SSL) -> (String, String) {
         let mut fingerprint = String::from("t");
 
         let version = get_version(ssl);
-        info!(target: "test", "TLS Version: 0x{:04x}", version);
 
         fingerprint += match version {
             0x0304 => "13",
@@ -362,8 +359,6 @@ unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
                     .filter(|i| !is_grease(*i))
                     .collect();
 
-                info!(target: "test", "EXT origin: {:?}", exts.iter().map(|c| format!("{:04x}", c)).collect::<Vec<_>>());
-
                 let len = exts.len();
 
                 let mut exts_ignored = exts
@@ -373,8 +368,6 @@ unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
                     .map(|c| format!("{:04x}", c))
                     .collect::<Vec<_>>();
                 exts_ignored.sort_unstable();
-
-                info!(target: "test", "EXT filterd: {:?}", &exts_ignored);
 
                 OPENSSL_free(ext_ptr as *mut _);
 
@@ -412,7 +405,6 @@ unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
             "".to_string()
         }
     };
-    info!(target: "test", "EXT signature_algorithms: {:?}", &signature_algorithms);
 
     let extensions = if extensions.is_empty() || signature_algorithms.is_empty() {
         extensions

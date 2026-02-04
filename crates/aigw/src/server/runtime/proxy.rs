@@ -47,6 +47,7 @@ use crate::{
                 get_remote_addr,
             },
             new_internal_error,
+            tls::FingerPrint,
             user_agent::{UserAgentType, classify_user_agent},
         },
         storage::Storage,
@@ -102,6 +103,8 @@ struct DigestDetail {
     tls_version: Option<String>,
     /// TLS cipher suite in use if using HTTPS
     tls_cipher: Option<String>,
+    /// JA4
+    tls_fingerprint: Option<String>,
 }
 
 /// Extracts timing and TLS information from connection digest.
@@ -146,6 +149,10 @@ fn get_digest_detail(digest: &Digest) -> DigestDetail {
         tls_established: get_established(digest.timing_digest.last()),
         tls_version: Some(ssl_digest.version.to_string()),
         tls_cipher: Some(ssl_digest.cipher.to_string()),
+        tls_fingerprint: ssl_digest
+            .extension
+            .get::<FingerPrint>()
+            .map(|fp| fp.ja4_hash.clone()),
     }
 }
 
@@ -222,6 +229,7 @@ impl ProxyHttp for AigwProxy {
             }
             ctx.tls_cipher = digest_detail.tls_cipher;
             ctx.tls_version = digest_detail.tls_version;
+            ctx.tls_fingerprint = digest_detail.tls_fingerprint;
         }
 
         let ip = get_client_ip(session);
@@ -792,8 +800,10 @@ impl ProxyHttp for AigwProxy {
             Some(q) => session.req_header().uri.path().to_string() + "?" + q,
             None => session.req_header().uri.path().to_string(),
         };
-        info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\"", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
+
+        info!(target: "test", "ja4: {}", &ctx.tls_fingerprint.as_ref().map_or("", |s|s));
+        info!(target: "access", "{:<17} - {} {:<4} {:<8} \"{:<7} {}\" {} \"{}\" {}", ctx.client_ip.as_ref().map_or("", |s|s), code ,rt, content_length,
             session.req_header().method, 
-            path, host, ua);
+            path, host, ua, &ctx.tls_fingerprint.as_ref().map_or("", |s|s));
     }
 }

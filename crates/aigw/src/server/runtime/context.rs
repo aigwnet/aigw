@@ -79,6 +79,8 @@ pub struct AigwCtx {
     pub tls_cipher: Option<String>,
     /// Time taken for TLS handshake with client (in milliseconds)
     pub tls_handshake_time: Option<u64>,
+    /// JA4
+    pub tls_fingerprint: Option<String>,
     /// HTTP status code of the response
     pub status: Option<StatusCode>,
     /// Total time the connection has been alive (in milliseconds)

@@ -7,7 +7,7 @@ use pingora_core::{
     protocols::tls::TlsRef,
     tls::{pkey::PKey, ssl, ssl_sys::SSL_get_ex_data, x509::X509},
 };
-use tracing::{error, info};
+use tracing::error;
 
 use crate::server::{runtime::fingerprint::JA4_INDEX, storage::Storage};
 
@@ -94,14 +94,10 @@ impl TlsAccept for DynamicTlsAccept {
             let ptr = SSL_get_ex_data(ssl.as_ptr(), *JA4_INDEX);
             if !ptr.is_null() {
                 let boxed: Box<(String, String)> = Box::from_raw(ptr as *mut _);
-                let (ja4_hash, ja4_origin) = *boxed;
+                let (ja4_hash, _) = *boxed;
 
-                let fp = FingerPrint {
-                    ja4_hash,
-                    ja4_origin,
-                };
+                let fp = FingerPrint { ja4_hash };
 
-                info!(target: "test", "ja4: {} ===> {}", &fp.ja4_hash, &fp.ja4_origin);
                 Some(Arc::new(fp))
             } else {
                 None
@@ -112,5 +108,4 @@ impl TlsAccept for DynamicTlsAccept {
 
 pub(crate) struct FingerPrint {
     pub ja4_hash: String,
-    pub ja4_origin: String,
 }
