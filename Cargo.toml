@@ -54,3 +54,4 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+strip = true
