@@ -4,7 +4,7 @@ use aigw_core::IpList;
 use aya::{
     Ebpf,
     maps::{HashMap, LpmTrie, lpm_trie::Key},
-    programs::{Xdp, XdpFlags},
+    programs::{Xdp, XdpMode},
 };
 use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
@@ -54,9 +54,9 @@ pub fn run(config: &EpbfConfig, address: &str) -> anyhow::Result<EbpfHandler> {
 
     let program: &mut Xdp = ebpf.program_mut("aigw").unwrap().try_into()?;
     program.load()?;
-    if let Err(e) = program.attach(&config.iface, XdpFlags::default()) {
+    if let Err(e) = program.attach(&config.iface, XdpMode::default()) {
         error!("Native XDP attach failed ({}), falling back to SKB mode", e);
-        program.attach(&config.iface, XdpFlags::SKB_MODE)?;
+        program.attach(&config.iface, XdpMode::Skb)?;
     }
 
     Ok(EbpfHandler::new(ebpf, address)?)
@@ -86,7 +86,7 @@ impl EbpfHandler {
                             "Add ip {:?} to WHITELIST_IPV4 list",ipv4_addr
                         );
                         let ip = u32::from_be_bytes(ipv4_addr.octets());
-                        map_ipv4.insert(ip, 1, 0)?;
+                        map_ipv4.insert(&ip, &1, 0)?;
                     }
                     IpAddr::V6(_) => {}
                 }
@@ -104,7 +104,7 @@ impl EbpfHandler {
                             "Add ip {:?} to WHITELIST_IPV6 list",ipv6_addr
                         );
                         let ip = u128::from_be_bytes(ipv6_addr.octets());
-                        map_ipv6.insert(ip, 1, 0)?;
+                        map_ipv6.insert(&ip, &1, 0)?;
                     }
                 }
             }
@@ -175,9 +175,9 @@ impl EbpfHandler {
         let mut map: HashMap<_, u32, u32> = HashMap::try_from(ebpf.map_mut("SWITCH").unwrap())?;
 
         if enable_white_list {
-            map.insert(0, 1, 0)?;
+            map.insert(&0, &1, 0)?;
         } else if enable_block_list {
-            map.insert(0, 2, 0)?;
+            map.insert(&0, &2, 0)?;
         } else {
             let _ = map.remove(&0);
         }
@@ -210,7 +210,7 @@ impl EbpfHandler {
                 LpmTrie::try_from(ebpf.map_mut(ipv4_map_name).unwrap())?;
             for &(prefix_len, addr) in ipv4_entries {
                 let key = Key::new(prefix_len, addr.octets());
-                map.insert(&key, 1, 0)?;
+                map.insert(&key, &1, 0)?;
 
                 info!(target: "console",
                     "Add ip {:?}/{} to {} list",addr, prefix_len, ipv4_map_name
@@ -223,7 +223,7 @@ impl EbpfHandler {
                 LpmTrie::try_from(ebpf.map_mut(ipv6_map_name).unwrap())?;
             for &(prefix_len, addr) in ipv6_entries {
                 let key = Key::new(prefix_len, addr.octets());
-                map.insert(&key, 1, 0)?;
+                map.insert(&key, &1, 0)?;
 
                 info!(target: "console",
                     "Add ip {:?}/{} to {} list",addr, prefix_len, ipv6_map_name
