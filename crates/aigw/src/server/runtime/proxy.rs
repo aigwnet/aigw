@@ -501,14 +501,17 @@ impl ProxyHttp for AigwProxy {
             });
             peer.options.verify_hostname = true;
 
-            if let Some(http_version) = &location.http_version {
+            // Upgrade (e.g. websocket) requests must go over HTTP/1.1 regardless of
+            // the configured http_version, otherwise the Upgrade header is stripped
+            // and the handshake fails.
+            if session.is_upgrade_req() {
+                peer.options.alpn = ALPN::H1;
+            } else if let Some(http_version) = &location.http_version {
                 match http_version {
                     aigw_core::HttpVersion::H1 => peer.options.alpn = ALPN::H1,
                     aigw_core::HttpVersion::H2 => peer.options.alpn = ALPN::H2,
                     aigw_core::HttpVersion::H2H1 => peer.options.alpn = ALPN::H2H1,
                 }
-            } else if session.is_upgrade_req() {
-                peer.options.alpn = ALPN::H1;
             } else {
                 peer.options.alpn = ALPN::H2H1;
             }
@@ -574,14 +577,36 @@ impl ProxyHttp for AigwProxy {
             let host = ctx.get_variable("sni").map_or(origin_host, |s| s);
             let _ = header.insert_header("Host", host);
 
-            // Helper closure to avoid code duplication
+            // Forward Connection/Upgrade headers for upgrade (e.g. websocket) requests,
+            // like nginx: proxy_set_header Upgrade $http_upgrade;
+            //             proxy_set_header Connection "upgrade";
+            if session.is_upgrade_req()
+                && let Some(upgrade) = &ctx.http_upgrade
+            {
+                let _ = header.insert_header(UPGRADE, upgrade);
+                let _ = header.insert_header(http::header::CONNECTION, "upgrade");
+            }
+
+            // Helper closure to avoid code duplication.
+            // Like nginx, if a variable (e.g. $http_upgrade) resolves to nothing,
+            // the header is removed instead of sending the literal variable name.
             let mut set_header = |k: &HeaderName, v: &HeaderValue, append: bool| {
-                let value = convert_header_value(v, session, ctx).unwrap_or_else(|| v.clone());
-                // v validate for HeaderValue, so always no error
-                if append {
-                    let _ = header.append_header(k, value);
-                } else {
-                    let _ = header.insert_header(k, value);
+                let buf = v.as_bytes();
+                match convert_header_value(v, session, ctx) {
+                    Some(value) => {
+                        // value is validated for HeaderValue, so always no error
+                        if append {
+                            let _ = header.append_header(k, value);
+                        } else {
+                            let _ = header.insert_header(k, value);
+                        }
+                    }
+                    None if !buf.is_empty() && (buf[0] == b'$' || buf[0] == b':') => {
+                        header.remove_header(k);
+                    }
+                    None => {
+                        let _ = header.insert_header(k, v.clone());
+                    }
                 };
             };
 

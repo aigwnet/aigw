@@ -1,5 +1,6 @@
 use core::panic;
 use std::{fs, sync::Arc};
+mod security;
 mod server;
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
