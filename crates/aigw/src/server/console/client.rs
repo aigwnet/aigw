@@ -176,10 +176,11 @@ impl ConsoleClient {
         }
 
         let length = reader.read_u32().await?;
-        let mut buf = BytesMut::with_capacity(65535);
-        unsafe {
-            buf.set_len(length as usize);
+        if length as usize > 65535 {
+            return Err(anyhow::anyhow!("Handshake response too large: {length}"));
         }
+        let mut buf = BytesMut::with_capacity(65535);
+        buf.resize(length as usize, 0);
         reader.read_exact(&mut buf).await?;
 
         let response = parse_handshake_response(&buf, signature)?;
@@ -324,7 +325,7 @@ impl ConsoleClient {
         loop {
             let data_type = reader.read_u8().await?;
             let data_length = reader.read_u32().await?;
-            buffer.set_len(data_length as usize);
+            buffer.set_len(data_length as usize)?;
             match reader.read_exact(buffer.message_mut()).await {
                 Ok(0) => {
                     error!("Server disconnected");

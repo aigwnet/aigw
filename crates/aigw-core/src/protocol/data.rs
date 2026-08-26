@@ -90,12 +90,14 @@ impl From<LogPoint> for pb::LogPoint {
     }
 }
 
-impl From<pb::LogPoint> for LogPoint {
-    fn from(val: pb::LogPoint) -> Self {
-        LogPoint {
+impl TryFrom<pb::LogPoint> for LogPoint {
+    type Error = anyhow::Error;
+
+    fn try_from(val: pb::LogPoint) -> Result<Self, Self::Error> {
+        Ok(LogPoint {
             log_id: val.log_id,
-            log_type: val.log_type.try_into().unwrap(),
-        }
+            log_type: val.log_type.try_into()?,
+        })
     }
 }
 
@@ -141,7 +143,7 @@ impl TryFrom<&[u8]> for ChangeLog {
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let data = pb::ChangeLog::decode(value)?;
-        Ok(data.into())
+        data.try_into()
     }
 }
 
@@ -158,16 +160,18 @@ impl From<ChangeLog> for pb::ChangeLog {
     }
 }
 
-impl From<pb::ChangeLog> for ChangeLog {
-    fn from(val: pb::ChangeLog) -> Self {
-        Self {
+impl TryFrom<pb::ChangeLog> for ChangeLog {
+    type Error = anyhow::Error;
+
+    fn try_from(val: pb::ChangeLog) -> Result<Self, Self::Error> {
+        Ok(Self {
             log_id: val.log_id,
             cluster: val.cluster_name,
-            log_type: val.log_type.try_into().unwrap(),
-            log_action: val.log_action.try_into().unwrap(),
+            log_type: val.log_type.try_into()?,
+            log_action: val.log_action.try_into()?,
             data_id: val.data_id,
             data: val.data,
-        }
+        })
     }
 }
 
@@ -195,12 +199,18 @@ impl From<DataFrame> for pb::Data {
     }
 }
 
-impl From<pb::Data> for DataFrame {
-    fn from(val: pb::Data) -> Self {
-        DataFrame {
-            logs: val.logs.into_iter().map(|i| i.into()).collect(),
-            log_point: val.log_point.map(|log| log.into()),
-        }
+impl TryFrom<pb::Data> for DataFrame {
+    type Error = anyhow::Error;
+
+    fn try_from(val: pb::Data) -> Result<Self, Self::Error> {
+        Ok(DataFrame {
+            logs: val
+                .logs
+                .into_iter()
+                .map(ChangeLog::try_from)
+                .collect::<Result<_, _>>()?,
+            log_point: val.log_point.map(LogPoint::try_from).transpose()?,
+        })
     }
 }
 

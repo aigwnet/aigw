@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use aigw_core::ChangeLog;
-use bytes::BytesMut;
 use rbatis::{PageRequest, rbdc::DateTime};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -94,10 +93,10 @@ async fn send_change_log_to_peer(host: &str, port: u16, data: &[u8]) -> anyhow::
 
     let length = stream.read_u32().await?;
     if length > 0 {
-        let mut buf = BytesMut::with_capacity(64);
-        unsafe {
-            buf.set_len(length as usize);
+        if length > 64 * 1024 {
+            return Err(anyhow::anyhow!("Response too large: {length}"));
         }
+        let mut buf = vec![0u8; length as usize];
         let _ = stream.read(&mut buf).await?;
     }
 

@@ -219,8 +219,32 @@ pub async fn build_auto_index(path: &PathBuf) -> String {
 
 fn smart_truncate(s: &str, width: usize) -> String {
     if s.len() > width {
-        s[0..width].to_string() + "..."
+        // Avoid panicking on multi-byte UTF-8 boundaries
+        let mut end = width;
+        while !s.is_char_boundary(end) {
+            end -= 1;
+        }
+        format!("{}...", &s[..end])
     } else {
         s.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::smart_truncate;
+
+    #[test]
+    fn test_smart_truncate_multibyte() {
+        // A multi-byte UTF-8 char straddling the width must not panic
+        let name = "中文文件名测试".repeat(20);
+        let truncated = smart_truncate(&name, 60);
+        assert!(truncated.ends_with("..."));
+        assert!(truncated.len() <= 60 + 3);
+
+        // Short strings pass through unchanged
+        assert_eq!(smart_truncate("abc", 60), "abc");
+        // ASCII truncation still works
+        assert_eq!(smart_truncate(&"a".repeat(100), 60), format!("{}...", "a".repeat(60)));
     }
 }

@@ -45,7 +45,7 @@ impl Handler {
         let data_len = reader.read_u32().await?;
 
         buffer.clear();
-        buffer.set_len(data_len as usize);
+        buffer.set_len(data_len as usize)?;
         reader.read_exact(buffer).await?;
         Ok(data_type)
     }

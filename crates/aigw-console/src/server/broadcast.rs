@@ -79,9 +79,7 @@ impl BroadcastServer {
         let length = socket.read_u32().await?;
         if length > 0 && length < capacity {
             let mut buffer = BytesMut::with_capacity(capacity as usize);
-            unsafe {
-                buffer.set_len(length as usize);
-            }
+            buffer.resize(length as usize, 0);
             socket.read_exact(&mut buffer).await?;
             socket.write_u32(0).await?;
 

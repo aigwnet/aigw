@@ -18,7 +18,11 @@ impl TryFrom<pb::Ping> for Ping {
     fn try_from(value: pb::Ping) -> Result<Self, Self::Error> {
         Ok(Ping {
             ts: value.ts,
-            log_points: value.log_points.into_iter().map(|l| l.into()).collect(),
+            log_points: value
+                .log_points
+                .into_iter()
+                .map(LogPoint::try_from)
+                .collect::<Result<_, _>>()?,
             statistics: Statistics {
                 uptime: value.uptime,
                 cpu: value.cpu,

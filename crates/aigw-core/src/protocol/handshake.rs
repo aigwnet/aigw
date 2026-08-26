@@ -41,7 +41,11 @@ impl TryFrom<pb::HandshakeRequest> for HandshakeRequest {
             public_key_salt: value.public_key_salt,
             public_key_hash: value.public_key_hash,
             public_key_data: value.public_key_data,
-            log_points: value.log_points.into_iter().map(|l| l.into()).collect(),
+            log_points: value
+                .log_points
+                .into_iter()
+                .map(LogPoint::try_from)
+                .collect::<Result<_, _>>()?,
             info: HandshakeInfo {
                 ip: value.ip,
                 cluster: value.cluster,

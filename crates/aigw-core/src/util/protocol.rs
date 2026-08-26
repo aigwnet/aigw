@@ -182,7 +182,7 @@ pub fn build_ping(
         ext_info: statistics.ext_info,
     };
     buffer.write_all(&ping.encode_to_vec())?;
-    core.encrypt(buffer);
+    core.encrypt(buffer)?;
     let len = buffer.len();
     prepend_type_and_len(buffer, Frame::HEARTBEAT_PING, len as u32);
     Ok(())
@@ -198,7 +198,7 @@ pub fn build_pong(buffer: &mut Buffer, core: &CryptoCore, ts: i64) -> anyhow::Re
     buffer.clear();
     let pong = pb::Pong { ts };
     buffer.write_all(&pong.encode_to_vec())?;
-    core.encrypt(buffer);
+    core.encrypt(buffer)?;
     let len = buffer.len();
     prepend_type_and_len(buffer, Frame::HEARTBEAT_PONG, len as u32);
     Ok(())
@@ -214,7 +214,7 @@ pub fn build_data(buffer: &mut Buffer, data: DataFrame, core: &CryptoCore) -> an
     let data: pb::Data = data.into();
     buffer.clear();
     let _ = buffer.write(&data.encode_to_vec())?;
-    core.encrypt(buffer);
+    core.encrypt(buffer)?;
     let len = buffer.len();
     prepend_type_and_len(buffer, Frame::DATA, len as u32);
     Ok(())
@@ -223,14 +223,14 @@ pub fn build_data(buffer: &mut Buffer, data: DataFrame, core: &CryptoCore) -> an
 pub fn parse_data(buffer: &mut Buffer, core: &CryptoCore) -> anyhow::Result<DataFrame> {
     core.decrypt(buffer)?;
     let data = pb::Data::decode(buffer.as_ref())?;
-    Ok(data.into())
+    data.try_into()
 }
 
 pub fn build_ack(buffer: &mut Buffer, data: DataAck, core: &CryptoCore) -> anyhow::Result<()> {
     let data: pb::Ack = data.into();
     buffer.clear();
     let _ = buffer.write(&data.encode_to_vec())?;
-    core.encrypt(buffer);
+    core.encrypt(buffer)?;
     let len = buffer.len();
     prepend_type_and_len(buffer, Frame::ACK, len as u32);
     Ok(())
@@ -240,7 +240,7 @@ pub fn parse_ack(buffer: &mut Buffer, core: &CryptoCore) -> anyhow::Result<DataA
     core.decrypt(buffer)?;
     let data = pb::Ack::decode(buffer.as_ref())?;
     Ok(DataAck {
-        log_point: data.log_point.map(|l| l.into()),
+        log_point: data.log_point.map(LogPoint::try_from).transpose()?,
     })
 }
 
@@ -248,7 +248,7 @@ pub fn build_close(buffer: &mut Buffer, data: &Close, core: &CryptoCore) -> anyh
     let data: pb::Close = data.into();
     buffer.clear();
     let _ = buffer.write(&data.encode_to_vec())?;
-    core.encrypt(buffer);
+    core.encrypt(buffer)?;
     let len = buffer.len();
     prepend_type_and_len(buffer, Frame::CLOSE, len as u32);
     Ok(())

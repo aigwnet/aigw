@@ -30,7 +30,7 @@ impl CryptoCore {
         }
     }
 
-    pub fn encrypt(&self, buf: &mut Buffer) {
+    pub fn encrypt(&self, buf: &mut Buffer) -> anyhow::Result<()> {
         let data_start = buf.get_start();
         let data_length = buf.len();
         assert!(buf.get_start() >= EXTRA_LEN);
@@ -38,7 +38,7 @@ impl CryptoCore {
         // insert 8 bytes before real data
         // insert 16 bytes after real data
         buf.set_start(data_start - EXTRA_LEN);
-        buf.set_len(data_length + EXTRA_LEN + TAG_LEN);
+        buf.set_len(data_length + EXTRA_LEN + TAG_LEN)?;
 
         let (extra, data_and_tag) = buf.message_mut().split_at_mut(EXTRA_LEN);
         let (data, tag_space) = data_and_tag.split_at_mut(data_length);
@@ -61,13 +61,16 @@ impl CryptoCore {
             .seal_in_place_separate_tag(nonce, aead::Aad::empty(), data)
             .expect("Failed to encrypt");
         tag_space.clone_from_slice(tag.as_ref());
+        Ok(())
     }
 
     ///
     /// Decrypt message
     ///
     pub fn decrypt(&self, buf: &mut Buffer) -> anyhow::Result<()> {
-        assert!(buf.len() >= EXTRA_LEN + TAG_LEN);
+        if buf.len() < EXTRA_LEN + TAG_LEN {
+            return Err(anyhow::anyhow!("message too short to decrypt"));
+        }
         let (extra, data_and_tag) = buf.message_mut().split_at_mut(EXTRA_LEN);
         let mut nonce = [0; NONCE_LEN];
         {
@@ -83,7 +86,7 @@ impl CryptoCore {
             .map_err(|e| anyhow::anyhow!(e))?;
 
         buf.set_start(buf.get_start() + EXTRA_LEN);
-        buf.set_len(buf.len() - TAG_LEN);
+        buf.set_len(buf.len() - TAG_LEN)?;
         Ok(())
     }
 

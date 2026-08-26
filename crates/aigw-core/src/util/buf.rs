@@ -34,7 +34,7 @@ impl Buffer {
 
     pub fn clear(&mut self) {
         self.set_start(self.space_before);
-        self.set_len(0);
+        let _ = self.set_len(0);
     }
 
     pub(crate) fn get_start(&self) -> usize {
@@ -45,8 +45,18 @@ impl Buffer {
         self.start = start
     }
 
-    pub fn set_len(&mut self, length: usize) {
-        self.end = self.start + length
+    pub fn set_len(&mut self, length: usize) -> std::io::Result<()> {
+        let end = self.start.checked_add(length).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidData, "buffer length overflow")
+        })?;
+        if end > self.buffer.len() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "buffer length exceeds capacity",
+            ));
+        }
+        self.end = end;
+        Ok(())
     }
 
     pub(crate) fn prepend_byte(&mut self, byte: u8) {
@@ -73,8 +83,17 @@ impl Write for Buffer {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let len = self.len();
         let length = buf.len();
-        self.buffer[self.end..self.end + length].clone_from_slice(buf);
-        self.set_len(len + length);
+        let end = self.end.checked_add(length).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::WriteZero, "buffer length overflow")
+        })?;
+        if end > self.buffer.len() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::WriteZero,
+                "buffer capacity exceeded",
+            ));
+        }
+        self.buffer[self.end..end].clone_from_slice(buf);
+        self.set_len(len + length)?;
         Ok(length)
     }
 

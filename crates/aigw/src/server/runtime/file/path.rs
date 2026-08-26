@@ -40,12 +40,14 @@ pub fn resolve_uri(uri_path: &str, root: &Path) -> Result<PathBuf, Error> {
     }
 
     let path = path.canonicalize()?;
-    Ok(path)
-    // if path.starts_with(root) {
-    //     Ok(path)
-    // } else {
-    //     Err(ErrorKind::InvalidData.into())
-    // }
+    // Canonicalize the root as well so the comparison is symlink-safe.
+    let root = root.canonicalize()?;
+    if path.starts_with(&root) {
+        Ok(path)
+    } else {
+        // Reject paths escaping the root (e.g. %2e%2e or absolute-path components)
+        Err(ErrorKind::InvalidData.into())
+    }
 }
 
 /// Calculates the canonical URI path describing the path relative to a root directory.
@@ -65,4 +67,49 @@ pub fn path_to_uri(path: &Path, root: &Path) -> Option<String> {
         uri.pop();
     }
     Some(uri)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn setup(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "aigw_path_test_{}_{}",
+            std::process::id(),
+            name
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("sub")).unwrap();
+        fs::write(root.join("sub/file.txt"), b"hello").unwrap();
+        root
+    }
+
+    #[test]
+    fn test_resolve_uri_normal() {
+        let root = setup("normal");
+        let resolved = resolve_uri("/sub/file.txt", &root).unwrap();
+        assert!(resolved.starts_with(root.canonicalize().unwrap()));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn test_resolve_uri_rejects_dotdot_escape() {
+        let root = setup("dotdot");
+        // /%2e%2e/%2e%2e/... escapes the root via decoded ".." components
+        let result = resolve_uri("/%2e%2e/%2e%2e/etc/passwd", &root);
+        assert!(result.is_err());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn test_resolve_uri_rejects_absolute_path_component() {
+        let root = setup("absolute");
+        // %2Fetc%2Fpasswd decodes to "/etc/passwd"; PathBuf::push with an
+        // absolute path replaces the whole path
+        let result = resolve_uri("/%2Fetc%2Fpasswd", &root);
+        assert!(result.is_err());
+        let _ = fs::remove_dir_all(&root);
+    }
 }
