@@ -353,8 +353,12 @@ impl ProxyLocation {
     ) -> bool {
         if let Some((re, value)) = &self.rewrite {
             let mut replace_value = value.to_string();
-            // replace variables for rewrite value
-            for (k, v) in variables.iter() {
+            // Replace variables for rewrite value. Longer keys must be replaced
+            // first: $host would otherwise corrupt $hostname, and the iteration
+            // order of a HashMap is nondeterministic.
+            let mut vars: Vec<_> = variables.iter().collect();
+            vars.sort_by_key(|(k, _)| std::cmp::Reverse(k.len()));
+            for (k, v) in vars {
                 replace_value = replace_value.replace(k, v);
             }
             let path = header.uri.path();
@@ -602,4 +606,52 @@ pub fn find_matched_location(
         return Some((location.clone(), vec![]));
     }
     None
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_location(rewrite: Option<(Regex, String)>) -> ProxyLocation {
+        ProxyLocation {
+            id: None,
+            path: Arc::new(new_path_selector("/").unwrap()),
+            proxy: true,
+            protocol: BanckedProtocol::Http,
+            upstream: vec!["127.0.0.1:8080".to_string()],
+            connection_timeout: 1,
+            read_timeout: 1,
+            write_timeout: 1,
+            idle_timeout: 1,
+            sni: String::new(),
+            client_max_body_size: 0,
+            rewrite,
+            http_version: None,
+            proxy_add_headers: None,
+            proxy_set_headers: None,
+            proxy_remove_headers: None,
+            response_add_headers: None,
+            response_set_headers: None,
+            response_remove_headers: None,
+            auto_index: false,
+            root_dir: None,
+            lb: OnceLock::new(),
+        }
+    }
+
+    #[test]
+    fn test_rewrite_overlapping_variables() {
+        // $host must not corrupt $hostname regardless of map iteration order
+        let loc = test_location(Some((
+            Regex::new("^/old/(.*)$").unwrap(),
+            "/new/$host/$hostname/$1".to_string(),
+        )));
+        let mut header = RequestHeader::build(http::Method::GET, b"/old/x", None).unwrap();
+        let mut vars = AHashMap::new();
+        vars.insert("$host".to_string(), "example.com".to_string());
+        vars.insert("$hostname".to_string(), "gateway1".to_string());
+        assert!(loc.rewrite(&mut header, &vars));
+        assert_eq!(header.uri.path(), "/new/example.com/gateway1/x");
+    }
 }

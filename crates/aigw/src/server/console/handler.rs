@@ -94,7 +94,8 @@ impl DataFrameHandler {
                                 .remove_token(&acme_token.host, &acme_token.token);
                         }
                     }
-                    return Ok(true);
+                    // Do NOT return early here: remaining change logs in this
+                    // frame and the log point persistence below must still run.
                 }
                 LogType::IpLayer4 => {
                     #[cfg(target_os = "linux")]

@@ -92,6 +92,8 @@ pub struct AigwCtx {
     pub site: Option<Arc<Site>>,
     /// The location handling request
     pub location: Option<(String, Arc<ProxyLocation>)>,
+    /// Number of request body bytes received so far (for client_max_body_size enforcement)
+    pub request_body_size: usize,
     /// Address of the upstream server
     pub upstream_address: String,
     /// Client's IP address

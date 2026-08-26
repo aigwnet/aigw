@@ -197,6 +197,19 @@ impl Storage {
         let mut sites = (**self.sites.load()).clone();
         let mut rates = (**self.rates.load()).clone();
 
+        // On update, drop stale hostname mappings from the previous version of
+        // this site, but only if they still point to this site.
+        if let Some(old) = sites.get(&site.name).cloned() {
+            for host in &old.alt_names {
+                if !site.alt_names.contains(host)
+                    && sites.get(host).is_some_and(|s| s.name == site.name)
+                {
+                    sites.remove(host);
+                    rates.remove(host);
+                }
+            }
+        }
+
         let rate_limit = Arc::new(RateLimit {
             max_request: site.rate_limit,
             rate: Rate::new(Duration::from_millis(site.rate_limit_unit)),
@@ -205,16 +218,37 @@ impl Storage {
             sites.insert(host.to_owned(), site.clone());
             if site.rate_limit > 0 {
                 rates.insert(host.to_owned(), rate_limit.clone());
+            } else {
+                // rate limiting disabled by this update: drop stale entries
+                rates.remove(host);
             }
         }
 
-        if self.default_tls_site.load().is_none() && site.tls_on {
-            self.default_tls_site.store(Arc::new(Some(site.clone())));
-        }
         if site.rate_limit > 0 {
             rates.insert(site.name.clone(), rate_limit.clone());
+        } else {
+            rates.remove(&site.name);
         }
-        sites.insert(site.name.clone(), site);
+        sites.insert(site.name.clone(), site.clone());
+
+        // Keep the default TLS site fresh: pick this site when there is no
+        // default yet, when this update replaces the current default, or when
+        // the current default no longer exists / lost TLS.
+        let default = (**self.default_tls_site.load()).clone();
+        let refresh_default = match &default {
+            None => site.tls_on,
+            Some(d) => {
+                d.name == site.name || !d.tls_on || !sites.contains_key(&d.name)
+            }
+        };
+        if refresh_default {
+            if site.tls_on {
+                self.default_tls_site.store(Arc::new(Some(site)));
+            } else {
+                let replacement = sites.values().find(|s| s.tls_on).cloned();
+                self.default_tls_site.store(Arc::new(replacement));
+            }
+        }
 
         self.sites.store(Arc::new(sites));
         self.rates.store(Arc::new(rates));
@@ -225,9 +259,13 @@ impl Storage {
     pub fn remove_site(&self, site: &Site) {
         let mut sites = (**self.sites.load()).clone();
         let mut rates = (**self.rates.load()).clone();
+        // Only remove hostname mappings that still point to this site; another
+        // site may have claimed the same hostname afterwards.
         for host in &site.alt_names {
-            sites.remove(host);
-            rates.remove(host);
+            if sites.get(host).is_some_and(|s| s.name == site.name) {
+                sites.remove(host);
+                rates.remove(host);
+            }
         }
         sites.remove(&site.name);
         rates.remove(&site.name);
@@ -235,14 +273,13 @@ impl Storage {
         if let Some(default_site) = &**self.default_tls_site.load()
             && default_site.name.eq(&site.name)
         {
-            for site in sites.values() {
-                if site.tls_on {
-                    self.default_tls_site.store(Arc::new(Some(site.clone())));
-                    break;
-                }
-            }
+            // Pick another TLS site as default, or clear it entirely so the
+            // deleted site (and its cert) is no longer served.
+            let replacement = sites.values().find(|s| s.tls_on).cloned();
+            self.default_tls_site.store(Arc::new(replacement));
         }
         self.sites.store(Arc::new(sites));
+        self.rates.store(Arc::new(rates));
     }
 
     pub fn add_token(&self, token: AcmeToken) {
@@ -536,11 +573,73 @@ fn init_sqlite(path: &PathBuf) -> anyhow::Result<Connection> {
 #[cfg(test)]
 mod tests {
     use super::Storage;
+    use aigw_core::Site;
 
     #[test]
     fn test_sqlite() {
         let data_dir = "tmp/data".to_owned();
         let storage = Storage::new(Some(&data_dir), "test".to_string()).unwrap();
         let _ = storage.load_log_points();
+    }
+
+    fn make_site(name: &str, alt_names: &[&str], tls_on: bool) -> Site {
+        serde_json::from_value(serde_json::json!({
+            "cluster": "test",
+            "name": name,
+            "alt_names": alt_names,
+            "auto_index": false,
+            "tls_on": tls_on,
+            "rate_limit": 10,
+            "rate_limit_unit": 1000u64,
+            "locations": []
+        }))
+        .unwrap()
+    }
+
+    fn default_tls_site_name(storage: &Storage) -> Option<String> {
+        storage
+            .default_tls_site
+            .load()
+            .as_ref()
+            .as_ref()
+            .map(|s| s.name.clone())
+    }
+
+    #[test]
+    fn test_site_add_update_remove() {
+        let data_dir = format!("tmp/data-site-test-{}", std::process::id());
+        let storage = Storage::new(Some(&data_dir), "test".to_string()).unwrap();
+
+        // Add a TLS site: becomes the default TLS site
+        storage
+            .add_site(make_site("a.com", &["www.a.com"], true))
+            .unwrap();
+        assert!(storage.find_site("www.a.com").is_some());
+        assert!(storage.find_rate("a.com").is_some());
+        assert_eq!(default_tls_site_name(&storage).as_deref(), Some("a.com"));
+
+        // Update: drop www.a.com, add m.a.com, disable rate limiting
+        let mut updated = make_site("a.com", &["m.a.com"], true);
+        updated.rate_limit = 0;
+        storage.add_site(updated).unwrap();
+        assert!(storage.find_site("www.a.com").is_none());
+        assert!(storage.find_site("m.a.com").is_some());
+        assert!(storage.find_rate("a.com").is_none());
+        assert_eq!(default_tls_site_name(&storage).as_deref(), Some("a.com"));
+
+        // Remove the site: rate entries cleaned, default cleared (no other TLS site)
+        storage.remove_site(&make_site("a.com", &["m.a.com"], true));
+        assert!(storage.find_site("a.com").is_none());
+        assert!(storage.find_site("m.a.com").is_none());
+        assert!(storage.find_rate("a.com").is_none());
+        assert!(default_tls_site_name(&storage).is_none());
+
+        // Two TLS sites: removing the default falls back to the other one
+        storage.add_site(make_site("a.com", &[], true)).unwrap();
+        storage.add_site(make_site("b.com", &[], true)).unwrap();
+        storage.remove_site(&make_site("a.com", &[], true));
+        assert_eq!(default_tls_site_name(&storage).as_deref(), Some("b.com"));
+
+        let _ = std::fs::remove_dir_all(&data_dir);
     }
 }

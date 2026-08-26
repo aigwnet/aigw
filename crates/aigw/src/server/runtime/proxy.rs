@@ -481,6 +481,11 @@ impl ProxyHttp for AigwProxy {
             && let Some(b) = lb.select(client_ip.as_bytes(), 5)
         {
             let sni = ctx.get_variable("sni").map_or("", |s| s);
+            // Fail closed: pingora disables upstream certificate verification when
+            // SNI is empty, which would make an HTTPS upstream MITM-able.
+            if location.protocol == BanckedProtocol::Https && sni.is_empty() {
+                return Err(Error::new(ErrorType::new("Empty upstream SNI")));
+            }
             let mut peer = HttpPeer::new(
                 b.addr,
                 location.protocol == BanckedProtocol::Https,
@@ -640,6 +645,34 @@ impl ProxyHttp for AigwProxy {
             }
         }
 
+        Ok(())
+    }
+
+    /// Enforces client_max_body_size while streaming the request body upstream.
+    /// The Content-Length pre-check is bypassed by chunked/unknown-length bodies,
+    /// so the actual byte count is enforced here (same as nginx behavior).
+    async fn request_body_filter(
+        &self,
+        _session: &mut Session,
+        body: &mut Option<Bytes>,
+        _end_of_stream: bool,
+        ctx: &mut Self::CTX,
+    ) -> Result<()>
+    where
+        Self::CTX: Send + Sync,
+    {
+        if let Some((_, location)) = &ctx.location
+            && location.client_max_body_size > 0
+        {
+            let size = body.as_ref().map_or(0, |b| b.len());
+            ctx.request_body_size = ctx.request_body_size.saturating_add(size);
+            if ctx.request_body_size > location.client_max_body_size {
+                return Err(Error::explain(
+                    HTTPStatus(413),
+                    "Request body exceeds client_max_body_size",
+                ));
+            }
+        }
         Ok(())
     }
 

@@ -100,6 +100,7 @@ impl ConsoleClient {
                                 e,
                                 RECONNECT_DELAY.as_secs()
                             );
+                            tokio::time::sleep(RECONNECT_DELAY).await;
                         }
                     }
                 }

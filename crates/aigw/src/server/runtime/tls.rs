@@ -54,6 +54,11 @@ impl DynamicTlsAccept {
 impl TlsAccept for DynamicTlsAccept {
     async fn certificate_callback(&self, ssl: &mut TlsRef) -> () {
         self.storage.tls();
+        // NOTE: pingora's certificate_callback cannot return an error, and the
+        // acceptor has no default certificate. Rejection therefore works by
+        // leaving no certificate on this (per-connection) SSL object, which
+        // makes resume_accept() abort the handshake. Do NOT load any fallback
+        // certificate here, or unknown-SNI connections would silently succeed.
         if let Some(sni) = ssl.servername(ssl::NameType::HOST_NAME) {
             let site = self
                 .storage
@@ -62,24 +67,19 @@ impl TlsAccept for DynamicTlsAccept {
             if let Some(site) = site {
                 if let Err(e) = self.set_dynamic_cert(&site, ssl) {
                     error!("Add cert error, {:?}", e);
-                    ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+                    self.storage.error();
                 }
             } else {
                 error!("Site  {:?} not found.", sni);
-                ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+                self.storage.error();
+            }
+        } else if let Some(site) = self.storage.find_default_tls_site() {
+            if let Err(e) = self.set_dynamic_cert(&site, ssl) {
+                error!("Add cert error, {:?}", e);
                 self.storage.error();
             }
         } else {
-            if let Some(site) = self.storage.find_default_tls_site() {
-                if let Err(e) = self.set_dynamic_cert(&site, ssl) {
-                    error!("Add cert error, {:?}", e);
-                    ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
-                } else {
-                    return;
-                }
-            }
-            error!("Unknowns HTTPS request without SNI.");
-            ssl.set_verify(ssl::SslVerifyMode::FAIL_IF_NO_PEER_CERT);
+            error!("Unknown HTTPS request without SNI.");
             self.storage.error();
         }
     }
