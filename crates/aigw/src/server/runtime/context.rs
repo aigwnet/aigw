@@ -374,11 +374,13 @@ impl AigwCtx {
             "service_time" => {
                 buf.extend(
                     itoa::Buffer::new()
-                        .format(now_ms() - self.created_at)
+                        .format(now_ms().saturating_sub(self.created_at))
                         .as_bytes(),
                 );
             }
-            "service_time_human" => buf = format_duration(buf, now_ms() - self.created_at),
+            "service_time_human" => {
+                buf = format_duration(buf, now_ms().saturating_sub(self.created_at))
+            }
             _ => {}
         }
         buf

@@ -82,6 +82,7 @@ impl Storage {
                 enable_default_site: false,
                 enable_white_list: false,
                 enable_block_list: false,
+                real_ip_from: vec![],
                 description: None,
                 gmt_modified: None,
             })),
@@ -97,14 +98,27 @@ impl Storage {
 }
 
 impl Storage {
+    /// Lowercase hostnames are used as map keys; DNS names are case-insensitive.
+    fn host_key(host: &str) -> String {
+        host.to_lowercase()
+    }
+
     pub fn find_site(&self, host: &str) -> Option<Arc<Site>> {
         let sites = self.sites.load();
-        sites.get(host).cloned()
+        if host.bytes().any(|b| b.is_ascii_uppercase()) {
+            sites.get(&Self::host_key(host)).cloned()
+        } else {
+            sites.get(host).cloned()
+        }
     }
 
     pub fn find_rate(&self, host: &str) -> Option<Arc<RateLimit>> {
         let rates = self.rates.load();
-        rates.get(host).cloned()
+        if host.bytes().any(|b| b.is_ascii_uppercase()) {
+            rates.get(&Self::host_key(host)).cloned()
+        } else {
+            rates.get(host).cloned()
+        }
     }
 
     pub fn find_default_tls_site(&self) -> Option<Arc<Site>> {
@@ -171,9 +185,9 @@ impl Storage {
                 rate: Rate::new(Duration::from_millis(s.rate_limit_unit)),
             });
             for host in &s.alt_names {
-                sites.insert(host.to_owned(), s.clone());
+                sites.insert(Self::host_key(host), s.clone());
                 if s.rate_limit > 0 {
-                    rates.insert(host.to_owned(), rate_limit.clone());
+                    rates.insert(Self::host_key(host), rate_limit.clone());
                 }
             }
 
@@ -182,9 +196,9 @@ impl Storage {
                 self.default_tls_site.store(Arc::new(Some(s.clone())));
             }
             if s.rate_limit > 0 {
-                rates.insert(s.name.clone(), rate_limit.clone());
+                rates.insert(Self::host_key(&s.name), rate_limit.clone());
             }
-            sites.insert(s.name.clone(), s);
+            sites.insert(Self::host_key(&s.name), s);
         }
         self.sites.store(Arc::new(sites));
         self.rates.store(Arc::new(rates));
@@ -199,13 +213,16 @@ impl Storage {
 
         // On update, drop stale hostname mappings from the previous version of
         // this site, but only if they still point to this site.
-        if let Some(old) = sites.get(&site.name).cloned() {
+        let site_key = Self::host_key(&site.name);
+        let new_alt_keys: Vec<String> = site.alt_names.iter().map(|h| Self::host_key(h)).collect();
+        if let Some(old) = sites.get(&site_key).cloned() {
             for host in &old.alt_names {
-                if !site.alt_names.contains(host)
-                    && sites.get(host).is_some_and(|s| s.name == site.name)
+                let key = Self::host_key(host);
+                if !new_alt_keys.contains(&key)
+                    && sites.get(&key).is_some_and(|s| s.name == site.name)
                 {
-                    sites.remove(host);
-                    rates.remove(host);
+                    sites.remove(&key);
+                    rates.remove(&key);
                 }
             }
         }
@@ -215,21 +232,22 @@ impl Storage {
             rate: Rate::new(Duration::from_millis(site.rate_limit_unit)),
         });
         for host in &site.alt_names {
-            sites.insert(host.to_owned(), site.clone());
+            let key = Self::host_key(host);
+            sites.insert(key.clone(), site.clone());
             if site.rate_limit > 0 {
-                rates.insert(host.to_owned(), rate_limit.clone());
+                rates.insert(key.clone(), rate_limit.clone());
             } else {
                 // rate limiting disabled by this update: drop stale entries
-                rates.remove(host);
+                rates.remove(&key);
             }
         }
 
         if site.rate_limit > 0 {
-            rates.insert(site.name.clone(), rate_limit.clone());
+            rates.insert(site_key.clone(), rate_limit.clone());
         } else {
-            rates.remove(&site.name);
+            rates.remove(&site_key);
         }
-        sites.insert(site.name.clone(), site.clone());
+        sites.insert(site_key.clone(), site.clone());
 
         // Keep the default TLS site fresh: pick this site when there is no
         // default yet, when this update replaces the current default, or when
@@ -238,7 +256,7 @@ impl Storage {
         let refresh_default = match &default {
             None => site.tls_on,
             Some(d) => {
-                d.name == site.name || !d.tls_on || !sites.contains_key(&d.name)
+                d.name == site.name || !d.tls_on || !sites.contains_key(&Self::host_key(&d.name))
             }
         };
         if refresh_default {
@@ -262,13 +280,15 @@ impl Storage {
         // Only remove hostname mappings that still point to this site; another
         // site may have claimed the same hostname afterwards.
         for host in &site.alt_names {
-            if sites.get(host).is_some_and(|s| s.name == site.name) {
-                sites.remove(host);
-                rates.remove(host);
+            let key = Self::host_key(host);
+            if sites.get(&key).is_some_and(|s| s.name == site.name) {
+                sites.remove(&key);
+                rates.remove(&key);
             }
         }
-        sites.remove(&site.name);
-        rates.remove(&site.name);
+        let site_key = Self::host_key(&site.name);
+        sites.remove(&site_key);
+        rates.remove(&site_key);
 
         if let Some(default_site) = &**self.default_tls_site.load()
             && default_site.name.eq(&site.name)

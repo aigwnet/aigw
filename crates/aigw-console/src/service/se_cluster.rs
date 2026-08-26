@@ -131,6 +131,7 @@ fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
         enable_default_site: cluster.enable_default_site,
         enable_white_list: cluster.enable_white_list,
         enable_block_list: cluster.enable_block_list,
+        real_ip_from: vec![],
         description: cluster.description.clone(),
         gmt_modified,
     }

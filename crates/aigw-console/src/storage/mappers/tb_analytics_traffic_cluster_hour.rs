@@ -1,4 +1,6 @@
-use rbatis::{impl_insert, impl_select, impl_select_page, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,8 +16,10 @@ pub struct TbAnalyticsTrafficClusterHour {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbAnalyticsTrafficClusterHour {});
-impl_select!(TbAnalyticsTrafficClusterHour { select_by_cluster(cluster_name: &str, limit: usize) => "`WHERE cluster_name = #{cluster_name} ORDER BY ID DESC LIMIT #{limit}`"});
-impl_select!(TbAnalyticsTrafficClusterHour { select_by_cluster_gmt_create(cluster_name: &str, gmt_create: DateTime) -> Option => "`WHERE cluster_name = #{cluster_name} AND gmt_create = #{gmt_create}`"});
-impl_select!(TbAnalyticsTrafficClusterHour { select_by_cluster_gmt_create_greater(cluster_name: &str, gmt_create: DateTime) => "`WHERE cluster_name = #{cluster_name} AND gmt_create >= #{gmt_create}`"});
-impl_select_page!(TbAnalyticsTrafficClusterHour{ select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) => "`WHERE cluster_name = #{cluster_name} AND gmt_create >=#{start_time} AND gmt_create <#{end_time} ORDER BY ID DESC`"});
+impl TbAnalyticsTrafficClusterHour {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbAnalyticsTrafficClusterHour) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_analytics_traffic_cluster_hour.html");
+    htmlsql!(select_by_cluster(rb: &dyn Executor, cluster_name: &str, limit: usize) -> Result<Vec<TbAnalyticsTrafficClusterHour>, rbatis::Error> => "src/storage/mappers/html/tb_analytics_traffic_cluster_hour.html");
+    htmlsql!(select_by_cluster_gmt_create(rb: &dyn Executor, cluster_name: &str, gmt_create: DateTime) -> Result<Option<TbAnalyticsTrafficClusterHour>, rbatis::Error> => "src/storage/mappers/html/tb_analytics_traffic_cluster_hour.html");
+    htmlsql!(select_by_cluster_gmt_create_greater(rb: &dyn Executor, cluster_name: &str, gmt_create: DateTime) -> Result<Vec<TbAnalyticsTrafficClusterHour>, rbatis::Error> => "src/storage/mappers/html/tb_analytics_traffic_cluster_hour.html");
+    htmlsql_select_page!(select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) -> TbAnalyticsTrafficClusterHour => "src/storage/mappers/html/tb_analytics_traffic_cluster_hour.html");
+}

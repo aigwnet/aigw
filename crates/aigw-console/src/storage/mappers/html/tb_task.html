@@ -1,0 +1,40 @@
+<mapper>
+    <!-- insert: skip None columns, same as rbatis 4.6 impl_insert! -->
+    <insert id="insert">
+        `insert into tb_task `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">`id,`</if>
+            <if test="table.name != null">`name,`</if>
+            <if test="table['type'] != null">`type,`</if>
+            <if test="table.last_time != null">`last_time,`</if>
+            <if test="table.gmt_create != null">`gmt_create,`</if>
+            <if test="table.gmt_modified != null">`gmt_modified,`</if>
+        </trim>
+        ` values `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">#{table.id},</if>
+            <if test="table.name != null">#{table.name},</if>
+            <if test="table['type'] != null">#{table['type']},</if>
+            <if test="table.last_time != null">#{table.last_time},</if>
+            <if test="table.gmt_create != null">#{table.gmt_create},</if>
+            <if test="table.gmt_modified != null">#{table.gmt_modified},</if>
+        </trim>
+    </insert>
+
+    <select id="select_by_name_and_type">
+        `select * from tb_task where name = #{name} and type = #{t}`
+    </select>
+
+    <!-- update: set non-null fields only, same as rbatis 4.6 impl_update! -->
+    <update id="update_by_name_and_type">
+        `update tb_task `
+        <set>
+            <if test="table.name != null">`name = #{table.name},`</if>
+            <if test="table['type'] != null">`type = #{table['type']},`</if>
+            <if test="table.last_time != null">`last_time = #{table.last_time},`</if>
+            <if test="table.gmt_create != null">`gmt_create = #{table.gmt_create},`</if>
+            <if test="table.gmt_modified != null">`gmt_modified = #{table.gmt_modified},`</if>
+        </set>
+        ` where name = #{name} and type = #{t}`
+    </update>
+</mapper>

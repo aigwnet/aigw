@@ -35,9 +35,15 @@ pub fn get_host(header: &RequestHeader) -> Option<&str> {
         return Some(host);
     }
     if let Some(host) = header.headers.get(http::header::HOST)
-        && let Ok(value) = host.to_str().map(|host| host.split(':').next())
+        && let Ok(value) = host.to_str()
     {
-        return value;
+        let value = value.trim();
+        // IPv6 literal: "[::1]:8080" -> "::1"
+        if let Some(rest) = value.strip_prefix('[') {
+            return rest.find(']').map(|end| &rest[..end]);
+        }
+        // host or host:port
+        return value.split(':').next();
     }
     None
 }
@@ -178,21 +184,71 @@ pub fn get_remote_addr(session: &Session) -> Option<(String, u16)> {
         .map(|addr| (addr.ip().to_canonical().to_string(), addr.port()))
 }
 
+/// Returns true when `ip` matches one of the trusted proxy entries
+/// (exact IP or CIDR range, e.g. "10.0.0.1" or "10.0.0.0/8").
+fn is_trusted_proxy(ip: &str, trusted_proxies: &[String]) -> bool {
+    let Ok(addr) = ip.parse::<std::net::IpAddr>() else {
+        return false;
+    };
+    trusted_proxies.iter().any(|t| {
+        let t = t.trim();
+        if let Ok(net) = t.parse::<ipnet::IpNet>() {
+            net.contains(&addr)
+        } else {
+            t == ip
+        }
+    })
+}
+
 /// Gets client ip from X-Forwarded-For,
 /// If none, get from X-Real-Ip,
 /// If none, get remote addr.
-pub fn get_client_ip(session: &Session) -> String {
-    if let Some(value) = session.get_header(HTTP_HEADER_X_FORWARDED_FOR.clone()) {
-        let arr: Vec<&str> = value.to_str().unwrap_or_default().split(',').collect();
-        if !arr.is_empty() {
-            return arr[0].trim().to_string();
+///
+/// The X-Forwarded-For / X-Real-Ip headers are client-supplied and only
+/// trusted when the direct peer matches `trusted_proxies` (exact IP or CIDR).
+/// Otherwise the socket peer address is used, so clients cannot forge their
+/// IP for hashing, geo stats and rate limiting.
+pub fn get_client_ip(session: &Session, trusted_proxies: &[String]) -> String {
+    let peer = get_remote_addr(session)
+        .map(|(ip, _)| ip)
+        .unwrap_or_default();
+    if peer.is_empty() || is_trusted_proxy(&peer, trusted_proxies) {
+        if let Some(value) = session.get_header(HTTP_HEADER_X_FORWARDED_FOR.clone()) {
+            let arr: Vec<&str> = value.to_str().unwrap_or_default().split(',').collect();
+            if !arr.is_empty() {
+                return arr[0].trim().to_string();
+            }
+        }
+        if let Some(value) = session.get_header(HTTP_HEADER_X_REAL_IP.clone()) {
+            return value.to_str().unwrap_or_default().to_string();
         }
     }
-    if let Some(value) = session.get_header(HTTP_HEADER_X_REAL_IP.clone()) {
-        return value.to_str().unwrap_or_default().to_string();
+    peer
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_host_ipv6_and_port() {
+        let mut header = RequestHeader::build(http::Method::GET, b"/", None).unwrap();
+        header.insert_header("Host", "[::1]:8080").unwrap();
+        assert_eq!(get_host(&header), Some("::1"));
+        header.insert_header("Host", "Example.COM:8443").unwrap();
+        assert_eq!(get_host(&header), Some("Example.COM"));
+        header.insert_header("Host", "example.com").unwrap();
+        assert_eq!(get_host(&header), Some("example.com"));
     }
-    if let Some((addr, _)) = get_remote_addr(session) {
-        return addr;
+
+    #[test]
+    fn test_is_trusted_proxy() {
+        let trusted = vec!["10.0.0.0/8".to_string(), "192.168.1.1".to_string()];
+        assert!(is_trusted_proxy("10.1.2.3", &trusted));
+        assert!(is_trusted_proxy("192.168.1.1", &trusted));
+        assert!(!is_trusted_proxy("192.168.1.2", &trusted));
+        assert!(!is_trusted_proxy("8.8.8.8", &trusted));
+        assert!(!is_trusted_proxy("not-an-ip", &trusted));
+        assert!(!is_trusted_proxy("10.1.2.3", &[]));
     }
-    "".to_string()
 }

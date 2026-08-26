@@ -1,4 +1,6 @@
-use rbatis::{impl_delete, impl_insert, impl_select, impl_update, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,9 +29,12 @@ pub struct TbLocation {
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,
 }
-impl_insert!(TbLocation {});
-impl_select!(TbLocation { select_by_site_id(site_id: u64)  => "`WHERE site_id = #{site_id}`"});
-impl_select!(TbLocation { select_by_site_id_and_location(site_id: u64, location: &str)  -> Option => "`WHERE site_id = #{site_id} AND location=#{location}`"});
-impl_select!(TbLocation { select_by_id(id: u64)  -> Option => "`WHERE id = #{id}"});
-impl_update!(TbLocation { update_by_id(id: u64)  => "`WHERE id = #{id}`"});
-impl_delete!(TbLocation { delete_by_id(id: u64) => "`WHERE id = #{id}`"});
+
+impl TbLocation {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbLocation) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_location.html");
+    htmlsql!(select_by_site_id(rb: &dyn Executor, site_id: u64) -> Result<Vec<TbLocation>, rbatis::Error> => "src/storage/mappers/html/tb_location.html");
+    htmlsql!(select_by_site_id_and_location(rb: &dyn Executor, site_id: u64, location: &str) -> Result<Option<TbLocation>, rbatis::Error> => "src/storage/mappers/html/tb_location.html");
+    htmlsql!(select_by_id(rb: &dyn Executor, id: u64) -> Result<Option<TbLocation>, rbatis::Error> => "src/storage/mappers/html/tb_location.html");
+    htmlsql!(update_by_id(rb: &dyn Executor, table: &TbLocation, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_location.html");
+    htmlsql!(delete_by_id(rb: &dyn Executor, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_location.html");
+}

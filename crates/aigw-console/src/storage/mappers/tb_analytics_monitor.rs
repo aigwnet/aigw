@@ -1,4 +1,6 @@
-use rbatis::{impl_delete, impl_insert, impl_select, impl_select_page, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,7 +30,9 @@ pub struct TbAnalyticsMonitor {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbAnalyticsMonitor {});
-impl_select!(TbAnalyticsMonitor { select_by_cluster_and_ip(cluster_name: &str, ip: &str, limit: usize) => "`WHERE cluster_name = #{cluster_name} and ip= #{ip} ORDER BY ID DESC LIMIT #{limit}`"});
-impl_select_page!(TbAnalyticsMonitor{select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) => "`WHERE cluster_name = #{cluster_name} AND gmt_create >=#{start_time} AND gmt_create <#{end_time} ORDER BY ID DESC`"});
-impl_delete!(TbAnalyticsMonitor { delete_by_gmt_create(gmt_create: DateTime) => "`WHERE gmt_create < #{gmt_create}`"});
+impl TbAnalyticsMonitor {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbAnalyticsMonitor) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_analytics_monitor.html");
+    htmlsql!(select_by_cluster_and_ip(rb: &dyn Executor, cluster_name: &str, ip: &str, limit: usize) -> Result<Vec<TbAnalyticsMonitor>, rbatis::Error> => "src/storage/mappers/html/tb_analytics_monitor.html");
+    htmlsql_select_page!(select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) -> TbAnalyticsMonitor => "src/storage/mappers/html/tb_analytics_monitor.html");
+    htmlsql!(delete_by_gmt_create(rb: &dyn Executor, gmt_create: DateTime) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_analytics_monitor.html");
+}

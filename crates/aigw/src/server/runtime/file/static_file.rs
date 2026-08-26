@@ -2,8 +2,7 @@ use std::{
     cmp::min,
     collections::HashSet,
     fmt::Display,
-    fs::File,
-    io::{ErrorKind, Read, Seek, SeekFrom},
+    io::{ErrorKind, SeekFrom},
     path::{Path, PathBuf},
     str::FromStr,
     time::SystemTime,
@@ -16,6 +15,7 @@ use pingora_core::{Error, ErrorType, modules::http::compression::ResponseCompres
 use pingora_http::ResponseHeader;
 use pingora_proxy::Session;
 use serde::Deserialize;
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tracing::{debug, error, warn};
 
 use crate::{
@@ -347,11 +347,11 @@ impl Metadata {
     ///
     /// This method will return any errors produced by [`std::fs::metadata()`]. It will also result
     /// in a [`ErrorKind::InvalidInput`] error if the path given doesn’t point to a regular file.
-    pub fn from_path<P: AsRef<Path> + ?Sized>(
+    pub async fn from_path<P: AsRef<Path> + ?Sized>(
         path: &P,
         orig_path: Option<&P>,
     ) -> Result<Self, std::io::Error> {
-        let meta = path.as_ref().metadata()?;
+        let meta = tokio::fs::metadata(path).await?;
 
         if !meta.is_file() {
             return Err(ErrorKind::InvalidInput.into());
@@ -528,6 +528,10 @@ impl Range {
         if units != "bytes" {
             return None;
         }
+        // Any range of an empty file is unsatisfiable (also avoids u64 underflow below)
+        if file_size == 0 {
+            return Some(Self::OutOfBounds);
+        }
 
         let (start, end) = range.trim().split_once('-')?;
         let (start, end) = if start.is_empty() {
@@ -562,16 +566,20 @@ impl Range {
 /// Note: Multiple ranges are not supported.
 fn extract_range(session: &Session, meta: &Metadata) -> Option<Range> {
     let headers = &session.req_header().headers;
+    // If-Range: only honor the Range when the validator matches (strong etag or
+    // modification date); otherwise the client must receive the full entity.
     if let Some(value) = headers
         .get(header::IF_RANGE)
         .and_then(|value| value.to_str().ok())
-        && value != meta.etag
-        && meta
-            .modified
-            .as_ref()
-            .is_some_and(|modified| modified == value)
     {
-        return None;
+        let matches = value == meta.etag
+            || meta
+                .modified
+                .as_ref()
+                .is_some_and(|modified| modified == value);
+        if !matches {
+            return None;
+        }
     }
 
     let value = headers.get(header::RANGE)?;
@@ -789,7 +797,7 @@ async fn handle_file(
         let s = build_auto_index(&path).await;
         html_response(session, StatusCode::OK, s.into(), "text/html;charset=utf-8").await?;
     } else {
-        let meta = match Metadata::from_path(&path, orig_path.as_ref()) {
+        let meta = match Metadata::from_path(&path, orig_path.as_ref()).await {
             Ok(meta) => meta,
             Err(err) if err.kind() == ErrorKind::InvalidInput => {
                 warn!("Path {path:?} is not a regular file, denying access");
@@ -872,7 +880,12 @@ async fn handle_file(
         if send_body {
             // sendfile would be nice but not currently possible within pingora-proxy (see
             // https://github.com/cloudflare/pingora/issues/160)
-            file_response(session, &path, start, end).await?;
+            if meta.size > 0 {
+                file_response(session, &path, start, end).await?;
+            } else {
+                // Empty file: Content-Length: 0 was already sent, just finish the stream
+                session.write_response_body(None, true).await?;
+            }
         }
     }
 
@@ -898,7 +911,7 @@ async fn file_response(
     start: u64,
     end: u64,
 ) -> Result<(), Box<Error>> {
-    let mut file = File::open(path).map_err(|err| {
+    let mut file = tokio::fs::File::open(path).await.map_err(|err| {
         error!("failed opening file {path:?}: {err}");
         Error::new(ErrorType::HTTPStatus(
             StatusCode::INTERNAL_SERVER_ERROR.into(),
@@ -906,7 +919,7 @@ async fn file_response(
     })?;
 
     if start != 0 {
-        file.seek(SeekFrom::Start(start)).map_err(|err| {
+        file.seek(SeekFrom::Start(start)).await.map_err(|err| {
             error!("failed seeking in file {path:?}: {err}");
             Error::new(ErrorType::HTTPStatus(
                 StatusCode::INTERNAL_SERVER_ERROR.into(),
@@ -917,7 +930,7 @@ async fn file_response(
     let mut remaining = (end - start + 1) as usize;
     while remaining > 0 {
         let mut buf = BytesMut::zeroed(min(remaining, BUFFER_SIZE));
-        let len = file.read(buf.as_mut()).map_err(|err| {
+        let len = file.read(buf.as_mut()).await.map_err(|err| {
             error!("failed reading data from {path:?}: {err}");
             Error::new(ErrorType::HTTPStatus(
                 StatusCode::INTERNAL_SERVER_ERROR.into(),
@@ -979,4 +992,27 @@ async fn redirect_response(
         .await?;
 
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::Range;
+
+    #[test]
+    fn test_range_parse_empty_file() {
+        // No u64 underflow on empty files: any range is unsatisfiable
+        assert_eq!(Range::parse("bytes=0-", 0), Some(Range::OutOfBounds));
+        assert_eq!(Range::parse("bytes=-0", 0), Some(Range::OutOfBounds));
+        assert_eq!(Range::parse("bytes=-5", 0), Some(Range::OutOfBounds));
+    }
+
+    #[test]
+    fn test_range_parse_normal() {
+        assert_eq!(Range::parse("bytes=0-9", 100), Some(Range::Valid(0, 9)));
+        assert_eq!(Range::parse("bytes=10-", 100), Some(Range::Valid(10, 99)));
+        assert_eq!(Range::parse("bytes=-10", 100), Some(Range::Valid(90, 99)));
+        assert_eq!(Range::parse("bytes=95-100", 100), Some(Range::OutOfBounds));
+        assert_eq!(Range::parse("items=0-9", 100), None);
+    }
 }

@@ -1,4 +1,6 @@
-use rbatis::{impl_insert, impl_select, impl_select_page, impl_update, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,7 +13,9 @@ pub struct TbConsole {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbConsole {});
-impl_update!(TbConsole {update_by_id(id: u64) => "`where id = #{id}`"});
-impl_select_page!(TbConsole{select_by_page() => "`ORDER BY ID DESC`"});
-impl_select!(TbConsole{select_by_host_port(host: &str, port: u16) -> Option => "`WHERE host = #{host} and port= #{port}`"});
+impl TbConsole {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbConsole) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_console.html");
+    htmlsql!(update_by_id(rb: &dyn Executor, table: &TbConsole, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_console.html");
+    htmlsql_select_page!(select_by_page() -> TbConsole => "src/storage/mappers/html/tb_console.html");
+    htmlsql!(select_by_host_port(rb: &dyn Executor, host: &str, port: u16) -> Result<Option<TbConsole>, rbatis::Error> => "src/storage/mappers/html/tb_console.html");
+}

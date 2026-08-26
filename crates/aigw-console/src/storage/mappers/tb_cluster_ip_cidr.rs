@@ -1,6 +1,6 @@
-use rbatis::{
-    impl_delete, impl_insert, impl_select, impl_select_page, impl_update, rbdc::DateTime,
-};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,8 +15,11 @@ pub struct TbClusterIpCidr {
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,
 }
-impl_insert!(TbClusterIpCidr {});
-impl_select!(TbClusterIpCidr { select_by_id(id: u64)  -> Option => "`WHERE id = #{id}`"});
-impl_delete!(TbClusterIpCidr { delete_by_id(id: u64) => "`WHERE id = #{id}`"});
-impl_select_page!(TbClusterIpCidr{select_page(cluster_name: &str, t: u8) => "`WHERE cluster_name = #{cluster_name} AND type = #{t} ORDER BY ID DESC`"});
-impl_update!(TbClusterIpCidr {update_by_id(id: u64) => "`where id = #{id}`"});
+
+impl TbClusterIpCidr {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbClusterIpCidr) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster_ip_cidr.html");
+    htmlsql!(select_by_id(rb: &dyn Executor, id: u64) -> Result<Option<TbClusterIpCidr>, rbatis::Error> => "src/storage/mappers/html/tb_cluster_ip_cidr.html");
+    htmlsql!(delete_by_id(rb: &dyn Executor, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster_ip_cidr.html");
+    htmlsql_select_page!(select_page(cluster_name: &str, t: u8) -> TbClusterIpCidr => "src/storage/mappers/html/tb_cluster_ip_cidr.html");
+    htmlsql!(update_by_id(rb: &dyn Executor, table: &TbClusterIpCidr, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster_ip_cidr.html");
+}

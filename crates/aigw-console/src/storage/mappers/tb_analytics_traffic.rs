@@ -1,4 +1,6 @@
-use rbatis::{impl_delete, impl_insert, impl_select_page, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,6 +17,8 @@ pub struct TbAnalyticsTraffic {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbAnalyticsTraffic {});
-impl_select_page!(TbAnalyticsTraffic{select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) => "`WHERE cluster_name = #{cluster_name} AND gmt_create >=#{start_time} AND gmt_create <#{end_time} ORDER BY ID DESC`"});
-impl_delete!(TbAnalyticsTraffic { delete_by_gmt_create(gmt_create: DateTime) => "`WHERE gmt_create < #{gmt_create}`"});
+impl TbAnalyticsTraffic {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbAnalyticsTraffic) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_analytics_traffic.html");
+    htmlsql_select_page!(select_page_by_cluster_and_time(cluster_name: &str, start_time: DateTime, end_time: DateTime) -> TbAnalyticsTraffic => "src/storage/mappers/html/tb_analytics_traffic.html");
+    htmlsql!(delete_by_gmt_create(rb: &dyn Executor, gmt_create: DateTime) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_analytics_traffic.html");
+}

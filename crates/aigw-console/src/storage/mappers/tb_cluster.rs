@@ -1,7 +1,7 @@
 use super::{from_i8_to_bool, serialize_bool_to_i8};
-use rbatis::{
-    impl_delete, impl_insert, impl_select, impl_select_page, impl_update, rbdc::DateTime,
-};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,12 +33,15 @@ pub struct TbCluster {
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,
 }
-impl_insert!(TbCluster {});
-impl_select!(TbCluster { select_all() => "`ORDER BY ID ASC`"});
-impl_select!(TbCluster { select_by_name(name: &str)  -> Option => "`WHERE name = #{name}`"});
-impl_select!(TbCluster { select_by_id(id: u64)  -> Option => "`WHERE id = #{id}`"});
-impl_delete!(TbCluster { delete_by_id(id: u64) => "`WHERE id = #{id}`"});
-impl_delete!(TbCluster { delete_by_name(name: &str) => "`WHERE name = #{name}`"});
-impl_select_page!(TbCluster{select_page() => "`ORDER BY ID DESC`"});
-impl_update!(TbCluster {update_by_id(id: u64) => "`where id = #{id}`"});
-impl_update!(TbCluster {update_by_name(name: &str) => "`where name = #{name}`"});
+
+impl TbCluster {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbCluster) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(select_all(rb: &dyn Executor) -> Result<Vec<TbCluster>, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(select_by_name(rb: &dyn Executor, name: &str) -> Result<Option<TbCluster>, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(select_by_id(rb: &dyn Executor, id: u64) -> Result<Option<TbCluster>, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(delete_by_id(rb: &dyn Executor, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(delete_by_name(rb: &dyn Executor, name: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql_select_page!(select_page() -> TbCluster => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(update_by_id(rb: &dyn Executor, table: &TbCluster, id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+    htmlsql!(update_by_name(rb: &dyn Executor, table: &TbCluster, name: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_cluster.html");
+}

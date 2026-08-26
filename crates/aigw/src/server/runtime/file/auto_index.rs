@@ -5,8 +5,29 @@ use std::{
 };
 
 use dyn_fmt::AsStrFormatExt;
+use percent_encoding::{AsciiSet, CONTROLS, percent_encode};
 
 use crate::{SERVER, version::VERSION};
+
+/// Percent-encode everything that could break the href attribute or the URL.
+const HREF_ESC_CHARSET: &AsciiSet = &CONTROLS
+    .add(b' ')
+    .add(b'<')
+    .add(b'>')
+    .add(b'"')
+    .add(b'\'')
+    .add(b'#')
+    .add(b'?')
+    .add(b'%');
+
+/// Escape HTML special characters in file names (stored-XSS prevention).
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
 
 const ROW_DIR: &str = r##"
 <tr class="current-item">
@@ -180,7 +201,7 @@ pub async fn build_auto_index(path: &PathBuf) -> String {
         while let Ok(Some(entry)) = entries.next_entry().await {
             let path = entry.path();
 
-            if let Ok(m) = path.metadata() {
+            if let Ok(m) = entry.metadata().await {
                 let file_name = path
                     .file_name()
                     .map_or("", |s| s.to_str().map_or("", |s| s));
@@ -188,9 +209,12 @@ pub async fn build_auto_index(path: &PathBuf) -> String {
                     continue;
                 }
 
-                let href = "./".to_owned() + file_name;
+                let href = format!(
+                    "./{}",
+                    percent_encode(file_name.as_bytes(), HREF_ESC_CHARSET)
+                );
 
-                let file_display_name = smart_truncate(file_name, 60);
+                let file_display_name = html_escape(&smart_truncate(file_name, 60));
                 let gmt_create =
                     httpdate::fmt_http_date(UNIX_EPOCH + Duration::from_secs(m.ctime() as u64));
                 let file_size = m.len().to_string();

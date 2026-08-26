@@ -1,0 +1,50 @@
+<mapper>
+    <!-- insert: skip None columns, same as rbatis 4.6 impl_insert! -->
+    <insert id="insert">
+        `insert into tb_analytics_traffic_cluster_hour `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">`id,`</if>
+            <if test="table.cluster_name != null">`cluster_name,`</if>
+            <if test="table.tls != null">`tls,`</if>
+            <if test="table.pv != null">`pv,`</if>
+            <if test="table.http_country != null">`http_country,`</if>
+            <if test="table.http_code != null">`http_code,`</if>
+            <if test="table.http_source != null">`http_source,`</if>
+            <if test="table.gmt_create != null">`gmt_create,`</if>
+            <if test="table.gmt_modified != null">`gmt_modified,`</if>
+        </trim>
+        ` values `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">#{table.id},</if>
+            <if test="table.cluster_name != null">#{table.cluster_name},</if>
+            <if test="table.tls != null">#{table.tls},</if>
+            <if test="table.pv != null">#{table.pv},</if>
+            <if test="table.http_country != null">#{table.http_country},</if>
+            <if test="table.http_code != null">#{table.http_code},</if>
+            <if test="table.http_source != null">#{table.http_source},</if>
+            <if test="table.gmt_create != null">#{table.gmt_create},</if>
+            <if test="table.gmt_modified != null">#{table.gmt_modified},</if>
+        </trim>
+    </insert>
+
+    <select id="select_by_cluster">
+        `select * from tb_analytics_traffic_cluster_hour where cluster_name = #{cluster_name} order by id desc limit #{limit}`
+    </select>
+
+    <select id="select_by_cluster_gmt_create">
+        `select * from tb_analytics_traffic_cluster_hour where cluster_name = #{cluster_name} and gmt_create = #{gmt_create}`
+    </select>
+
+    <select id="select_by_cluster_gmt_create_greater">
+        `select * from tb_analytics_traffic_cluster_hour where cluster_name = #{cluster_name} and gmt_create >= #{gmt_create}`
+    </select>
+
+    <!-- paginated select: do_count=true returns count(1), otherwise rows with limit -->
+    <select id="select_page_by_cluster_and_time">
+        `select `
+        <if test="do_count == true">`count(1) `</if>
+        <if test="do_count == false">`* `</if>
+        `from tb_analytics_traffic_cluster_hour where cluster_name = #{cluster_name} and gmt_create >=#{start_time} and gmt_create <#{end_time} `
+        <if test="do_count == false">`order by id desc limit ${page_no},${page_size}`</if>
+    </select>
+</mapper>

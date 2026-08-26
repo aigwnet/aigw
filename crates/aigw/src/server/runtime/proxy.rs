@@ -129,7 +129,7 @@ fn get_digest_detail(digest: &Digest) -> DigestDetail {
     let tcp_established = get_established(digest.timing_digest.first());
     let mut connection_time = 0;
     if tcp_established > 0 {
-        connection_time = now_ms() - tcp_established;
+        connection_time = now_ms().saturating_sub(tcp_established);
     }
     let connection_reused = connection_time > 100;
 
@@ -232,7 +232,7 @@ impl ProxyHttp for AigwProxy {
             ctx.tls_fingerprint = digest_detail.tls_fingerprint;
         }
 
-        let ip = get_client_ip(session);
+        let ip = get_client_ip(session, &self.storage.cluster().real_ip_from);
         let address = ip.as_str().parse();
         if let Ok(address) = address {
             let country = self.geo_lite.country(address);
@@ -348,11 +348,12 @@ impl ProxyHttp for AigwProxy {
     where
         Self::CTX: Send + Sync,
     {
-        // rate limit
+        // rate limit, per client IP (nginx limit_req $binary_remote_addr semantics)
         if let Some(rate) = &ctx.rate
             && rate.max_request > 0
         {
-            let curr_window_requests = rate.rate.observe(b"global", 1);
+            let key = ctx.client_ip.clone().unwrap_or_default();
+            let curr_window_requests = rate.rate.observe(&key, 1);
             if curr_window_requests > rate.max_request {
                 let (mut header, body) = error_page::generate_error(StatusCode::TOO_MANY_REQUESTS);
                 header.insert_header(http::header::CONNECTION, "close")?;
@@ -691,7 +692,7 @@ impl ProxyHttp for AigwProxy {
         let host = ctx.get_variable("host").map_or("", |s| s);
         let sni = ctx.get_variable("sni").map_or("", |s| s);
 
-        let mut new_cookies = vec![];
+        let mut new_cookies: Vec<String> = vec![];
         if !sni.is_empty() && !sni.eq(host) {
             let cookie_strings: Vec<String> = upstream_response
                 .headers
@@ -701,22 +702,28 @@ impl ProxyHttp for AigwProxy {
                 .collect();
 
             let mut changed = false;
-            for cookie in cookie_strings {
-                if let Ok(mut cookie) = Cookie::parse(cookie) {
-                    if let Some(domain) = cookie.domain()
-                        && !domain.eq(host)
-                    {
-                        cookie.set_domain(host);
-                        changed = true;
+            for cookie_str in cookie_strings {
+                match Cookie::parse(&cookie_str) {
+                    Ok(mut cookie) => {
+                        // RFC 6265: domain comparison is case-insensitive and a
+                        // leading dot is semantically equivalent
+                        if let Some(domain) = cookie.domain()
+                            && !domain.trim_start_matches('.').eq_ignore_ascii_case(host)
+                        {
+                            cookie.set_domain(host);
+                            changed = true;
+                        }
+                        new_cookies.push(cookie.to_string());
                     }
-                    new_cookies.push(cookie);
+                    // Preserve cookies we cannot parse instead of dropping them
+                    Err(_) => new_cookies.push(cookie_str),
                 }
             }
 
             if changed {
                 upstream_response.remove_header("set-cookie");
                 for cookie in &new_cookies {
-                    if let Ok(h) = HeaderValue::from_str(&cookie.to_string()) {
+                    if let Ok(h) = HeaderValue::from_str(cookie) {
                         let _ = upstream_response.append_header("set-cookie", h);
                     }
                 }
@@ -833,8 +840,14 @@ impl ProxyHttp for AigwProxy {
         if e.is_some() {
             self.storage.error();
         }
+        // Decrement the in-flight counter incremented in early_request_filter.
+        // ctx.processing > 0 guarantees the increment happened (requests that
+        // failed before early_request_filter never incremented it).
+        if ctx.processing > 0 {
+            self.processing.fetch_sub(1, Ordering::Relaxed);
+        }
         // Record rt
-        let rt = now_ms() - ctx.created_at;
+        let rt = now_ms().saturating_sub(ctx.created_at);
         self.storage.rt(rt);
 
         let code = session

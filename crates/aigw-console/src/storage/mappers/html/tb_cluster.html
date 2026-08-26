@@ -1,0 +1,93 @@
+<mapper>
+    <!-- insert: skip None columns, same as rbatis 4.6 impl_insert! -->
+    <insert id="insert">
+        `insert into tb_cluster `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">`id,`</if>
+            <if test="table.name != null">`name,`</if>
+            <if test="table.security_key != null">`security_key,`</if>
+            <if test="table.enable != null">`enable,`</if>
+            <if test="table.enable_default_site != null">`enable_default_site,`</if>
+            <if test="table.enable_white_list != null">`enable_white_list,`</if>
+            <if test="table.enable_block_list != null">`enable_block_list,`</if>
+            <if test="table.description != null">`description,`</if>
+            <if test="table.gmt_create != null">`gmt_create,`</if>
+            <if test="table.gmt_modified != null">`gmt_modified,`</if>
+        </trim>
+        ` values `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">#{table.id},</if>
+            <if test="table.name != null">#{table.name},</if>
+            <if test="table.security_key != null">#{table.security_key},</if>
+            <if test="table.enable != null">#{table.enable},</if>
+            <if test="table.enable_default_site != null">#{table.enable_default_site},</if>
+            <if test="table.enable_white_list != null">#{table.enable_white_list},</if>
+            <if test="table.enable_block_list != null">#{table.enable_block_list},</if>
+            <if test="table.description != null">#{table.description},</if>
+            <if test="table.gmt_create != null">#{table.gmt_create},</if>
+            <if test="table.gmt_modified != null">#{table.gmt_modified},</if>
+        </trim>
+    </insert>
+
+    <select id="select_all">
+        `select * from tb_cluster order by id asc`
+    </select>
+
+    <select id="select_by_name">
+        `select * from tb_cluster where name = #{name}`
+    </select>
+
+    <select id="select_by_id">
+        `select * from tb_cluster where id = #{id}`
+    </select>
+
+    <delete id="delete_by_id">
+        `delete from tb_cluster where id = #{id}`
+    </delete>
+
+    <delete id="delete_by_name">
+        `delete from tb_cluster where name = #{name}`
+    </delete>
+
+    <!-- paginated select: do_count=true returns count(1), otherwise rows with limit -->
+    <select id="select_page">
+        `select `
+        <if test="do_count == true">`count(1) `</if>
+        <if test="do_count == false">`* `</if>
+        `from tb_cluster `
+        <if test="do_count == false">`order by id desc limit ${page_no},${page_size}`</if>
+    </select>
+
+    <!-- update: set non-null fields only, same as rbatis 4.6 impl_update! -->
+    <update id="update_by_id">
+        `update tb_cluster `
+        <set>
+            <if test="table.name != null">`name = #{table.name},`</if>
+            <if test="table.security_key != null">`security_key = #{table.security_key},`</if>
+            <if test="table.enable != null">`enable = #{table.enable},`</if>
+            <if test="table.enable_default_site != null">`enable_default_site = #{table.enable_default_site},`</if>
+            <if test="table.enable_white_list != null">`enable_white_list = #{table.enable_white_list},`</if>
+            <if test="table.enable_block_list != null">`enable_block_list = #{table.enable_block_list},`</if>
+            <if test="table.description != null">`description = #{table.description},`</if>
+            <if test="table.gmt_create != null">`gmt_create = #{table.gmt_create},`</if>
+            <if test="table.gmt_modified != null">`gmt_modified = #{table.gmt_modified},`</if>
+        </set>
+        ` where id = #{id}`
+    </update>
+
+    <update id="update_by_name">
+        `update tb_cluster `
+        <set>
+            <if test="table.name != null">`name = #{table.name},`</if>
+            <if test="table.security_key != null">`security_key = #{table.security_key},`</if>
+            <if test="table.enable != null">`enable = #{table.enable},`</if>
+            <if test="table.enable_default_site != null">`enable_default_site = #{table.enable_default_site},`</if>
+            <if test="table.enable_white_list != null">`enable_white_list = #{table.enable_white_list},`</if>
+            <if test="table.enable_block_list != null">`enable_block_list = #{table.enable_block_list},`</if>
+            <if test="table.description != null">`description = #{table.description},`</if>
+            <if test="table.gmt_create != null">`gmt_create = #{table.gmt_create},`</if>
+            <if test="table.gmt_modified != null">`gmt_modified = #{table.gmt_modified},`</if>
+        </set>
+        ` where name = #{name}`
+    </update>
+</mapper>

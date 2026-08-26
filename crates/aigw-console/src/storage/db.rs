@@ -11,7 +11,7 @@ use std::{
 use rbatis::{
     DefaultPool, Intercept, RBatis, ResultType, async_trait,
     executor::Executor,
-    intercept_page::PageIntercept,
+    intercept::{Action, intercept_page::PageIntercept},
     rbdc::{DateTime, db::ExecResult},
 };
 use rbdc_mysql::{Driver, options::MySqlConnectOptions};
@@ -564,10 +564,10 @@ impl Intercept for TracingInterceptor {
         _rb: &dyn Executor,
         sql: &mut String,
         args: &mut Vec<Value>,
-        _result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Vec<Value>, Error>>,
-    ) -> Result<Option<bool>, Error> {
+        _result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Value, Error>>,
+    ) -> Result<Action, Error> {
         if self.get_level_filter() == LevelFilter::OFF {
-            return Ok(Some(true));
+            return Ok(Action::Next);
         }
         let level = self.to_level().unwrap_or(Level::DEBUG);
         //send sql/args
@@ -579,7 +579,7 @@ impl Intercept for TracingInterceptor {
             RbsValueDisplay::new(args)
         );
 
-        Ok(Some(true))
+        Ok(Action::Next)
     }
 
     async fn after(
@@ -588,10 +588,10 @@ impl Intercept for TracingInterceptor {
         _rb: &dyn Executor,
         _sql: &mut String,
         _args: &mut Vec<Value>,
-        result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Vec<Value>, Error>>,
-    ) -> Result<Option<bool>, Error> {
+        result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Value, Error>>,
+    ) -> Result<Action, Error> {
         if self.get_level_filter() == LevelFilter::OFF {
-            return Ok(Some(true));
+            return Ok(Action::Next);
         }
         let level = self.to_level().unwrap_or_else(|| Level::DEBUG);
         //ResultType
@@ -606,16 +606,22 @@ impl Intercept for TracingInterceptor {
             },
             ResultType::Query(result) => match result {
                 Ok(result) => {
+                    // Query results are a single rbs::Value (array of rows) in rbatis 4.9
+                    let len = match &*result {
+                        Value::Array(rows) => rows.len(),
+                        Value::Null => 0,
+                        _ => 1,
+                    };
                     if is_debug_mode() {
                         dynamic_tracing_event!(
                             level, target: "database",
                             "[rb] [{}] <= len={},rows={:?}",
                             task_id,
-                            result.len(),
+                            len,
                             result
                         );
                     } else {
-                        dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= len={}", task_id, result.len());
+                        dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= len={}", task_id, len);
                     }
                 }
                 Err(e) => {
@@ -623,7 +629,7 @@ impl Intercept for TracingInterceptor {
                 }
             },
         }
-        Ok(Some(true))
+        Ok(Action::Next)
     }
 }
 

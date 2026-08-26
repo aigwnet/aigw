@@ -1,7 +1,7 @@
 use super::{from_i8_to_bool, serialize_bool_to_i8};
-use rbatis::{
-    impl_delete, impl_insert, impl_select, impl_select_page, impl_update, rbdc::DateTime,
-};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,11 +41,13 @@ pub struct TbSite {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbSite {});
-impl_select!(TbSite{select_by_id(id: i64) -> Option => "`WHERE id = #{id}`"});
-impl_select!(TbSite{select_by_name(name: &str) -> Option => "`WHERE name = #{name}`"});
-impl_delete!(TbSite{delete_by_name(name: &str) => "`WHERE name = #{name}`"});
-impl_select_page!(TbSite{select_page(cluster_name: &str) => "`WHERE cluster_name = #{cluster_name} ORDER BY ID DESC`"});
-impl_select_page!(TbSite{select_page_with_acme() => "`WHERE acme_on=1 ORDER BY ID DESC`"});
-impl_update!(TbSite{update_by_name(name: &str) => "`WHERE name = #{name}`"});
-impl_select_page!(TbSite{select_acme_cert_about_to_expire() => "`WHERE acme_on=1 AND tls_cert_end_date < DATE_ADD(NOW(), INTERVAL 30 DAY) ORDER BY ID DESC`"});
+impl TbSite {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbSite) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_site.html");
+    htmlsql!(select_by_id(rb: &dyn Executor, id: i64) -> Result<Option<TbSite>, rbatis::Error> => "src/storage/mappers/html/tb_site.html");
+    htmlsql!(select_by_name(rb: &dyn Executor, name: &str) -> Result<Option<TbSite>, rbatis::Error> => "src/storage/mappers/html/tb_site.html");
+    htmlsql!(delete_by_name(rb: &dyn Executor, name: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_site.html");
+    htmlsql_select_page!(select_page(cluster_name: &str) -> TbSite => "src/storage/mappers/html/tb_site.html");
+    htmlsql_select_page!(select_page_with_acme() -> TbSite => "src/storage/mappers/html/tb_site.html");
+    htmlsql!(update_by_name(rb: &dyn Executor, table: &TbSite, name: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_site.html");
+    htmlsql_select_page!(select_acme_cert_about_to_expire() -> TbSite => "src/storage/mappers/html/tb_site.html");
+}

@@ -1,4 +1,6 @@
-use rbatis::{impl_insert, impl_select, impl_update, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,6 +13,8 @@ pub struct TbTask {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbTask {});
-impl_select!(TbTask { select_by_name_and_type(name: &str, t: u32)  -> Option => "`WHERE name = #{name} AND type = #{t}`"});
-impl_update!(TbTask { update_by_name_and_type(name: &str, t: u32) => "`WHERE name = #{name} AND type = #{t}`"});
+impl TbTask {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbTask) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_task.html");
+    htmlsql!(select_by_name_and_type(rb: &dyn Executor, name: &str, t: u32) -> Result<Option<TbTask>, rbatis::Error> => "src/storage/mappers/html/tb_task.html");
+    htmlsql!(update_by_name_and_type(rb: &dyn Executor, table: &TbTask, name: &str, t: u32) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_task.html");
+}

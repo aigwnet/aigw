@@ -62,6 +62,9 @@ pub struct RegexPath {
 #[derive(Debug)]
 pub struct PrefixPath {
     value: String,
+    /// nginx `^~` modifier: when this is the longest matching prefix,
+    /// regex locations are skipped.
+    priority: bool,
 }
 
 #[derive(Debug)]
@@ -104,12 +107,22 @@ impl PathSelector {
 /// # Path Format
 /// - Empty string: Matches all paths
 /// - Starting with "~": Regex pattern matching
-/// - Starting with "=": Exact path matching  
+/// - Starting with "=": Exact path matching
+/// - Starting with "^~": Prefix matching that skips regex checks (nginx semantics)
 /// - Otherwise: Prefix path matching
 pub fn new_path_selector(path: &str) -> anyhow::Result<PathSelector> {
     let path = path.trim();
     if path.is_empty() {
         return Ok(PathSelector::Empty);
+    }
+    if let Some(rest) = path.strip_prefix("^~") {
+        return Ok(PathSelector::PrefixPath(
+            path.to_owned(),
+            PrefixPath {
+                value: rest.trim().to_string(),
+                priority: true,
+            },
+        ));
     }
     let first = path.chars().next().unwrap_or_default();
     let last = path.substring(1, path.len()).trim();
@@ -130,6 +143,7 @@ pub fn new_path_selector(path: &str) -> anyhow::Result<PathSelector> {
                 path.to_owned(),
                 PrefixPath {
                     value: path.to_string(),
+                    priority: false,
                 },
             )
         }
@@ -561,30 +575,32 @@ pub fn find_matched_location(
         }
     }
 
-    // Stage 2: Non-exact matches
-    let mut best_prefix: Option<(&Arc<ProxyLocation>, usize)> = None;
+    // Stage 2: nginx semantics — find the longest prefix and the first matching
+    // regex (in config order) in one pass.
+    let mut best_prefix: Option<(&Arc<ProxyLocation>, usize, bool)> = None;
     let mut empty_match: Option<&Arc<ProxyLocation>> = None;
+    let mut regex_match: Option<MatchedLocation> = None;
 
     for location in locations {
         match &*location.path {
-            // For exact path matching, compare path strings directly
             PathSelector::EqualPath(_, _) => {
                 continue;
             }
-            // For regex path matching, use regex is_match
+            // For regex path matching, the first match in config order wins
             PathSelector::RegexPath(_, RegexPath { value }) => {
-                let (matched, captures) = value.captures(path);
-                if matched {
-                    // Assuming captures is Some(_) when matched; if not, use unwrap_or_default()
-                    return Some((location.clone(), captures.unwrap_or_default()));
+                if regex_match.is_none() {
+                    let (matched, captures) = value.captures(path);
+                    if matched {
+                        regex_match = Some((location.clone(), captures.unwrap_or_default()));
+                    }
                 }
             }
             // For prefix path matching, check if path starts with prefix
-            PathSelector::PrefixPath(_, PrefixPath { value }) => {
+            PathSelector::PrefixPath(_, PrefixPath { value, priority }) => {
                 if path.starts_with(value) {
                     let len = value.len();
-                    if best_prefix.as_ref().is_none_or(|&(_, l)| len > l) {
-                        best_prefix = Some((location, len));
+                    if best_prefix.as_ref().is_none_or(|&(_, l, _)| len > l) {
+                        best_prefix = Some((location, len, *priority));
                     }
                 }
             }
@@ -597,8 +613,18 @@ pub fn find_matched_location(
         }
     }
 
-    // Stage 3: Return longest prefix or empty
-    if let Some((location, _)) = best_prefix {
+    // Stage 3: a longest prefix with the ^~ modifier skips regex matching
+    if let Some((location, _, true)) = best_prefix {
+        return Some((location.clone(), vec![]));
+    }
+
+    // Stage 4: first matching regex wins over plain prefixes
+    if let Some(matched) = regex_match {
+        return Some(matched);
+    }
+
+    // Stage 5: longest prefix or empty
+    if let Some((location, _, _)) = best_prefix {
         return Some((location.clone(), vec![]));
     }
 
@@ -653,5 +679,53 @@ mod tests {
         vars.insert("$hostname".to_string(), "gateway1".to_string());
         assert!(loc.rewrite(&mut header, &vars));
         assert_eq!(header.uri.path(), "/new/example.com/gateway1/x");
+    }
+
+    fn loc_with_path(path: &str) -> Arc<ProxyLocation> {
+        Arc::new(ProxyLocation {
+            path: Arc::new(new_path_selector(path).unwrap()),
+            ..test_location(None)
+        })
+    }
+
+    #[test]
+    fn test_location_matching_nginx_semantics() {
+        let prefix_api = loc_with_path("/api");
+        let priority_prefix = loc_with_path("^~ /api/priority");
+        let regex_php = loc_with_path("~ /api/.*\\.php$");
+
+        // ^~ longest prefix skips regex matching
+        let locations = vec![prefix_api.clone(), priority_prefix.clone(), regex_php.clone()];
+        let (m, _) = find_matched_location(&locations, "/api/priority/x.php").unwrap();
+        assert!(Arc::ptr_eq(&m, &priority_prefix));
+
+        // First matching regex wins over a plain prefix
+        let locations = vec![prefix_api.clone(), regex_php.clone()];
+        let (m, _) = find_matched_location(&locations, "/api/x.php").unwrap();
+        assert!(Arc::ptr_eq(&m, &regex_php));
+
+        // Plain prefix is used when no regex matches
+        let (m, _) = find_matched_location(&locations, "/api/x.html").unwrap();
+        assert!(Arc::ptr_eq(&m, &prefix_api));
+
+        // Exact match has the highest priority
+        let exact = loc_with_path("= /api/x.html");
+        let locations = vec![prefix_api.clone(), regex_php.clone(), exact.clone()];
+        let (m, _) = find_matched_location(&locations, "/api/x.html").unwrap();
+        assert!(Arc::ptr_eq(&m, &exact));
+    }
+
+    #[test]
+    fn test_path_selector_roundtrip() {
+        // serialize keeps the original modifier, deserialize restores it
+        let se = new_path_selector("^~ /api/").unwrap();
+        assert_eq!(se.as_str(), "^~ /api/");
+        match se {
+            PathSelector::PrefixPath(_, PrefixPath { value, priority }) => {
+                assert_eq!(value, "/api/");
+                assert!(priority);
+            }
+            _ => panic!("expected priority prefix path"),
+        }
     }
 }

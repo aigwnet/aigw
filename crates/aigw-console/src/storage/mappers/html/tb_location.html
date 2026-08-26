@@ -1,0 +1,103 @@
+<mapper>
+    <!-- insert: skip None columns, same as rbatis 4.6 impl_insert! -->
+    <insert id="insert">
+        `insert into tb_location `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">`id,`</if>
+            <if test="table.site_id != null">`site_id,`</if>
+            <if test="table.location != null">`location,`</if>
+            <if test="table.proxy != null">`proxy,`</if>
+            <if test="table.protocol != null">`protocol,`</if>
+            <if test="table.sni != null">`sni,`</if>
+            <if test="table.client_max_body_size != null">`client_max_body_size,`</if>
+            <if test="table.connection_timeout != null">`connection_timeout,`</if>
+            <if test="table.read_timeout != null">`read_timeout,`</if>
+            <if test="table.write_timeout != null">`write_timeout,`</if>
+            <if test="table.idle_timeout != null">`idle_timeout,`</if>
+            <if test="table.rewrite != null">`rewrite,`</if>
+            <if test="table.http_version != null">`http_version,`</if>
+            <if test="table.proxy_set_headers != null">`proxy_set_headers,`</if>
+            <if test="table.proxy_add_headers != null">`proxy_add_headers,`</if>
+            <if test="table.proxy_remove_headers != null">`proxy_remove_headers,`</if>
+            <if test="table.response_set_headers != null">`response_set_headers,`</if>
+            <if test="table.response_add_headers != null">`response_add_headers,`</if>
+            <if test="table.response_remove_headers != null">`response_remove_headers,`</if>
+            <if test="table.root_dir != null">`root_dir,`</if>
+            <if test="table.auto_index != null">`auto_index,`</if>
+            <if test="table.gmt_create != null">`gmt_create,`</if>
+            <if test="table.gmt_modified != null">`gmt_modified,`</if>
+        </trim>
+        ` values `
+        <trim prefix="(" suffix=")" end=",">
+            <if test="table.id != null">#{table.id},</if>
+            <if test="table.site_id != null">#{table.site_id},</if>
+            <if test="table.location != null">#{table.location},</if>
+            <if test="table.proxy != null">#{table.proxy},</if>
+            <if test="table.protocol != null">#{table.protocol},</if>
+            <if test="table.sni != null">#{table.sni},</if>
+            <if test="table.client_max_body_size != null">#{table.client_max_body_size},</if>
+            <if test="table.connection_timeout != null">#{table.connection_timeout},</if>
+            <if test="table.read_timeout != null">#{table.read_timeout},</if>
+            <if test="table.write_timeout != null">#{table.write_timeout},</if>
+            <if test="table.idle_timeout != null">#{table.idle_timeout},</if>
+            <if test="table.rewrite != null">#{table.rewrite},</if>
+            <if test="table.http_version != null">#{table.http_version},</if>
+            <if test="table.proxy_set_headers != null">#{table.proxy_set_headers},</if>
+            <if test="table.proxy_add_headers != null">#{table.proxy_add_headers},</if>
+            <if test="table.proxy_remove_headers != null">#{table.proxy_remove_headers},</if>
+            <if test="table.response_set_headers != null">#{table.response_set_headers},</if>
+            <if test="table.response_add_headers != null">#{table.response_add_headers},</if>
+            <if test="table.response_remove_headers != null">#{table.response_remove_headers},</if>
+            <if test="table.root_dir != null">#{table.root_dir},</if>
+            <if test="table.auto_index != null">#{table.auto_index},</if>
+            <if test="table.gmt_create != null">#{table.gmt_create},</if>
+            <if test="table.gmt_modified != null">#{table.gmt_modified},</if>
+        </trim>
+    </insert>
+
+    <select id="select_by_site_id">
+        `select * from tb_location where site_id = #{site_id}`
+    </select>
+
+    <select id="select_by_site_id_and_location">
+        `select * from tb_location where site_id = #{site_id} and location=#{location}`
+    </select>
+
+    <select id="select_by_id">
+        `select * from tb_location where id = #{id}`
+    </select>
+
+    <!-- update: set non-null fields only, same as rbatis 4.6 impl_update! -->
+    <update id="update_by_id">
+        `update tb_location `
+        <set>
+            <if test="table.site_id != null">`site_id = #{table.site_id},`</if>
+            <if test="table.location != null">`location = #{table.location},`</if>
+            <if test="table.proxy != null">`proxy = #{table.proxy},`</if>
+            <if test="table.protocol != null">`protocol = #{table.protocol},`</if>
+            <if test="table.sni != null">`sni = #{table.sni},`</if>
+            <if test="table.client_max_body_size != null">`client_max_body_size = #{table.client_max_body_size},`</if>
+            <if test="table.connection_timeout != null">`connection_timeout = #{table.connection_timeout},`</if>
+            <if test="table.read_timeout != null">`read_timeout = #{table.read_timeout},`</if>
+            <if test="table.write_timeout != null">`write_timeout = #{table.write_timeout},`</if>
+            <if test="table.idle_timeout != null">`idle_timeout = #{table.idle_timeout},`</if>
+            <if test="table.rewrite != null">`rewrite = #{table.rewrite},`</if>
+            <if test="table.http_version != null">`http_version = #{table.http_version},`</if>
+            <if test="table.proxy_set_headers != null">`proxy_set_headers = #{table.proxy_set_headers},`</if>
+            <if test="table.proxy_add_headers != null">`proxy_add_headers = #{table.proxy_add_headers},`</if>
+            <if test="table.proxy_remove_headers != null">`proxy_remove_headers = #{table.proxy_remove_headers},`</if>
+            <if test="table.response_set_headers != null">`response_set_headers = #{table.response_set_headers},`</if>
+            <if test="table.response_add_headers != null">`response_add_headers = #{table.response_add_headers},`</if>
+            <if test="table.response_remove_headers != null">`response_remove_headers = #{table.response_remove_headers},`</if>
+            <if test="table.root_dir != null">`root_dir = #{table.root_dir},`</if>
+            <if test="table.auto_index != null">`auto_index = #{table.auto_index},`</if>
+            <if test="table.gmt_create != null">`gmt_create = #{table.gmt_create},`</if>
+            <if test="table.gmt_modified != null">`gmt_modified = #{table.gmt_modified},`</if>
+        </set>
+        ` where id = #{id}`
+    </update>
+
+    <delete id="delete_by_id">
+        `delete from tb_location where id = #{id}`
+    </delete>
+</mapper>

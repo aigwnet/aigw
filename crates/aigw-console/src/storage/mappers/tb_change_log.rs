@@ -1,4 +1,6 @@
-use rbatis::{impl_delete, impl_insert, impl_select, impl_select_page, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql, htmlsql_select_page};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,9 +15,12 @@ pub struct TbChangeLog {
     pub gmt_create: Option<DateTime>,
     pub gmt_modified: Option<DateTime>,
 }
-impl_insert!(TbChangeLog {});
-impl_delete!(TbChangeLog{delete_by_id(log_id: u64) => "`WHERE id = #{log_id}`"});
-impl_delete!(TbChangeLog{delete_expired() => "`WHERE expire_second != 0 and TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) > expire_second`"});
-impl_delete!(TbChangeLog{delete_by_data_id(data_id: u64) => "`WHERE data_id = #{data_id}`"});
-impl_select!(TbChangeLog{select_by_data_id_and_type(log_type: u32, data_id: u64) -> Option => "`WHERE log_type = #{log_type} AND data_id = #{data_id} AND (expire_second = 0 or TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) <= expire_second)`"});
-impl_select_page!(TbChangeLog{select_by_type(cluster_name: &str, log_type: u32, log_id: u64) => "`WHERE cluster_name=#{cluster_name} AND log_type = #{log_type} AND id > #{log_id} AND (expire_second = 0 or TIMESTAMPDIFF(SECOND, gmt_modified, NOW()) <= expire_second)`"});
+
+impl TbChangeLog {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbChangeLog) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_change_log.html");
+    htmlsql!(delete_by_id(rb: &dyn Executor, log_id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_change_log.html");
+    htmlsql!(delete_expired(rb: &dyn Executor) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_change_log.html");
+    htmlsql!(delete_by_data_id(rb: &dyn Executor, data_id: u64) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_change_log.html");
+    htmlsql!(select_by_data_id_and_type(rb: &dyn Executor, log_type: u32, data_id: u64) -> Result<Option<TbChangeLog>, rbatis::Error> => "src/storage/mappers/html/tb_change_log.html");
+    htmlsql_select_page!(select_by_type(cluster_name: &str, log_type: u32, log_id: u64) -> TbChangeLog => "src/storage/mappers/html/tb_change_log.html");
+}

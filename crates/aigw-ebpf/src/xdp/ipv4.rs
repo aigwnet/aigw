@@ -26,7 +26,7 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv4Hdr) -> Result<u32, i64> {
             let mode = SWITCH.get(&0).copied().unwrap_or(0);
             match mode {
                 1 => {
-                    if WHITELIST_IPV4_CIDR.get(key).is_some() {
+                    if WHITELIST_IPV4_CIDR.get(&key).is_some() {
                         XDP_PASS
                     } else {
                         info!(
@@ -39,7 +39,7 @@ pub fn handle_xdp(ctx: XdpContext, ip_hdr: *const Ipv4Hdr) -> Result<u32, i64> {
                     }
                 }
                 2 => {
-                    if BLOCKLIST_IPV4_CIDR.get(key).is_some() {
+                    if BLOCKLIST_IPV4_CIDR.get(&key).is_some() {
                         info!(
                             &ctx,
                             "in blocklist (CIDR), dropping: {} -> {}.",

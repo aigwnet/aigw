@@ -1,4 +1,6 @@
-use rbatis::{impl_delete, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,4 +13,6 @@ pub struct TbLock {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_delete!(TbLock { delete_by_key(key: &str) => "`WHERE lock_key = #{key}`"});
+impl TbLock {
+    htmlsql!(delete_by_key(rb: &dyn Executor, key: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_lock.html");
+}

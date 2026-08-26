@@ -55,5 +55,8 @@ pub use util::statistics::statistics;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref LOCAL_IP: String = local_ip_address::local_ip().unwrap().to_string();
+    pub static ref LOCAL_IP: String = local_ip_address::local_ip()
+        .map(|ip| ip.to_string())
+        // Hosts without a non-loopback interface (containers, sandboxes)
+        .unwrap_or_else(|_| "127.0.0.1".to_string());
 }

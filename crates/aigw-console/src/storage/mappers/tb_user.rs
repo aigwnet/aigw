@@ -1,4 +1,6 @@
-use rbatis::{impl_insert, impl_select, impl_update, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,9 +15,11 @@ pub struct TbUser {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbUser {});
-impl_select!(TbUser { select_by_name(name: &str)  -> Option => "`WHERE name = #{name}`"});
-impl_select!(TbUser { select_by_email(email: &str)  -> Option => "`WHERE email = #{email}`"});
-impl_update!(TbUser { update_by_name(name: &str)  => "`WHERE name = #{name}`"});
-impl_update!(TbUser { update_by_email(email: &str)  => "`WHERE email = #{email}`"});
-impl_select!(TbUser { select_default_user()  -> Option => "`WHERE email IS NOT NULL ORDER BY ID ASC LIMIT 1`"});
+impl TbUser {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbUser) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_user.html");
+    htmlsql!(select_by_name(rb: &dyn Executor, name: &str) -> Result<Option<TbUser>, rbatis::Error> => "src/storage/mappers/html/tb_user.html");
+    htmlsql!(select_by_email(rb: &dyn Executor, email: &str) -> Result<Option<TbUser>, rbatis::Error> => "src/storage/mappers/html/tb_user.html");
+    htmlsql!(update_by_name(rb: &dyn Executor, table: &TbUser, name: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_user.html");
+    htmlsql!(update_by_email(rb: &dyn Executor, table: &TbUser, email: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_user.html");
+    htmlsql!(select_default_user(rb: &dyn Executor) -> Result<Option<TbUser>, rbatis::Error> => "src/storage/mappers/html/tb_user.html");
+}

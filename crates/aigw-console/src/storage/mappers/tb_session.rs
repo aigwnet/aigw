@@ -1,4 +1,6 @@
-use rbatis::{impl_insert, impl_select, impl_update, rbdc::DateTime};
+use rbatis::rbdc::db::ExecResult;
+use rbatis::rbdc::DateTime;
+use rbatis::{executor::Executor, htmlsql};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,6 +14,8 @@ pub struct TbSession {
     pub gmt_modified: Option<DateTime>,
 }
 
-impl_insert!(TbSession {});
-impl_select!(TbSession { select_by_token(token: &str)  -> Option => "`WHERE token = #{token}`"});
-impl_update!(TbSession { update_by_token(token: &str) => "`WHERE token = #{token}`"});
+impl TbSession {
+    htmlsql!(insert(rb: &dyn Executor, table: &TbSession) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_session.html");
+    htmlsql!(select_by_token(rb: &dyn Executor, token: &str) -> Result<Option<TbSession>, rbatis::Error> => "src/storage/mappers/html/tb_session.html");
+    htmlsql!(update_by_token(rb: &dyn Executor, table: &TbSession, token: &str) -> Result<ExecResult, rbatis::Error> => "src/storage/mappers/html/tb_session.html");
+}
