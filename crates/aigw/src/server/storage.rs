@@ -29,7 +29,7 @@ pub struct Storage {
     sites: arc_swap::ArcSwap<HashMap<String, Arc<Site>>>,
     rates: arc_swap::ArcSwap<HashMap<String, Arc<RateLimit>>>,
     default_tls_site: arc_swap::ArcSwap<Option<Arc<Site>>>,
-    acme_tokens: arc_swap::ArcSwap<HashMap<String, AcmeToken>>,
+    acme_tokens: arc_swap::ArcSwap<HashMap<String, (AcmeToken, std::time::Instant)>>,
     counter: Counter,
     crypto_provider: CryptoProvider,
 }
@@ -302,23 +302,37 @@ impl Storage {
         self.rates.store(Arc::new(rates));
     }
 
+    /// ACME http-01 tokens are short-lived; the console expires them after 300s
+    const ACME_TOKEN_TTL: std::time::Duration = std::time::Duration::from_secs(300);
+
+    /// Separator keeps (host, token) pairs unambiguous (e.g. "ab"+"c" vs "a"+"bc")
+    fn acme_key(host: &str, token: &str) -> String {
+        format!("{host}\n{token}")
+    }
+
     pub fn add_token(&self, token: AcmeToken) {
         let mut acme_tokens = (**self.acme_tokens.load()).clone();
-        acme_tokens.insert(token.host.clone() + "" + &token.token, token);
+        acme_tokens.insert(
+            Self::acme_key(&token.host, &token.token),
+            (token, std::time::Instant::now()),
+        );
         self.acme_tokens.store(Arc::new(acme_tokens));
     }
 
     pub fn remove_token(&self, host: &str, token: &str) {
         let mut acme_tokens = (**self.acme_tokens.load()).clone();
-        let key = host.to_owned() + token;
-        acme_tokens.remove(&key);
+        acme_tokens.remove(&Self::acme_key(host, token));
         self.acme_tokens.store(Arc::new(acme_tokens));
     }
 
     pub fn find_token(&self, host: &str, token: &str) -> Option<AcmeToken> {
-        let key = host.to_owned() + token;
+        let key = Self::acme_key(host, token);
         let acme_tokens = &**self.acme_tokens.load();
-        acme_tokens.get(&key).cloned()
+        acme_tokens
+            .get(&key)
+            .filter(|(_, ts)| ts.elapsed() < Self::ACME_TOKEN_TTL)
+            .map(|(token, _)| token)
+            .cloned()
     }
 
     pub async fn update_log_point(&self, log_type: u32, log_id: u64) -> anyhow::Result<()> {

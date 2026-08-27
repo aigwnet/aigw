@@ -153,18 +153,21 @@ pub fn new_path_selector(path: &str) -> anyhow::Result<PathSelector> {
 }
 
 pub fn new_rewrite(rewrite: Option<&str>) -> anyhow::Result<Option<(Regex, String)>> {
-    if let Some(rewrite) = rewrite {
-        let mut arr: Vec<&str> = rewrite.split(' ').collect();
-        if arr.len() == 1 && arr[0].contains("$") {
-            arr.push(arr[0]);
-            arr[0] = ".*";
-        }
-
-        let value = if arr.len() == 2 { arr[1] } else { "" };
-        let re = Regex::new(arr[0])?;
-        Ok(Some((re, value.to_string())))
-    } else {
-        Ok(None)
+    let Some(rewrite) = rewrite else {
+        return Ok(None);
+    };
+    // Whitespace-tolerant: extra spaces/tabs no longer silently drop the replacement
+    let arr: Vec<&str> = rewrite.split_whitespace().collect();
+    match arr.len() {
+        0 => Ok(None),
+        // Single token is a match-all replacement, e.g. rewrite "/api/$1".
+        // (Previously a `$` heuristic hijacked single-token regexes like `^/old$`;
+        // regex-only rules rewrote to an empty path, which is never useful.)
+        1 => Ok(Some((Regex::new(".*")?, arr[0].to_string()))),
+        2 => Ok(Some((Regex::new(arr[0])?, arr[1].to_string()))),
+        _ => Err(anyhow::anyhow!(
+            "rewrite must be \"<regex> <replacement>\" or \"<replacement>\", got: {rewrite}"
+        )),
     }
 }
 
@@ -713,6 +716,31 @@ mod tests {
         let locations = vec![prefix_api.clone(), regex_php.clone(), exact.clone()];
         let (m, _) = find_matched_location(&locations, "/api/x.html").unwrap();
         assert!(Arc::ptr_eq(&m, &exact));
+    }
+
+    #[test]
+    fn test_new_rewrite() {
+        // regex + replacement
+        let (re, value) = new_rewrite(Some("^/users/(.*)$ /api/users/$1")).unwrap().unwrap();
+        assert_eq!(re.as_str(), "^/users/(.*)$");
+        assert_eq!(value, "/api/users/$1");
+
+        // extra whitespace must not drop the replacement
+        let (re, value) = new_rewrite(Some("^/a  /b")).unwrap().unwrap();
+        assert_eq!(re.as_str(), "^/a");
+        assert_eq!(value, "/b");
+
+        // single token with $ is a match-all replacement
+        let (re, value) = new_rewrite(Some("/api/$1")).unwrap().unwrap();
+        assert_eq!(re.as_str(), ".*");
+        assert_eq!(value, "/api/$1");
+
+        // too many tokens is an error now instead of silently dropping the replacement
+        assert!(new_rewrite(Some("a b c")).is_err());
+
+        // empty / none
+        assert!(new_rewrite(Some("  ")).unwrap().is_none());
+        assert!(new_rewrite(None).unwrap().is_none());
     }
 
     #[test]

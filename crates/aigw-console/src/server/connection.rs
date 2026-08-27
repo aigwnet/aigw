@@ -19,9 +19,10 @@ impl Connection {
     }
 
     pub async fn write(&mut self, buf: &[u8]) -> anyhow::Result<usize> {
-        let size = self.writer.write(buf).await?;
+        // write() may return after a partial write; frames must go out whole
+        self.writer.write_all(buf).await?;
         self.writer.flush().await?;
-        Ok(size)
+        Ok(buf.len())
     }
 
     pub async fn close(&mut self) {

@@ -97,8 +97,13 @@ pub fn run(
     }
     tls_settings.set_max_proto_version(Some(SslVersion::TLS1_3))?;
     tls_settings.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-    // TLS 1.2 requires setting cipher suites
-    let _= tls_settings.set_cipher_list("TLS-CHACHA20-POLY1305-SHA256:TLS-AES-256-GCM-SHA384:TLS-AES-128-GCM-SHA256:HIGH:!aNULL:!MD5");
+    // TLS 1.3 cipher suites are configured separately from the TLS<=1.2 cipher list;
+    // mixing TLS 1.3 suite names into set_cipher_list fails silently in OpenSSL.
+    tls_settings.set_ciphersuites(
+        "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256",
+    )?;
+    // TLS 1.2 cipher suites
+    tls_settings.set_cipher_list("ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305")?;
     tls_settings.enable_h2();
     let mut proxy_service_https = http_proxy_service_with_name(&main_conf, proxy, "Aigw-https");
     let addr = format!(":::{}", config.basic().https());

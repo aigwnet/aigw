@@ -1,16 +1,38 @@
 use core::slice;
 use pingora_core::tls::ssl_sys::{
-    OPENSSL_free, SSL, SSL_client_hello_get0_ciphers, SSL_client_hello_get0_ext,
+    CRYPTO_EX_DATA, OPENSSL_free, SSL, SSL_client_hello_get0_ciphers, SSL_client_hello_get0_ext,
     SSL_client_hello_get0_legacy_version, SSL_client_hello_get1_extensions_present,
-    SSL_get_ex_new_index, SSL_set_ex_data,
+    SSL_get_ex_data, SSL_get_ex_new_index, SSL_set_ex_data,
 };
 use sha::{
     sha256,
     utils::{Digest, DigestExt},
 };
 
+/// Free the JA4 box attached to an SSL object. Registered as the ex_data free
+/// callback so failed handshakes (which never reach handshake_complete_callback)
+/// don't leak it.
+unsafe extern "C" fn ja4_ex_data_free(
+    _parent: *mut std::ffi::c_void,
+    ptr: *mut std::ffi::c_void,
+    _ad: *mut CRYPTO_EX_DATA,
+    _idx: std::os::raw::c_int,
+    _argl: std::os::raw::c_long,
+    _argp: *mut std::ffi::c_void,
+) {
+    if !ptr.is_null() {
+        unsafe { drop(Box::from_raw(ptr as *mut (String, String))) };
+    }
+}
+
 pub static JA4_INDEX: once_cell::sync::Lazy<i32> = once_cell::sync::Lazy::new(|| unsafe {
-    SSL_get_ex_new_index(0, std::ptr::null_mut(), None, None, None)
+    SSL_get_ex_new_index(
+        0,
+        std::ptr::null_mut(),
+        None,
+        None,
+        Some(ja4_ex_data_free),
+    )
 });
 
 pub unsafe extern "C" fn client_hello_cb(
@@ -19,6 +41,12 @@ pub unsafe extern "C" fn client_hello_cb(
     _arg: *mut ::std::os::raw::c_void,
 ) -> std::os::raw::c_int {
     unsafe {
+        // The callback can run twice (HelloRetryRequest); free the previous box
+        // before overwriting the pointer.
+        let old = SSL_get_ex_data(ssl, *JA4_INDEX);
+        if !old.is_null() {
+            drop(Box::from_raw(old as *mut (String, String)));
+        }
         let (ja4_hash, ja4_origin) = ja4(ssl);
         let boxed = Box::new((ja4_hash, ja4_origin));
         SSL_set_ex_data(ssl, *JA4_INDEX, Box::into_raw(boxed) as *mut _);

@@ -5,7 +5,12 @@ use async_trait::async_trait;
 use pingora_core::{
     listeners::TlsAccept,
     protocols::tls::TlsRef,
-    tls::{pkey::PKey, ssl, ssl_sys::SSL_get_ex_data, x509::X509},
+    tls::{
+        pkey::PKey,
+        ssl,
+        ssl_sys::{SSL_get_ex_data, SSL_set_ex_data},
+        x509::X509,
+    },
 };
 use tracing::error;
 
@@ -93,6 +98,9 @@ impl TlsAccept for DynamicTlsAccept {
         unsafe {
             let ptr = SSL_get_ex_data(ssl.as_ptr(), *JA4_INDEX);
             if !ptr.is_null() {
+                // Take ownership and clear the pointer so the ex_data free
+                // callback (registered at index creation) won't double-free it.
+                SSL_set_ex_data(ssl.as_ptr(), *JA4_INDEX, std::ptr::null_mut());
                 let boxed: Box<(String, String)> = Box::from_raw(ptr as *mut _);
                 let (ja4_hash, _) = *boxed;
 
