@@ -2,13 +2,14 @@ use std::{collections::HashMap, time::Duration};
 
 use aigw_core::date_format_local;
 use lazy_static::lazy_static;
-use rbatis::{PageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
+use sqlx::MySqlPool;
+use time::OffsetDateTime;
 
 use crate::{
     service::{HH_FORMAT, HH_MM_FORMAT, MM_DD_FORMAT, map::LinkedHashMap, se_task::Task},
     storage::{
-        tb_analytics_traffic::TbAnalyticsTraffic,
+        PageRequest, tb_analytics_traffic::TbAnalyticsTraffic,
         tb_analytics_traffic_cluster::TbAnalyticsTrafficCluster,
         tb_analytics_traffic_cluster_hour::TbAnalyticsTrafficClusterHour,
     },
@@ -63,11 +64,11 @@ lazy_static! {
 }
 
 pub async fn get_analytics_traffic(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     limit: usize,
 ) -> anyhow::Result<Vec<AnalyticsTrafficItem>> {
-    let items = TbAnalyticsTrafficCluster::select_by_cluster(rb, cluster_name, limit).await?;
+    let items = TbAnalyticsTrafficCluster::select_by_cluster(rb, cluster_name, limit as u64).await?;
     let mut items: Vec<AnalyticsTrafficItem> = items
         .iter()
         .map(|item| {
@@ -76,9 +77,9 @@ pub async fn get_analytics_traffic(
                 .as_ref()
                 .and_then(|d| date_format_local(d.unix_timestamp(), HH_MM_FORMAT));
             AnalyticsTrafficItem {
-                time: gmt_create.map_or("-".to_string(), |s| s),
-                tls: item.tls.map_or(0, |i| i),
-                pv: item.pv.map_or(0, |i| i),
+                time: gmt_create.unwrap_or("-".to_string()),
+                tls: item.tls.map_or(0, |i| i as u64),
+                pv: item.pv.map_or(0, |i| i as u64),
             }
         })
         .collect();
@@ -87,11 +88,11 @@ pub async fn get_analytics_traffic(
 }
 
 pub async fn get_analytics_traffic_1day(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
 ) -> anyhow::Result<Vec<AnalyticsTrafficItem>> {
-    let end_time = DateTime::utc();
-    let start_time = end_time.clone().sub(Duration::from_secs(86400));
+    let end_time = OffsetDateTime::now_utc();
+    let start_time = end_time - Duration::from_secs(86400);
 
     let mut page_no = 1;
 
@@ -102,8 +103,8 @@ pub async fn get_analytics_traffic_1day(
             rb,
             &page_request,
             cluster_name,
-            start_time.clone(),
-            end_time.clone(),
+            start_time,
+            end_time,
         )
         .await?;
 
@@ -122,13 +123,13 @@ pub async fn get_analytics_traffic_1day(
                         gmt_create.clone(),
                         AnalyticsTrafficItem {
                             time: gmt_create,
-                            tls: a.tls.map_or(0, |i| i),
-                            pv: a.pv.map_or(0, |i| i),
+                            tls: a.tls.map_or(0, |i| i as u64),
+                            pv: a.pv.map_or(0, |i| i as u64),
                         },
                     );
                 } else if let Some(item) = maps.get_mut(&gmt_create) {
-                    item.tls += a.tls.map_or(0, |i| i);
-                    item.pv += a.pv.map_or(0, |i| i);
+                    item.tls += a.tls.map_or(0, |i| i as u64);
+                    item.pv += a.pv.map_or(0, |i| i as u64);
                 }
             }
         }
@@ -145,11 +146,11 @@ pub async fn get_analytics_traffic_1day(
 }
 
 pub async fn get_analytics_traffic_1month(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
 ) -> anyhow::Result<Vec<AnalyticsTrafficItem>> {
-    let end_time = DateTime::utc();
-    let start_time = end_time.clone().sub(Duration::from_secs(86400 * 30));
+    let end_time = OffsetDateTime::now_utc();
+    let start_time = end_time - Duration::from_secs(86400 * 30);
 
     let mut page_no = 1;
 
@@ -160,8 +161,8 @@ pub async fn get_analytics_traffic_1month(
             rb,
             &page_request,
             cluster_name,
-            start_time.clone(),
-            end_time.clone(),
+            start_time,
+            end_time,
         )
         .await?;
 
@@ -179,13 +180,13 @@ pub async fn get_analytics_traffic_1month(
                         gmt_create.clone(),
                         AnalyticsTrafficItem {
                             time: gmt_create,
-                            tls: a.tls.map_or(0, |i| i),
-                            pv: a.pv.map_or(0, |i| i),
+                            tls: a.tls.map_or(0, |i| i as u64),
+                            pv: a.pv.map_or(0, |i| i as u64),
                         },
                     );
                 } else if let Some(item) = maps.get_mut(&gmt_create) {
-                    item.tls += a.tls.map_or(0, |i| i);
-                    item.pv += a.pv.map_or(0, |i| i);
+                    item.tls += a.tls.map_or(0, |i| i as u64);
+                    item.pv += a.pv.map_or(0, |i| i as u64);
                 }
             }
         }
@@ -202,10 +203,10 @@ pub async fn get_analytics_traffic_1month(
 }
 
 pub async fn get_analytics_traffic_ext_info_1month(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
 ) -> anyhow::Result<ExtInfo> {
-    let start_time = DateTime::utc().sub(Duration::from_secs(86400 * 30));
+    let start_time = OffsetDateTime::now_utc() - Duration::from_secs(86400 * 30);
 
     let items = TbAnalyticsTrafficClusterHour::select_by_cluster_gmt_create_greater(
         rb,
@@ -231,14 +232,15 @@ pub async fn get_analytics_traffic_ext_info_1month(
 }
 
 pub(crate) async fn analytics_traffic_minute(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     task: &Task,
 ) -> anyhow::Result<Option<TrafficItem>> {
     let access_items = TbAnalyticsTrafficCluster::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.unix_timestamp()),
+        OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+            .unwrap_or(OffsetDateTime::UNIX_EPOCH),
     )
     .await?;
 
@@ -254,8 +256,10 @@ pub(crate) async fn analytics_traffic_minute(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.unix_timestamp()),
-                DateTime::from_timestamp(new_end_time.unix_timestamp()),
+                OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                OffsetDateTime::from_unix_timestamp(new_end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
             )
             .await?;
 
@@ -275,14 +279,15 @@ pub(crate) async fn analytics_traffic_minute(
 }
 
 pub(crate) async fn analytics_traffic_hour(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     task: &Task,
 ) -> anyhow::Result<Option<TrafficItem>> {
     let access_item = TbAnalyticsTrafficClusterHour::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.unix_timestamp()),
+        OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+            .unwrap_or(OffsetDateTime::UNIX_EPOCH),
     )
     .await?;
 
@@ -298,8 +303,10 @@ pub(crate) async fn analytics_traffic_hour(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.unix_timestamp()),
-                DateTime::from_timestamp(new_end_time.unix_timestamp()),
+                OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                OffsetDateTime::from_unix_timestamp(new_end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
             )
             .await?;
 
@@ -319,8 +326,8 @@ pub(crate) async fn analytics_traffic_hour(
 }
 
 fn count_tb_analytics_traffic(item: &mut TrafficItem, a: TbAnalyticsTraffic) {
-    item.tls += a.tls.map_or(0, |i| i);
-    item.pv += a.pv.map_or(0, |i| i);
+    item.tls += a.tls.map_or(0, |i| i as u64);
+    item.pv += a.pv.map_or(0, |i| i as u64);
 
     if let Some(country) = &a.http_country {
         let countries: Result<HashMap<String, u64>, serde_json::Error> =
@@ -352,8 +359,8 @@ fn count_tb_analytics_traffic(item: &mut TrafficItem, a: TbAnalyticsTraffic) {
 }
 
 fn count_tb_analytics_traffic_cluster(item: &mut TrafficItem, a: TbAnalyticsTrafficCluster) {
-    item.tls += a.tls.map_or(0, |i| i);
-    item.pv += a.pv.map_or(0, |i| i);
+    item.tls += a.tls.map_or(0, |i| i as u64);
+    item.pv += a.pv.map_or(0, |i| i as u64);
 
     if let Some(country) = &a.http_country {
         let countries: Result<HashMap<String, u64>, serde_json::Error> =

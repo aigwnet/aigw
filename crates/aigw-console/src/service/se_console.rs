@@ -1,25 +1,23 @@
-use std::time::Duration;
-
 use aigw_core::ChangeLog;
-use rbatis::{PageRequest, rbdc::DateTime};
+use time::OffsetDateTime;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 use tracing::{debug, error};
 
-use crate::storage::tb_console::TbConsole;
+use crate::storage::{PageRequest, tb_console::TbConsole};
 
 pub async fn update_or_insert_local_peer(
-    rb: &rbatis::RBatis,
+    rb: &sqlx::MySqlPool,
     host: &str,
     port: u16,
 ) -> anyhow::Result<()> {
-    let now = DateTime::utc();
-    let item = TbConsole::select_by_host_port(rb, host, port).await?;
+    let now = OffsetDateTime::now_utc();
+    let item = TbConsole::select_by_host_port(rb, host, port as i32).await?;
     // update last_active_time
     if let Some(mut item) = item {
-        item.last_active_time = Some(now.clone());
+        item.last_active_time = Some(now);
         item.gmt_modified = Some(now);
         let _r = TbConsole::update_by_id(rb, &item, item.id.unwrap()).await;
     }
@@ -28,9 +26,9 @@ pub async fn update_or_insert_local_peer(
         let item = TbConsole {
             id: None,
             host: Some(host.to_string()),
-            port: Some(port),
-            last_active_time: Some(now.clone()),
-            gmt_create: Some(now.clone()),
+            port: Some(port as i32),
+            last_active_time: Some(now),
+            gmt_create: Some(now),
             gmt_modified: Some(now),
         };
         let _ = TbConsole::insert(rb, &item).await?;
@@ -40,7 +38,7 @@ pub async fn update_or_insert_local_peer(
 }
 
 pub async fn send_change_log_to_peers(
-    rb: &rbatis::RBatis,
+    rb: &sqlx::MySqlPool,
     changelog: ChangeLog,
 ) -> anyhow::Result<()> {
     let changelog = &changelog.to_vec();
@@ -61,7 +59,7 @@ pub async fn send_change_log_to_peers(
                     //
                     if let Err(e) = send_change_log_to_peer(
                         item.host.unwrap().as_str(),
-                        item.port.unwrap(),
+                        item.port.unwrap() as u16,
                         changelog,
                     )
                     .await
@@ -104,14 +102,16 @@ async fn send_change_log_to_peer(host: &str, port: u16, data: &[u8]) -> anyhow::
 }
 
 async fn select_console_peer_by_page(
-    rb: &rbatis::RBatis,
+    rb: &sqlx::MySqlPool,
     page_request: &PageRequest,
 ) -> anyhow::Result<Vec<TbConsole>> {
     let page = TbConsole::select_by_page(rb, page_request).await?;
     let mut r = vec![];
     for item in page.records {
         // If last_active_time has not been updated for more than 60 seconds, the node is considered unreachable
-        if DateTime::utc() - item.last_active_time.clone().unwrap() > Duration::from_millis(60000) {
+        if OffsetDateTime::now_utc() - item.last_active_time.unwrap()
+            > time::Duration::milliseconds(60000)
+        {
             continue;
         }
         r.push(item);

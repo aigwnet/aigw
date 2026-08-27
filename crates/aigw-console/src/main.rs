@@ -66,7 +66,6 @@ fn main() -> anyhow::Result<()> {
     debug!("{}", s);
 
     let config = Arc::new(config);
-    let database_client = DatabaseClient::default();
     let rt = tokio::runtime::Builder::new_multi_thread()
         .max_blocking_threads(20)
         .enable_all()
@@ -74,14 +73,13 @@ fn main() -> anyhow::Result<()> {
     let rt = Arc::new(rt);
 
     // init mysql database
-    rt.block_on(async {
-        database_client
-            .init(
-                &config.database.url,
-                Some(&config.database.user),
-                Some(&config.database.password),
-            )
-            .await
+    let database_client = rt.block_on(async {
+        DatabaseClient::init(
+            &config.database.url,
+            Some(&config.database.user),
+            Some(&config.database.password),
+        )
+        .await
     })?;
     let database_client = Arc::new(database_client);
 

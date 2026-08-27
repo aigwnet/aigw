@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use aigw_core::{Buffer, ChangeLog, DataFrame, LogAction, LogPoint, LogType, build_data};
-use rbatis::rbdc::DateTime;
-use rbatis::{PageRequest, RBatis};
+use time::OffsetDateTime;
 use tokio::sync::Mutex;
 use tracing::{error, info};
 
 use crate::server::connection::Connection;
 use crate::service::find_site_by_page;
+use crate::storage::PageRequest;
 use crate::storage::tb_change_log::{self, TbChangeLog};
 
 /// Asynchronously builds a change log entry.
@@ -33,7 +33,7 @@ use crate::storage::tb_change_log::{self, TbChangeLog};
 /// # Errors
 /// Returns an error if database operations fail or if required parameters are invalid.
 pub async fn do_build_change_log(
-    rb: &dyn rbatis::executor::Executor,
+    conn: &mut sqlx::MySqlConnection,
     cluster_name: String,
     log_type: LogType,
     log_action: LogAction,
@@ -42,37 +42,40 @@ pub async fn do_build_change_log(
     data: Option<String>,
 ) -> anyhow::Result<ChangeLog> {
     // 0. delete expired items
-    let _r = tb_change_log::TbChangeLog::delete_expired(rb).await?;
+    let _r = tb_change_log::TbChangeLog::delete_expired(&mut *conn).await?;
 
     // 1. delete old change log
-    let old_change_log =
-        tb_change_log::TbChangeLog::select_by_data_id_and_type(rb, log_type.code(), data_id)
-            .await?;
+    let old_change_log = tb_change_log::TbChangeLog::select_by_data_id_and_type(
+        &mut *conn,
+        log_type.code() as i32,
+        data_id as i64,
+    )
+    .await?;
     if let Some(old) = old_change_log {
-        tb_change_log::TbChangeLog::delete_by_id(rb, old.id.unwrap()).await?;
+        tb_change_log::TbChangeLog::delete_by_id(&mut *conn, old.id.unwrap()).await?;
     }
     // 2. add change log
-    let now = DateTime::utc();
+    let now = OffsetDateTime::now_utc();
     let mut change_log = TbChangeLog {
         id: None,
         cluster_name: Some(cluster_name),
-        log_type: Some(log_type.code()),
-        log_action: Some(log_action.code()),
-        data_id: Some(data_id),
+        log_type: Some(log_type.code() as i32),
+        log_action: Some(log_action.code() as i32),
+        data_id: Some(data_id as i64),
         data,
-        expire_second: Some(expire_second),
-        gmt_create: Some(now.clone()),
+        expire_second: Some(expire_second as i32),
+        gmt_create: Some(now),
         gmt_modified: Some(now),
     };
-    let r = tb_change_log::TbChangeLog::insert(rb, &change_log).await?;
-    change_log.id = r.last_insert_id.as_u64();
+    let r = tb_change_log::TbChangeLog::insert(&mut *conn, &change_log).await?;
+    change_log.id = Some(r.last_insert_id() as i64);
 
     Ok(ChangeLog {
-        log_id: change_log.id.unwrap(),
+        log_id: change_log.id.unwrap() as u64,
         cluster: change_log.cluster_name.unwrap_or_default(),
         log_type,
         log_action,
-        data_id: change_log.data_id.unwrap(),
+        data_id: change_log.data_id.unwrap() as u64,
         data: change_log.data.map_or(vec![], |s| s.into_bytes()),
     })
 }
@@ -103,7 +106,7 @@ pub async fn do_build_change_log(
 /// - Database operations during transmission fail
 pub async fn send_change_logs_to_aigw(
     connection: &Arc<Mutex<Connection>>,
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     log_points: &Vec<LogPoint>,
 ) -> anyhow::Result<()> {
     info!("Try to send change logs to aigw.");
@@ -151,11 +154,11 @@ pub async fn send_change_logs_to_aigw(
                                 let change_log =
                                     tb_change_log::TbChangeLog::select_by_data_id_and_type(
                                         rb,
-                                        log_type.code(),
-                                        last.data_id,
+                                        log_type.code() as i32,
+                                        last.data_id as i64,
                                     )
                                     .await?;
-                                change_log.map_or(0, |c| c.id.unwrap_or_default())
+                                change_log.map_or(0, |c| c.id.unwrap_or_default() as u64)
                             } else {
                                 0
                             };
@@ -182,8 +185,8 @@ pub async fn send_change_logs_to_aigw(
                         rb,
                         &page_request,
                         cluster,
-                        log_type.code(),
-                        log_id,
+                        log_type.code() as i32,
+                        log_id as i64,
                     )
                     .await;
                     match r {
@@ -195,11 +198,11 @@ pub async fn send_change_logs_to_aigw(
                             let mut logs = vec![];
                             for item in page.records {
                                 logs.push(ChangeLog {
-                                    log_id: item.id.unwrap(),
+                                    log_id: item.id.unwrap() as u64,
                                     cluster: item.cluster_name.unwrap_or_default(),
                                     log_type,
-                                    log_action: item.log_action.unwrap().try_into()?,
-                                    data_id: item.data_id.unwrap(),
+                                    log_action: (item.log_action.unwrap() as u32).try_into()?,
+                                    data_id: item.data_id.unwrap() as u64,
                                     data: item.data.map_or(vec![], |data| data.into_bytes()),
                                 });
                             }

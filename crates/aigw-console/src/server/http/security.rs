@@ -2,7 +2,6 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use rbatis::PageRequest;
 use serde::{Deserialize, Deserializer};
 
 use crate::{
@@ -11,6 +10,7 @@ use crate::{
         ClusterIpCidr, ClusterIpCidrList, Page, add_new_cluster_ip, delete_cluster_ip,
         find_ip_cidr_by_page,
     },
+    storage::PageRequest,
 };
 
 pub(crate) struct HttpApiSecurity {}
@@ -48,8 +48,7 @@ impl HttpApiSecurity {
         Query(page): Query<Pagination>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Page<ClusterIpCidr>> {
-        let mut page_request = PageRequest::new(page.page, page.page_size);
-        page_request = page_request.set_do_count(true);
+        let page_request = PageRequest::new(page.page, page.page_size);
         let data = find_ip_cidr_by_page(
             &context.database_client.rb,
             &page_request,

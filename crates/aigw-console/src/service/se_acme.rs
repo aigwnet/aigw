@@ -14,7 +14,8 @@ use crate::{
 use aigw_core::{AcmeToken, ChangeLog, LOCAL_IP, LogAction, LogType, TlsPrivateKey};
 use anyhow::anyhow;
 use base64::{Engine, prelude::BASE64_STANDARD};
-use rbatis::{PageRequest, RBatis};
+use sqlx::MySqlPool;
+use crate::storage::PageRequest;
 use rcgen::{KeyPair, PKCS_RSA_SHA512};
 use time::OffsetDateTime;
 use tokio::{sync::mpsc::Sender, time::interval};
@@ -31,7 +32,7 @@ fn gen_rsa_private_key() -> anyhow::Result<TlsPrivateKey> {
     Ok(key)
 }
 
-async fn get_account(rb: &RBatis, email: &str) -> anyhow::Result<Account> {
+async fn get_account(rb: &MySqlPool, email: &str) -> anyhow::Result<Account> {
     let user = TbUser::select_by_email(rb, email)
         .await?
         .ok_or(anyhow!("User not found"))?;
@@ -49,7 +50,7 @@ async fn get_account(rb: &RBatis, email: &str) -> anyhow::Result<Account> {
     Err(anyhow!("Account not exist"))
 }
 
-async fn save_account(rb: &RBatis, email: &str, account: &Account) -> anyhow::Result<()> {
+async fn save_account(rb: &MySqlPool, email: &str, account: &Account) -> anyhow::Result<()> {
     let account = serde_json::to_string_pretty(&account)?;
     let account = BASE64_STANDARD.encode(account);
     let ext = UserExtInfo {
@@ -60,7 +61,7 @@ async fn save_account(rb: &RBatis, email: &str, account: &Account) -> anyhow::Re
 }
 
 pub async fn apply_cert(
-    rb: &RBatis,
+    rb: &MySqlPool,
     sender: &Sender<ChangeLog>,
     cluster: String,
     email: &str,
@@ -134,8 +135,9 @@ pub async fn apply_cert(
             token: challenge.token.clone().unwrap(),
             proof: challenge.key_authorization()?.clone().unwrap(),
         })?;
+        let mut conn = rb.acquire().await?;
         let change_log = do_build_change_log(
-            rb,
+            &mut conn,
             cluster.clone(),
             LogType::Acme,
             LogAction::Create,
@@ -236,7 +238,7 @@ pub async fn renew_certs(database_client: Arc<DatabaseClient>, sender: Sender<Ch
 }
 
 async fn do_renew_certs(
-    rb: &RBatis,
+    rb: &MySqlPool,
     sender: &Sender<ChangeLog>,
     email: &str,
 ) -> anyhow::Result<()> {
@@ -271,8 +273,8 @@ async fn do_renew_certs(
             // apply new cert
             let cert = apply_cert(rb, sender, cluster, email, &domains).await?;
             // update cert
-            let rx = rb.acquire_begin().await?;
-            match update_cert(&rx, &name, cert.tls_cert, cert.tls_private_key).await {
+            let mut rx = rb.begin().await?;
+            match update_cert(&mut rx, &name, cert.tls_cert, cert.tls_private_key).await {
                 Ok((_, change_log)) => {
                     rx.commit().await?;
                     let _ = sender.send(change_log).await;

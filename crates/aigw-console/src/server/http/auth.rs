@@ -164,9 +164,9 @@ impl Auth {
         {
             let (r, user, email) = auth.validate(token_str).await;
             if r {
-                let user = HeaderValue::from_str(user.map_or("".to_string(), |u| u).as_str())
+                let user = HeaderValue::from_str(user.unwrap_or("".to_string()).as_str())
                     .map_err(|e| ApiError::BasicError(anyhow!(e)))?;
-                let email = HeaderValue::from_str(email.map_or("".to_string(), |u| u).as_str())
+                let email = HeaderValue::from_str(email.unwrap_or("".to_string()).as_str())
                     .map_err(|e| ApiError::BasicError(anyhow!(e)))?;
                 req.headers_mut().append("x-user-name", user);
                 req.headers_mut().append("x-user-email", email);

@@ -6,7 +6,7 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use rbatis::{PageRequest, RBatis};
+use sqlx::MySqlPool;
 use time::OffsetDateTime;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error};
@@ -19,6 +19,7 @@ use crate::{
         Page, add_site, apply_cert, build_change_log_delete_site, find_site, find_site_by_page,
         modify_site, update_cert,
     },
+    storage::PageRequest,
 };
 
 pub(crate) struct HttpApiSite {}
@@ -55,7 +56,7 @@ impl HttpApiSite {
     }
 
     async fn add_cert_and_notify(
-        rb: RBatis,
+        rb: MySqlPool,
         sender: Sender<ChangeLog>,
         cluster: String,
         name: String,
@@ -71,8 +72,8 @@ impl HttpApiSite {
 
         let cert = apply_cert(&rb, &sender, cluster.clone(), &email, &domains[..]).await?;
 
-        let rx = rb.acquire_begin().await?;
-        match update_cert(&rx, &name, cert.tls_cert, cert.tls_private_key).await {
+        let mut rx = rb.begin().await?;
+        match update_cert(&mut rx, &name, cert.tls_cert, cert.tls_private_key).await {
             Ok((_, change_log)) => {
                 rx.commit().await?;
                 let _ = sender.send(change_log).await;
@@ -91,7 +92,8 @@ impl HttpApiSite {
         State(context): State<ApiContext>,
         Json(site): Json<Site>,
     ) -> ApiResponseResult<Site> {
-        let (_, old_site) = find_site(&context.database_client.rb, name.as_str()).await?;
+        let mut conn = context.database_client.rb.acquire().await.map_err(ApiError::from)?;
+        let (_, old_site) = find_site(&mut conn, name.as_str()).await?;
 
         let (site, change_log) = modify_site(&context.database_client.rb, &site)
             .await
@@ -135,7 +137,7 @@ impl HttpApiSite {
     }
 
     async fn update_cert_and_notify(
-        rb: RBatis,
+        rb: MySqlPool,
         sender: Sender<ChangeLog>,
         cluster: String,
         name: String,
@@ -151,8 +153,8 @@ impl HttpApiSite {
 
         let cert = apply_cert(&rb, &sender, cluster.clone(), &email, &domains[..]).await?;
 
-        let rx = rb.acquire_begin().await?;
-        match update_cert(&rx, &name, cert.tls_cert, cert.tls_private_key).await {
+        let mut rx = rb.begin().await?;
+        match update_cert(&mut rx, &name, cert.tls_cert, cert.tls_private_key).await {
             Ok((_, change_log)) => {
                 rx.commit().await?;
                 let _ = sender.send(change_log).await;
@@ -169,7 +171,8 @@ impl HttpApiSite {
         Path(name): Path<String>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Site> {
-        let (_, site) = find_site(&context.database_client.rb, name.as_str())
+        let mut conn = context.database_client.rb.acquire().await.map_err(ApiError::from)?;
+        let (_, site) = find_site(&mut conn, name.as_str())
             .await
             .map_err(ApiError::from)?;
         Ok(ApiData(Some(site)))
@@ -180,8 +183,7 @@ impl HttpApiSite {
         Query(page): Query<Pagination>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Page<Site>> {
-        let mut page_request = PageRequest::new(page.page, page.page_size);
-        page_request = page_request.set_do_count(true);
+        let page_request = PageRequest::new(page.page, page.page_size);
         let r = find_site_by_page(&context.database_client.rb, &page_request, &cluster_name)
             .await
             .map_err(ApiError::from)?;

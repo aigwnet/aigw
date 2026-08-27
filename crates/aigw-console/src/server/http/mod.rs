@@ -224,6 +224,12 @@ impl From<anyhow::Error> for ApiError {
     }
 }
 
+impl From<sqlx::Error> for ApiError {
+    fn from(value: sqlx::Error) -> Self {
+        ApiError::BasicError(anyhow::anyhow!(value))
+    }
+}
+
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         match self {

@@ -283,7 +283,7 @@ unsafe fn get_ciphers(ssl: *mut SSL) -> (u8, String, String) {
             let data = slice::from_raw_parts(ptr, len);
 
             let mut ciphers = data
-                .chunks_exact(2)
+                .as_chunks::<2>().0.iter()
                 .map(|c| u16::from_be_bytes([c[0], c[1]]))
                 .filter(|i| !is_grease(*i))
                 .map(|c| format!("{:04x}", c)) // lowercase hex, 4 digits
@@ -395,7 +395,7 @@ unsafe fn get_extensions_hash(ssl: *mut SSL) -> (u8, String, String) {
                 "".to_string()
             } else {
                 let data = &data[2..];
-                data.chunks_exact(2)
+                data.as_chunks::<2>().0.iter()
                     .map(|c| u16::from_be_bytes([c[0], c[1]]))
                     .map(|c| format!("{:04x}", c)) // lowercase hex, 4 digits
                     .collect::<Vec<_>>()

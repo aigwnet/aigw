@@ -91,7 +91,7 @@ pub struct Page<T: Send + Sync> {
 impl<T: Send + Sync> Page<T> {
     pub fn new(page_no: u64, mut page_size: u64, total: u64, items: Vec<T>) -> Self {
         if page_size == 0 {
-            page_size = rbatis::DEFAULT_PAGE_SIZE;
+            page_size = crate::storage::DEFAULT_PAGE_SIZE;
         }
         if page_no < 1 {
             return Self {

@@ -259,14 +259,14 @@ impl ConsoleClient {
 
             let crypto = &*crypto.read().await;
             if let Some(crypto) = crypto {
-                let log_points = storage.load_log_points().await.map_or(vec![], |v| v);
+                let log_points = storage.load_log_points().await.unwrap_or(vec![]);
                 let now = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
                 let ts = now as i64;
                 let ts_str = date_format_local_nanos((ts as i128) * 1_000_000, LOGGER_TIME_FORMAT)
                     .unwrap_or_default();
                 info!(target:"console", "Ping ==> {:?} log_points: {:?}", ts_str, log_points);
                 let pv = storage.pv_swap();
-                let rt = if pv == 0 { 0 } else { storage.rt_swap() / pv };
+                let rt = storage.rt_swap().checked_div(pv).unwrap_or(0);
 
                 let mut map = HashMap::new();
                 let mut http_code = HashMap::new();
@@ -288,7 +288,7 @@ impl ConsoleClient {
                 map.insert("http_code", http_code);
                 map.insert("http_source", http_source);
                 map.insert("http_country", http_country);
-                let ext_info = serde_json::to_string(&map).map_or("{}".to_string(), |s| s);
+                let ext_info = serde_json::to_string(&map).unwrap_or("{}".to_string());
 
                 let statistics =
                     statistics(storage.tls_swap(), pv, rt, storage.error_swap(), ext_info).await;

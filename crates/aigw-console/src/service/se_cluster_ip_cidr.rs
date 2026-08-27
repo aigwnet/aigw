@@ -1,10 +1,10 @@
 use aigw_core::{ChangeLog, IpItem, IpList, LogAction, LogType, date_format_local};
-use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::{
     service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT, do_build_change_log},
-    storage::tb_cluster_ip_cidr::TbClusterIpCidr,
+    storage::{PageRequest, tb_cluster_ip_cidr::TbClusterIpCidr},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -37,10 +37,10 @@ pub struct ClusterIpCidrList {
 }
 
 pub async fn add_new_cluster_ip(
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     list: &ClusterIpCidrList,
 ) -> anyhow::Result<ChangeLog> {
-    let now = DateTime::utc();
+    let now = OffsetDateTime::now_utc();
 
     let mut ip_list = vec![];
     for ip_cidr in &list.list {
@@ -50,12 +50,12 @@ pub async fn add_new_cluster_ip(
                 id: None,
                 cluster_name: Some(list.cluster_name.clone()),
                 ip: Some(ip_cidr.ip.clone()),
-                prefix_len: Some(ip_cidr.prefix_len),
-                r#type: Some(list.r#type),
+                prefix_len: Some(ip_cidr.prefix_len as i32),
+                r#type: Some(list.r#type as i8),
                 start_time: None,
                 end_time: None,
-                gmt_create: Some(now.clone()),
-                gmt_modified: Some(now.clone()),
+                gmt_create: Some(now),
+                gmt_modified: Some(now),
             },
         )
         .await?;
@@ -72,8 +72,9 @@ pub async fn add_new_cluster_ip(
     };
 
     let s = serde_json::to_string_pretty(&data)?;
+    let mut conn = rb.acquire().await.map_err(|e| anyhow::anyhow!(e))?;
     let change_log = do_build_change_log(
-        rb,
+        &mut conn,
         list.cluster_name.clone(),
         LogType::IpLayer4,
         LogAction::Create,
@@ -86,12 +87,12 @@ pub async fn add_new_cluster_ip(
 }
 
 pub async fn find_ip_cidr_by_page(
-    rb: &RBatis,
-    page_request: &dyn IPageRequest,
+    rb: &sqlx::MySqlPool,
+    page_request: &PageRequest,
     cluster_name: &str,
     r#type: u8,
 ) -> anyhow::Result<Page<ClusterIpCidr>> {
-    let r = TbClusterIpCidr::select_page(rb, page_request, cluster_name, r#type).await?;
+    let r = TbClusterIpCidr::select_page(rb, page_request, cluster_name, r#type as i8).await?;
     let mut page = Page::new(r.page_no, r.page_size, r.total, vec![]);
     for tb_cluster_ip_cidr in r.records {
         let r = convert_tb_cluster_ip_cidr(tb_cluster_ip_cidr);
@@ -100,23 +101,24 @@ pub async fn find_ip_cidr_by_page(
     Ok(page)
 }
 
-pub async fn delete_cluster_ip(rb: &RBatis, id: u64) -> anyhow::Result<ChangeLog> {
-    let ip = TbClusterIpCidr::select_by_id(rb, id)
+pub async fn delete_cluster_ip(rb: &sqlx::MySqlPool, id: u64) -> anyhow::Result<ChangeLog> {
+    let ip = TbClusterIpCidr::select_by_id(rb, id as i64)
         .await?
         .ok_or(anyhow::anyhow!("ClusterIpCidr not found."))?;
-    let _ = TbClusterIpCidr::delete_by_id(rb, id).await?;
+    let _ = TbClusterIpCidr::delete_by_id(rb, id as i64).await?;
 
     let data = IpList {
         item_type: ip.r#type.unwrap_or_default() as u32,
         data: vec![IpItem {
-            prefix_len: ip.prefix_len.unwrap_or_default(),
+            prefix_len: ip.prefix_len.unwrap_or_default() as u32,
             data: ip.ip.unwrap_or_default(),
         }],
     };
 
     let s = serde_json::to_string_pretty(&data)?;
+    let mut conn = rb.acquire().await.map_err(|e| anyhow::anyhow!(e))?;
     let change_log = do_build_change_log(
-        rb,
+        &mut conn,
         ip.cluster_name.unwrap_or_default(),
         LogType::IpLayer4,
         LogAction::Delete,
@@ -145,11 +147,11 @@ fn convert_tb_cluster_ip_cidr(tb_cluster_ip_cidr: TbClusterIpCidr) -> ClusterIpC
         .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
 
     ClusterIpCidr {
-        id: tb_cluster_ip_cidr.id,
-        cluster_name: tb_cluster_ip_cidr.cluster_name.map_or("".to_owned(), |s| s),
-        ip: tb_cluster_ip_cidr.ip.map_or("".to_owned(), |s| s),
-        prefix_len: tb_cluster_ip_cidr.prefix_len.map_or(0, |i| i),
-        r#type: tb_cluster_ip_cidr.r#type.map_or(0, |i| i),
+        id: tb_cluster_ip_cidr.id.map(|id| id as u64),
+        cluster_name: tb_cluster_ip_cidr.cluster_name.unwrap_or("".to_owned()),
+        ip: tb_cluster_ip_cidr.ip.unwrap_or("".to_owned()),
+        prefix_len: tb_cluster_ip_cidr.prefix_len.map_or(0, |i| i as u32),
+        r#type: tb_cluster_ip_cidr.r#type.map_or(0, |i| i as u8),
         start_time,
         end_time,
         gmt_modified,

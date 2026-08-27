@@ -1,36 +1,10 @@
-use std::{
-    fmt::{Display, Formatter},
-    ops::Deref,
-    str::FromStr,
-    sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
-    },
-};
+use std::str::FromStr;
 
-use rbatis::{
-    DefaultPool, Intercept, RBatis, ResultType, async_trait,
-    executor::Executor,
-    intercept::{Action, intercept_page::PageIntercept},
-    rbdc::{DateTime, db::ExecResult},
-};
-use rbdc_mysql::{Driver, options::MySqlConnectOptions};
-use rbs::{Error, Value, is_debug_mode};
-use tracing::{Level, info, level_filters::LevelFilter};
+use sqlx::mysql::{MySqlConnectOptions, MySqlPool, MySqlPoolOptions};
+use time::OffsetDateTime;
+use tracing::info;
 
 use crate::storage::tb_user::TbUser;
-
-macro_rules! dynamic_tracing_event {
-    ($level:expr, $($field:tt)*) => {
-        match $level {
-            tracing::Level::ERROR => tracing::error!($($field)*),
-            tracing::Level::WARN  => tracing::warn!($($field)*),
-            tracing::Level::INFO  => tracing::info!($($field)*),
-            tracing::Level::DEBUG => tracing::debug!($($field)*),
-            tracing::Level::TRACE => tracing::trace!($($field)*),
-        }
-    };
-}
 
 static INIT_SQL: &str = r#"
 
@@ -219,7 +193,7 @@ DROP TABLE IF EXISTS `tb_backend`;
 CREATE TABLE `tb_backend` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `location_id` bigint NOT NULL,
-  `host` varbinary(255) NOT NULL,
+  `host` varchar(255) NOT NULL,
   `port` int NOT NULL,
   `gmt_create` timestamp(3) NOT NULL,
   `gmt_modified` timestamp(3) NOT NULL,
@@ -433,25 +407,16 @@ SET FOREIGN_KEY_CHECKS = 1;
 "#;
 
 pub(crate) struct DatabaseClient {
-    pub(crate) rb: RBatis,
-}
-
-impl Default for DatabaseClient {
-    fn default() -> Self {
-        let rb = Default::default();
-        //rb.table_name_filter(move |table_name| format!("my_prefix_{}", table_name));
-        Self { rb }
-    }
+    pub(crate) rb: MySqlPool,
 }
 
 impl DatabaseClient {
-    /// init mysql with username and password
+    /// init mysql pool with username and password
     pub async fn init(
-        &self,
         url: &str,
         username: Option<&str>,
         password: Option<&str>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Self> {
         let mut option = MySqlConnectOptions::from_str(url)?;
         if let Some(password) = password {
             option = option.password(password);
@@ -459,26 +424,21 @@ impl DatabaseClient {
         if let Some(username) = username {
             option = option.username(username);
         }
-        self.rb.intercepts.insert(0, Arc::new(PageIntercept::new()));
-        self.rb
-            .intercepts
-            .insert(1, Arc::new(TracingInterceptor::new(LevelFilter::DEBUG)));
-        self.rb
-            .init_option::<Driver, MySqlConnectOptions, DefaultPool>(Driver {}, option)?;
-
-        self.rb.get_pool()?.set_max_idle_conns(2).await;
-        self.rb.get_pool()?.set_max_open_conns(10).await;
-        Ok(())
+        let rb = MySqlPoolOptions::new()
+            .max_connections(10)
+            .connect_with(option)
+            .await?;
+        Ok(Self { rb })
     }
 
     pub async fn install(&self) -> anyhow::Result<()> {
-        self.rb.exec(INIT_SQL, vec![]).await?;
+        sqlx::raw_sql(INIT_SQL).execute(&self.rb).await?;
         info!("Create tables successfully.");
 
         let digest = md5::compute(b"admin");
         let email = "admin@test.test".to_owned();
         let password = format!("{:x}", digest);
-        let now = DateTime::utc();
+        let now = OffsetDateTime::now_utc();
 
         TbUser::insert(
             &self.rb,
@@ -489,170 +449,13 @@ impl DatabaseClient {
                 password: Some(password),
                 real_name: Some("Admin".to_string()),
                 ext_info: None,
-                gmt_create: Some(now.clone()),
+                gmt_create: Some(now),
                 gmt_modified: Some(now),
             },
         )
         .await?;
         info!("Create default user `admin` successfully.");
         info!("Install Completely.");
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub struct TracingInterceptor {
-    ///control log off,or change log level.
-    /// 0=Off,
-    /// 1=Error,
-    /// 2=Warn,
-    /// 3=Info,
-    /// 4=Debug,
-    /// 5=Trace
-    pub level_filter: AtomicUsize,
-}
-
-impl TracingInterceptor {
-    pub fn new(level_filter: LevelFilter) -> Self {
-        let s = Self {
-            level_filter: AtomicUsize::new(0),
-        };
-        s.set_level_filter(level_filter);
-        s
-    }
-
-    pub fn get_level_filter(&self) -> LevelFilter {
-        match self.level_filter.load(Ordering::Relaxed) {
-            0 => LevelFilter::OFF,
-            1 => LevelFilter::ERROR,
-            2 => LevelFilter::WARN,
-            3 => LevelFilter::INFO,
-            4 => LevelFilter::DEBUG,
-            5 => LevelFilter::TRACE,
-            _ => LevelFilter::OFF,
-        }
-    }
-
-    pub fn to_level(&self) -> Option<Level> {
-        match self.get_level_filter() {
-            LevelFilter::OFF => None,
-            LevelFilter::ERROR => Some(Level::ERROR),
-            LevelFilter::WARN => Some(Level::WARN),
-            LevelFilter::INFO => Some(Level::INFO),
-            LevelFilter::DEBUG => Some(Level::DEBUG),
-            LevelFilter::TRACE => Some(Level::TRACE),
-        }
-    }
-
-    pub fn set_level_filter(&self, level_filter: LevelFilter) {
-        match level_filter {
-            LevelFilter::OFF => self.level_filter.store(0, Ordering::SeqCst),
-            LevelFilter::ERROR => self.level_filter.store(1, Ordering::SeqCst),
-            LevelFilter::WARN => self.level_filter.store(2, Ordering::SeqCst),
-            LevelFilter::INFO => self.level_filter.store(3, Ordering::SeqCst),
-            LevelFilter::DEBUG => self.level_filter.store(4, Ordering::SeqCst),
-            LevelFilter::TRACE => self.level_filter.store(5, Ordering::SeqCst),
-        }
-    }
-}
-
-#[async_trait]
-impl Intercept for TracingInterceptor {
-    async fn before(
-        &self,
-        task_id: i64,
-        _rb: &dyn Executor,
-        sql: &mut String,
-        args: &mut Vec<Value>,
-        _result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Value, Error>>,
-    ) -> Result<Action, Error> {
-        if self.get_level_filter() == LevelFilter::OFF {
-            return Ok(Action::Next);
-        }
-        let level = self.to_level().unwrap_or(Level::DEBUG);
-        //send sql/args
-        dynamic_tracing_event!(
-            level, target: "database",
-            "[rb] [{}] => `{}` {}",
-            task_id,
-            &sql,
-            RbsValueDisplay::new(args)
-        );
-
-        Ok(Action::Next)
-    }
-
-    async fn after(
-        &self,
-        task_id: i64,
-        _rb: &dyn Executor,
-        _sql: &mut String,
-        _args: &mut Vec<Value>,
-        result: ResultType<&mut Result<ExecResult, Error>, &mut Result<Value, Error>>,
-    ) -> Result<Action, Error> {
-        if self.get_level_filter() == LevelFilter::OFF {
-            return Ok(Action::Next);
-        }
-        let level = self.to_level().unwrap_or_else(|| Level::DEBUG);
-        //ResultType
-        match result {
-            ResultType::Exec(result) => match result {
-                Ok(result) => {
-                    dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= rows_affected={}", task_id, result);
-                }
-                Err(e) => {
-                    dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= {}", task_id, e);
-                }
-            },
-            ResultType::Query(result) => match result {
-                Ok(result) => {
-                    // Query results are a single rbs::Value (array of rows) in rbatis 4.9
-                    let len = match &*result {
-                        Value::Array(rows) => rows.len(),
-                        Value::Null => 0,
-                        _ => 1,
-                    };
-                    if is_debug_mode() {
-                        dynamic_tracing_event!(
-                            level, target: "database",
-                            "[rb] [{}] <= len={},rows={:?}",
-                            task_id,
-                            len,
-                            result
-                        );
-                    } else {
-                        dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= len={}", task_id, len);
-                    }
-                }
-                Err(e) => {
-                    dynamic_tracing_event!(level, target: "database", "[rb] [{}] <= {}", task_id, e);
-                }
-            },
-        }
-        Ok(Action::Next)
-    }
-}
-
-struct RbsValueDisplay<'a> {
-    inner: &'a Vec<Value>,
-}
-
-impl<'a> RbsValueDisplay<'a> {
-    pub fn new(v: &'a Vec<Value>) -> Self {
-        Self { inner: v }
-    }
-}
-
-impl<'a> Display for RbsValueDisplay<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("[")?;
-        for (idx, x) in self.inner.deref().iter().enumerate() {
-            std::fmt::Display::fmt(x, f)?;
-            if (idx + 1) < self.inner.len() {
-                f.write_str(",")?;
-            }
-        }
-        f.write_str("]")?;
         Ok(())
     }
 }

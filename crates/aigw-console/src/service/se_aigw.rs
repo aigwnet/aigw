@@ -1,10 +1,10 @@
 use aigw_core::{HandshakeInfo, date_format_local};
-use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::{
     service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT},
-    storage::tb_aigw::TbAigw,
+    storage::{PageRequest, tb_aigw::TbAigw},
 };
 
 /// Asynchronously updates an existing AIGW or inserts a new one based on the handshake information.
@@ -19,8 +19,11 @@ use crate::{
 ///
 /// # Errors
 /// Returns an error if database operations fail or if required parameters are invalid.
-pub async fn update_or_insert_aigw(rb: &rbatis::RBatis, info: HandshakeInfo) -> anyhow::Result<()> {
-    let now = DateTime::utc();
+pub async fn update_or_insert_aigw(
+    rb: &sqlx::MySqlPool,
+    info: HandshakeInfo,
+) -> anyhow::Result<()> {
+    let now = OffsetDateTime::now_utc();
     let item = TbAigw::select_by_cluster_name_and_ip(rb, &info.cluster, &info.ip).await?;
     // update last_active_time
     if let Some(mut item) = item {
@@ -30,8 +33,8 @@ pub async fn update_or_insert_aigw(rb: &rbatis::RBatis, info: HandshakeInfo) -> 
         item.os_arch = Some(info.os_arch);
         item.cpu_name = Some(info.cpu_name);
         item.cpu_vendor = Some(info.cpu_vendor);
-        item.cpu_frequency = Some(info.cpu_frequency);
-        item.cpu_nums = Some(info.cpu_nums);
+        item.cpu_frequency = Some(info.cpu_frequency as i64);
+        item.cpu_nums = Some(info.cpu_nums as i32);
         item.gmt_modified = Some(now);
         let _r = TbAigw::update_by_id(rb, &item, item.id.unwrap()).await;
     }
@@ -47,9 +50,9 @@ pub async fn update_or_insert_aigw(rb: &rbatis::RBatis, info: HandshakeInfo) -> 
             os_arch: Some(info.os_arch),
             cpu_name: Some(info.cpu_name),
             cpu_vendor: Some(info.cpu_vendor),
-            cpu_frequency: Some(info.cpu_frequency),
-            cpu_nums: Some(info.cpu_nums),
-            gmt_create: Some(now.clone()),
+            cpu_frequency: Some(info.cpu_frequency as i64),
+            cpu_nums: Some(info.cpu_nums as i32),
+            gmt_create: Some(now),
             gmt_modified: Some(now),
         };
         let _ = TbAigw::insert(rb, &item).await?;
@@ -59,11 +62,11 @@ pub async fn update_or_insert_aigw(rb: &rbatis::RBatis, info: HandshakeInfo) -> 
 }
 
 pub async fn find_aigw_by_page(
-    rb: &RBatis,
-    page_request: &dyn IPageRequest,
+    rb: &sqlx::MySqlPool,
+    page_request: &PageRequest,
     cluster_name: &str,
 ) -> anyhow::Result<Page<Server>> {
-    let r: rbatis::Page<TbAigw> = TbAigw::select_by_page(rb, page_request, cluster_name).await?;
+    let r = TbAigw::select_by_page(rb, page_request, cluster_name).await?;
     let mut page = Page::new(r.page_no, r.page_size, r.total, vec![]);
     for tb_server in r.records {
         let server = convert_tb_aigw(&tb_server);
@@ -83,26 +86,26 @@ fn convert_tb_aigw(server: &TbAigw) -> Server {
         .as_ref()
         .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
     Server {
-        id: server.id,
+        id: server.id.map(|id| id as u64),
         cluster_name: server
             .cluster_name
             .clone()
-            .map_or("".to_string(), |name| name),
-        ip: server.ip.clone().map_or("".to_string(), |s| s),
-        version: server.version.clone().map_or("".to_string(), |s| s),
-        os_name: server.os_name.clone().map_or("".to_string(), |s| s),
-        os_version: server.os_version.clone().map_or("".to_string(), |s| s),
-        os_arch: server.os_arch.clone().map_or("".to_string(), |s| s),
+            .unwrap_or("".to_string()),
+        ip: server.ip.clone().unwrap_or("".to_string()),
+        version: server.version.clone().unwrap_or("".to_string()),
+        os_name: server.os_name.clone().unwrap_or("".to_string()),
+        os_version: server.os_version.clone().unwrap_or("".to_string()),
+        os_arch: server.os_arch.clone().unwrap_or("".to_string()),
         cpu_name: server
             .cpu_name
             .clone()
-            .map_or("".to_string(), |s: String| s),
+            .unwrap_or("".to_string()),
         cpu_vendor: server
             .cpu_vendor
             .clone()
-            .map_or("".to_string(), |s: String| s),
-        cpu_frequency: server.cpu_frequency.map_or(1, |i| i),
-        cpu_nums: server.cpu_nums.map_or(1, |i| i),
+            .unwrap_or("".to_string()),
+        cpu_frequency: server.cpu_frequency.map_or(1, |i| i as u64),
+        cpu_nums: server.cpu_nums.map_or(1, |i| i as u32),
         gmt_create,
         gmt_modified,
     }

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use rbatis::{RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::storage::{tb_session::TbSession, tb_user::TbUser};
 
@@ -23,7 +23,10 @@ pub struct UserExtInfo {
     pub acme_account: Option<String>,
 }
 
-pub async fn query_user(rb: &RBatis, user_or_email: &str) -> anyhow::Result<UserProfile> {
+pub async fn query_user(
+    rb: &sqlx::MySqlPool,
+    user_or_email: &str,
+) -> anyhow::Result<UserProfile> {
     let user = if user_or_email.contains('@') {
         TbUser::select_by_email(rb, user_or_email).await?
     } else {
@@ -43,7 +46,11 @@ pub async fn query_user(rb: &RBatis, user_or_email: &str) -> anyhow::Result<User
     Err(anyhow::anyhow!("User not found."))
 }
 
-pub async fn update_profile(rb: &RBatis, name: &str, profile: UserProfile) -> anyhow::Result<()> {
+pub async fn update_profile(
+    rb: &sqlx::MySqlPool,
+    name: &str,
+    profile: UserProfile,
+) -> anyhow::Result<()> {
     TbUser::update_by_name(
         rb,
         &TbUser {
@@ -54,7 +61,7 @@ pub async fn update_profile(rb: &RBatis, name: &str, profile: UserProfile) -> an
             ext_info: None,
             password: None,
             gmt_create: None,
-            gmt_modified: Some(DateTime::utc()),
+            gmt_modified: Some(OffsetDateTime::now_utc()),
         },
         name,
     )
@@ -63,7 +70,7 @@ pub async fn update_profile(rb: &RBatis, name: &str, profile: UserProfile) -> an
 }
 
 pub async fn update_password(
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     name: &str,
     password: UserPassword,
 ) -> anyhow::Result<()> {
@@ -77,7 +84,7 @@ pub async fn update_password(
             real_name: None,
             ext_info: None,
             gmt_create: None,
-            gmt_modified: Some(DateTime::utc()),
+            gmt_modified: Some(OffsetDateTime::now_utc()),
         },
         name,
     )
@@ -85,7 +92,11 @@ pub async fn update_password(
     Ok(())
 }
 
-pub async fn update_ext_info(rb: &RBatis, email: &str, ext_info: String) -> anyhow::Result<()> {
+pub async fn update_ext_info(
+    rb: &sqlx::MySqlPool,
+    email: &str,
+    ext_info: String,
+) -> anyhow::Result<()> {
     TbUser::update_by_email(
         rb,
         &TbUser {
@@ -96,7 +107,7 @@ pub async fn update_ext_info(rb: &RBatis, email: &str, ext_info: String) -> anyh
             real_name: None,
             ext_info: Some(ext_info),
             gmt_create: None,
-            gmt_modified: Some(DateTime::utc()),
+            gmt_modified: Some(OffsetDateTime::now_utc()),
         },
         email,
     )
@@ -105,7 +116,7 @@ pub async fn update_ext_info(rb: &RBatis, email: &str, ext_info: String) -> anyh
 }
 
 pub async fn check_password(
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     user_or_email: &str,
     password: &str,
 ) -> anyhow::Result<(bool, String, String, bool)> {
@@ -132,7 +143,7 @@ pub async fn check_password(
 }
 
 pub async fn login(
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     user_or_email: &str,
     password: &str,
     ip: &str,
@@ -142,10 +153,10 @@ pub async fn login(
     if b {
         let session = TbSession::select_by_token(rb, token).await?;
         if let Some(mut session) = session {
-            session.gmt_modified = Some(DateTime::utc());
+            session.gmt_modified = Some(OffsetDateTime::now_utc());
             TbSession::update_by_token(rb, &session, token).await?;
         } else {
-            let now = DateTime::utc();
+            let now = OffsetDateTime::now_utc();
             TbSession::insert(
                 rb,
                 &TbSession {
@@ -154,7 +165,7 @@ pub async fn login(
                     email: Some(email),
                     login_ip: Some(ip.to_owned()),
                     token: Some(token.to_owned()),
-                    gmt_create: Some(now.clone()),
+                    gmt_create: Some(now),
                     gmt_modified: Some(now),
                 },
             )
@@ -167,15 +178,15 @@ pub async fn login(
 }
 
 pub async fn token_validate(
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     token: &str,
 ) -> anyhow::Result<(bool, Option<String>, Option<String>)> {
     let session = TbSession::select_by_token(rb, token).await?;
     if let Some(mut session) = session
         && let Some(gmt_modified) = session.gmt_modified
-        && gmt_modified.add(Duration::from_secs(1800)) > DateTime::utc()
+        && gmt_modified + Duration::from_secs(1800) > OffsetDateTime::now_utc()
     {
-        session.gmt_modified = Some(DateTime::utc());
+        session.gmt_modified = Some(OffsetDateTime::now_utc());
         TbSession::update_by_token(rb, &session, token).await?;
         return Ok((true, session.user, session.email));
     }
@@ -183,7 +194,9 @@ pub async fn token_validate(
     Ok((false, None, None))
 }
 
-pub async fn find_default_user(rb: &RBatis) -> anyhow::Result<Option<(String, String)>> {
+pub async fn find_default_user(
+    rb: &sqlx::MySqlPool,
+) -> anyhow::Result<Option<(String, String)>> {
     let user = TbUser::select_default_user(rb).await?;
     let r = user.map(|user| (user.name.unwrap(), user.email.unwrap()));
     Ok(r)

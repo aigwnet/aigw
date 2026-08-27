@@ -1,13 +1,14 @@
 use std::time::Duration;
 
 use aigw_core::date_format_local;
-use rbatis::{PageRequest, RBatis, rbdc::DateTime};
 use serde::{Deserialize, Serialize};
+use sqlx::MySqlPool;
+use time::OffsetDateTime;
 
 use crate::{
     service::{HH_MM_FORMAT, se_task::Task},
     storage::{
-        tb_analytics_monitor::TbAnalyticsMonitor,
+        PageRequest, tb_analytics_monitor::TbAnalyticsMonitor,
         tb_analytics_monitor_cluster::TbAnalyticsMonitorCluster,
         tb_analytics_monitor_cluster_hour::TbAnalyticsMonitorClusterHour,
     },
@@ -38,11 +39,11 @@ pub struct MonitorItem {
 }
 
 pub async fn get_analytics_monitor(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     limit: usize,
 ) -> anyhow::Result<Vec<AnalyticsMonitorItem>> {
-    let items = TbAnalyticsMonitorCluster::select_by_cluster(rb, cluster_name, limit).await?;
+    let items = TbAnalyticsMonitorCluster::select_by_cluster(rb, cluster_name, limit as u64).await?;
     let mut items: Vec<AnalyticsMonitorItem> = items
         .iter()
         .map(|item| {
@@ -58,12 +59,13 @@ pub async fn get_analytics_monitor(
 }
 
 pub async fn get_analytics_monitor_server(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     ip: &str,
     limit: usize,
 ) -> anyhow::Result<Vec<AnalyticsMonitorItem>> {
-    let items = TbAnalyticsMonitor::select_by_cluster_and_ip(rb, cluster_name, ip, limit).await?;
+    let items =
+        TbAnalyticsMonitor::select_by_cluster_and_ip(rb, cluster_name, ip, limit as u64).await?;
     let mut items: Vec<AnalyticsMonitorItem> = items
         .iter()
         .map(|item| {
@@ -79,7 +81,7 @@ pub async fn get_analytics_monitor_server(
 }
 
 pub(crate) async fn analytics_monitor_minute(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     task: &Task,
 ) -> anyhow::Result<(Option<MonitorItem>, usize)> {
@@ -87,7 +89,8 @@ pub(crate) async fn analytics_monitor_minute(
     let mointor_items = TbAnalyticsMonitorCluster::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.unix_timestamp()),
+        OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+            .unwrap_or(OffsetDateTime::UNIX_EPOCH),
     )
     .await?;
 
@@ -104,8 +107,10 @@ pub(crate) async fn analytics_monitor_minute(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.unix_timestamp()),
-                DateTime::from_timestamp(new_end_time.unix_timestamp()),
+                OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                OffsetDateTime::from_unix_timestamp(new_end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
             )
             .await?;
 
@@ -126,7 +131,7 @@ pub(crate) async fn analytics_monitor_minute(
 }
 
 pub(crate) async fn analytics_monitor_hour(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: &str,
     task: &Task,
 ) -> anyhow::Result<(Option<MonitorItem>, usize)> {
@@ -134,7 +139,8 @@ pub(crate) async fn analytics_monitor_hour(
     let monitor_item = TbAnalyticsMonitorClusterHour::select_by_cluster_gmt_create(
         rb,
         cluster_name,
-        DateTime::from_timestamp(task.end_time.unix_timestamp()),
+        OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+            .unwrap_or(OffsetDateTime::UNIX_EPOCH),
     )
     .await?;
 
@@ -151,8 +157,10 @@ pub(crate) async fn analytics_monitor_hour(
                 rb,
                 &page_request,
                 cluster_name,
-                DateTime::from_timestamp(task.end_time.unix_timestamp()),
-                DateTime::from_timestamp(new_end_time.unix_timestamp()),
+                OffsetDateTime::from_unix_timestamp(task.end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                OffsetDateTime::from_unix_timestamp(new_end_time.unix_timestamp())
+                    .unwrap_or(OffsetDateTime::UNIX_EPOCH),
             )
             .await?;
 
@@ -177,22 +185,22 @@ fn convert_tb_analytics_monitor_cluster(
     gmt_create: Option<String>,
 ) -> AnalyticsMonitorItem {
     AnalyticsMonitorItem {
-        time: gmt_create.map_or("-".to_string(), |s| s),
+        time: gmt_create.unwrap_or("-".to_string()),
         item: MonitorItem {
-            cpu: a.cpu.map_or(0.0, |i| i),
-            cpu_current_process: a.cpu_current_process.map_or(0.0, |i| i),
-            cpu_load_one: a.cpu_load_one.map_or(0.0, |i| i),
-            cpu_load_five: a.cpu_load_five.map_or(0.0, |i| i),
-            cpu_load_fifteen: a.cpu_load_fifteen.map_or(0.0, |i| i),
-            mem: a.mem.map_or(0.0, |i| i),
-            swap: a.swap.map_or(0.0, |i| i),
-            disk: a.disk.map_or(0.0, |i| i),
-            io_read: a.io_read.map_or(0, |i| i),
-            io_written: a.io_written.map_or(0, |i| i),
-            net_send: a.net_send.map_or(0, |i| i),
-            net_received: a.net_received.map_or(0, |i| i),
-            rt: a.rt.map_or(0, |i| i),
-            error: a.error.map_or(0, |i| i),
+            cpu: a.cpu.unwrap_or(0.0),
+            cpu_current_process: a.cpu_current_process.unwrap_or(0.0),
+            cpu_load_one: a.cpu_load_one.unwrap_or(0.0),
+            cpu_load_five: a.cpu_load_five.unwrap_or(0.0),
+            cpu_load_fifteen: a.cpu_load_fifteen.unwrap_or(0.0),
+            mem: a.mem.unwrap_or(0.0),
+            swap: a.swap.unwrap_or(0.0),
+            disk: a.disk.unwrap_or(0.0),
+            io_read: a.io_read.map_or(0, |i| i as u64),
+            io_written: a.io_written.map_or(0, |i| i as u64),
+            net_send: a.net_send.map_or(0, |i| i as u64),
+            net_received: a.net_received.map_or(0, |i| i as u64),
+            rt: a.rt.map_or(0, |i| i as u64),
+            error: a.error.map_or(0, |i| i as u64),
         },
     }
 }
@@ -201,24 +209,24 @@ fn convert_tb_analytics_monitor(
     a: &TbAnalyticsMonitor,
     gmt_create: Option<String>,
 ) -> AnalyticsMonitorItem {
-    let mem_used = a.mem_used.map_or(0, |i| i);
-    let mem_total = a.mem_free.map_or(0, |i| i) + mem_used;
+    let mem_used = a.mem_used.unwrap_or(0);
+    let mem_total = a.mem_free.unwrap_or(0) + mem_used;
     let mem = if mem_total == 0 {
         0.0
     } else {
         mem_used as f64 / mem_total as f64
     };
 
-    let swap_used = a.swap_used.map_or(0, |i| i);
-    let swap_total = a.swap_free.map_or(0, |i| i) + swap_used;
+    let swap_used = a.swap_used.unwrap_or(0);
+    let swap_total = a.swap_free.unwrap_or(0) + swap_used;
     let swap = if swap_total == 0 {
         0.0
     } else {
         swap_used as f64 / swap_total as f64
     };
 
-    let disk_used = a.disk_used.map_or(0, |i| i);
-    let disk_total = a.disk_free.map_or(0, |i| i) + disk_used;
+    let disk_used = a.disk_used.unwrap_or(0);
+    let disk_total = a.disk_free.unwrap_or(0) + disk_used;
     let disk = if disk_total == 0 {
         0.0
     } else {
@@ -226,80 +234,80 @@ fn convert_tb_analytics_monitor(
     };
 
     AnalyticsMonitorItem {
-        time: gmt_create.map_or("-".to_string(), |s| s),
+        time: gmt_create.unwrap_or("-".to_string()),
         item: MonitorItem {
-            cpu: a.cpu.map_or(0.0, |i| i),
-            cpu_current_process: a.cpu_current_process.map_or(0.0, |i| i),
-            cpu_load_one: a.cpu_load_one.map_or(0.0, |i| i),
-            cpu_load_five: a.cpu_load_five.map_or(0.0, |i| i),
-            cpu_load_fifteen: a.cpu_load_fifteen.map_or(0.0, |i| i),
+            cpu: a.cpu.unwrap_or(0.0),
+            cpu_current_process: a.cpu_current_process.unwrap_or(0.0),
+            cpu_load_one: a.cpu_load_one.unwrap_or(0.0),
+            cpu_load_five: a.cpu_load_five.unwrap_or(0.0),
+            cpu_load_fifteen: a.cpu_load_fifteen.unwrap_or(0.0),
             mem,
             swap,
             disk,
-            io_read: a.io_read.map_or(0, |i| i),
-            io_written: a.io_written.map_or(0, |i| i),
-            net_send: a.net_send.map_or(0, |i| i),
-            net_received: a.net_received.map_or(0, |i| i),
-            rt: a.rt.map_or(0, |i| i),
-            error: a.error.map_or(0, |i| i),
+            io_read: a.io_read.map_or(0, |i| i as u64),
+            io_written: a.io_written.map_or(0, |i| i as u64),
+            net_send: a.net_send.map_or(0, |i| i as u64),
+            net_received: a.net_received.map_or(0, |i| i as u64),
+            rt: a.rt.map_or(0, |i| i as u64),
+            error: a.error.map_or(0, |i| i as u64),
         },
     }
 }
 
 fn count_tb_analytics_monitor(item: &mut MonitorItem, a: TbAnalyticsMonitor) {
-    let mem_used = a.mem_used.map_or(0, |i| i);
-    let mem_total = a.mem_free.map_or(0, |i| i) + mem_used;
+    let mem_used = a.mem_used.unwrap_or(0);
+    let mem_total = a.mem_free.unwrap_or(0) + mem_used;
     let mem = if mem_total == 0 {
         0.0
     } else {
         mem_used as f64 / mem_total as f64
     };
 
-    let swap_used = a.swap_used.map_or(0, |i| i);
-    let swap_total = a.swap_free.map_or(0, |i| i) + swap_used;
+    let swap_used = a.swap_used.unwrap_or(0);
+    let swap_total = a.swap_free.unwrap_or(0) + swap_used;
     let swap = if swap_total == 0 {
         0.0
     } else {
         swap_used as f64 / swap_total as f64
     };
 
-    let disk_used = a.disk_used.map_or(0, |i| i);
-    let disk_total = a.disk_free.map_or(0, |i| i) + disk_used;
+    let disk_used = a.disk_used.unwrap_or(0);
+    let disk_total = a.disk_free.unwrap_or(0) + disk_used;
     let disk = if disk_total == 0 {
         0.0
     } else {
         disk_used as f64 / disk_total as f64
     };
 
-    item.cpu += a.cpu.map_or(0.0, |i| i);
-    item.cpu_current_process += a.cpu_current_process.map_or(0.0, |i| i);
-    item.cpu_load_one += a.cpu_load_one.map_or(0.0, |i| i);
-    item.cpu_load_five += a.cpu_load_five.map_or(0.0, |i| i);
-    item.cpu_load_fifteen += a.cpu_load_fifteen.map_or(0.0, |i| i);
+    item.cpu += a.cpu.unwrap_or(0.0);
+    item.cpu_current_process += a.cpu_current_process.unwrap_or(0.0);
+    item.cpu_load_one += a.cpu_load_one.unwrap_or(0.0);
+    item.cpu_load_five += a.cpu_load_five.unwrap_or(0.0);
+    item.cpu_load_fifteen += a.cpu_load_fifteen.unwrap_or(0.0);
     item.mem += mem;
     item.swap += swap;
     item.disk += disk;
-    item.io_read += a.io_read.map_or(0, |i| i);
-    item.io_written += a.io_written.map_or(0, |i| i);
-    item.net_send += a.net_send.map_or(0, |i| i);
-    item.net_received += a.net_received.map_or(0, |i| i);
-    item.rt += a.rt.map_or(0, |i| i);
-    item.error += a.error.map_or(0, |i| i);
+    item.io_read += a.io_read.map_or(0, |i| i as u64);
+    item.io_written += a.io_written.map_or(0, |i| i as u64);
+    item.net_send += a.net_send.map_or(0, |i| i as u64);
+    item.net_received += a.net_received.map_or(0, |i| i as u64);
+    item.rt += a.rt.map_or(0, |i| i as u64);
+    item.error += a.error.map_or(0, |i| i as u64);
 }
 
 fn count_tb_analytics_monitor_cluster(item: &mut MonitorItem, a: TbAnalyticsMonitorCluster) {
-    item.cpu += a.cpu.map_or(0.0, |i| i);
-    item.cpu_current_process += a.cpu_current_process.map_or(0.0, |i| i);
-    item.cpu_load_one += a.cpu_load_one.map_or(0.0, |i| i);
-    item.cpu_load_five += a.cpu_load_five.map_or(0.0, |i| i);
-    item.cpu_load_fifteen += a.cpu_load_fifteen.map_or(0.0, |i| i);
-    item.mem += a.mem.map_or(0.0, |i| i);
-    item.swap += a.swap.map_or(0.0, |i| i);
-    item.disk += a.disk.map_or(0.0, |i| i);
-    item.io_read += a.io_read.map_or(0, |i| i);
-    item.io_written += a.io_written.map_or(0, |i| i);
-    item.net_send += a.net_send.map_or(0, |i| i);
-    item.net_received += a.net_received.map_or(0, |i| i);
-    item.rt += a.rt.map_or(0, |i| i);
-    item.error += a.error.map_or(0, |i| i);
+    item.cpu += a.cpu.unwrap_or(0.0);
+    item.cpu_current_process += a.cpu_current_process.unwrap_or(0.0);
+    item.cpu_load_one += a.cpu_load_one.unwrap_or(0.0);
+    item.cpu_load_five += a.cpu_load_five.unwrap_or(0.0);
+    item.cpu_load_fifteen += a.cpu_load_fifteen.unwrap_or(0.0);
+    item.mem += a.mem.unwrap_or(0.0);
+    item.swap += a.swap.unwrap_or(0.0);
+    item.disk += a.disk.unwrap_or(0.0);
+    item.io_read += a.io_read.map_or(0, |i| i as u64);
+    item.io_written += a.io_written.map_or(0, |i| i as u64);
+    item.net_send += a.net_send.map_or(0, |i| i as u64);
+    item.net_received += a.net_received.map_or(0, |i| i as u64);
+    item.rt += a.rt.map_or(0, |i| i as u64);
+    item.error += a.error.map_or(0, |i| i as u64);
 }

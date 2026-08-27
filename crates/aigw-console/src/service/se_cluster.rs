@@ -1,12 +1,12 @@
 use crate::{
     service::{Page, YYYY_MM_DD_HH_MM_SS_FORMAT, do_build_change_log},
-    storage::tb_cluster::TbCluster,
+    storage::{PageRequest, tb_cluster::TbCluster},
 };
 use aigw_core::{ChangeLog, Cluster, LogAction, LogType, date_format_local};
-use rbatis::{IPageRequest, RBatis, rbdc::DateTime};
+use time::OffsetDateTime;
 
-pub async fn add_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<ChangeLog> {
-    let now = DateTime::utc();
+pub async fn add_cluster(rb: &sqlx::MySqlPool, cluster: &Cluster) -> anyhow::Result<ChangeLog> {
+    let now = OffsetDateTime::now_utc();
     TbCluster::insert(
         rb,
         &TbCluster {
@@ -18,7 +18,7 @@ pub async fn add_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<Chang
             enable_white_list: cluster.enable_white_list,
             enable_block_list: cluster.enable_block_list,
             description: cluster.description.clone(),
-            gmt_create: Some(now.clone()),
+            gmt_create: Some(now),
             gmt_modified: Some(now),
         },
     )
@@ -26,8 +26,9 @@ pub async fn add_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<Chang
 
     let c = find_cluster_by_name(rb, &cluster.name).await?;
     let s = serde_json::to_string_pretty(&c)?;
+    let mut conn = rb.acquire().await?;
     let change_log = do_build_change_log(
-        rb,
+        &mut conn,
         cluster.name.clone(),
         LogType::Cluster,
         LogAction::Update,
@@ -40,11 +41,11 @@ pub async fn add_cluster(rb: &RBatis, cluster: &Cluster) -> anyhow::Result<Chang
 }
 
 pub async fn modify_cluster(
-    rb: &RBatis,
+    rb: &sqlx::MySqlPool,
     cluster: &Cluster,
     name: &str,
 ) -> anyhow::Result<ChangeLog> {
-    let now = DateTime::utc();
+    let now = OffsetDateTime::now_utc();
     let table = &TbCluster {
         id: None,
         name: Some(cluster.name.clone()),
@@ -60,8 +61,9 @@ pub async fn modify_cluster(
     TbCluster::update_by_name(rb, table, name).await?;
     let c = find_cluster_by_name(rb, &cluster.name).await?;
     let s = serde_json::to_string_pretty(&c)?;
+    let mut conn = rb.acquire().await?;
     let change_log = do_build_change_log(
-        rb,
+        &mut conn,
         cluster.name.clone(),
         LogType::Cluster,
         LogAction::Update,
@@ -73,21 +75,24 @@ pub async fn modify_cluster(
     Ok(change_log)
 }
 
-pub async fn find_cluster(rb: &RBatis, name: &str) -> anyhow::Result<Cluster> {
+pub async fn find_cluster(rb: &sqlx::MySqlPool, name: &str) -> anyhow::Result<Cluster> {
     let cluster = TbCluster::select_by_name(rb, name)
         .await?
         .ok_or(anyhow::anyhow!("Cluster not found."))?;
     Ok(convert_tb_cluster(&cluster))
 }
 
-pub async fn find_cluster_by_name(rb: &RBatis, name: &str) -> anyhow::Result<Cluster> {
+pub async fn find_cluster_by_name(
+    rb: &sqlx::MySqlPool,
+    name: &str,
+) -> anyhow::Result<Cluster> {
     let cluster = TbCluster::select_by_name(rb, name)
         .await?
         .ok_or(anyhow::anyhow!("Cluster not found."))?;
     Ok(convert_tb_cluster(&cluster))
 }
 
-pub async fn find_all(rb: &RBatis) -> anyhow::Result<Vec<Cluster>> {
+pub async fn find_all(rb: &sqlx::MySqlPool) -> anyhow::Result<Vec<Cluster>> {
     let clusters = TbCluster::select_all(rb)
         .await?
         .iter()
@@ -97,16 +102,16 @@ pub async fn find_all(rb: &RBatis) -> anyhow::Result<Vec<Cluster>> {
     Ok(clusters)
 }
 
-pub async fn delete_cluster(rb: &RBatis, name: &str) -> anyhow::Result<()> {
+pub async fn delete_cluster(rb: &sqlx::MySqlPool, name: &str) -> anyhow::Result<()> {
     let _ = TbCluster::delete_by_name(rb, name).await?;
     Ok(())
 }
 
 pub async fn find_cluster_by_page(
-    rb: &RBatis,
-    page_request: &dyn IPageRequest,
+    rb: &sqlx::MySqlPool,
+    page_request: &PageRequest,
 ) -> anyhow::Result<Page<Cluster>> {
-    let r: rbatis::Page<TbCluster> = TbCluster::select_page(rb, page_request).await?;
+    let r = TbCluster::select_page(rb, page_request).await?;
     let mut page = Page::new(r.page_no, r.page_size, r.total, vec![]);
     for cluster in r.records {
         let cluster = convert_tb_cluster(&cluster);
@@ -121,12 +126,12 @@ fn convert_tb_cluster(cluster: &TbCluster) -> Cluster {
         .as_ref()
         .and_then(|d| date_format_local(d.unix_timestamp(), YYYY_MM_DD_HH_MM_SS_FORMAT));
     Cluster {
-        id: cluster.id,
-        name: cluster.name.clone().map_or("".to_string(), |name| name),
+        id: cluster.id.map(|id| id as u64),
+        name: cluster.name.clone().unwrap_or("".to_string()),
         security_key: cluster
             .security_key
             .clone()
-            .map_or("".to_string(), |key| key),
+            .unwrap_or("".to_string()),
         enable: cluster.enable,
         enable_default_site: cluster.enable_default_site,
         enable_white_list: cluster.enable_white_list,

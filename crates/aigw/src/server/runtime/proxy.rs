@@ -816,7 +816,7 @@ impl ProxyHttp for AigwProxy {
         };
         if code > 0 {
             let (header, body) = error_page::generate_error(
-                StatusCode::from_u16(code).map_or(StatusCode::INTERNAL_SERVER_ERROR, |s| s),
+                StatusCode::from_u16(code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
             );
             session
                 .write_error_response(header, body)

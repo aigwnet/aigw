@@ -30,19 +30,19 @@ use crate::{
     },
 };
 use aigw_core::{LOCAL_IP, Ping};
-use rbatis::{RBatis, executor::RBatisTxExecutor, rbdc::DateTime};
+use sqlx::{MySql, MySqlPool, Transaction};
 use std::{sync::Arc, time::Duration};
 use time::OffsetDateTime;
 use tokio::time::interval;
 use tracing::{debug, error};
 
 pub async fn save_ping(
-    rb: &RBatis,
+    rb: &MySqlPool,
     cluster_name: String,
     ip: String,
     ping: Ping,
 ) -> anyhow::Result<()> {
-    let now = DateTime::utc();
+    let now = OffsetDateTime::now_utc();
 
     TbAnalyticsMonitor::insert(
         rb,
@@ -50,26 +50,26 @@ pub async fn save_ping(
             id: None,
             cluster_name: Some(cluster_name.clone()),
             ip: Some(ip.clone()),
-            uptime: Some(ping.statistics.uptime),
+            uptime: Some(ping.statistics.uptime as i64),
             cpu: Some(ping.statistics.cpu),
             cpu_current_process: Some(ping.statistics.cpu_current_process),
             cpu_load_one: Some(ping.statistics.cpu_load_one),
             cpu_load_five: Some(ping.statistics.cpu_load_five),
             cpu_load_fifteen: Some(ping.statistics.cpu_load_fifteen),
-            mem_used: Some(ping.statistics.mem_used),
-            mem_free: Some(ping.statistics.mem_free),
-            swap_used: Some(ping.statistics.swap_used),
-            swap_free: Some(ping.statistics.swap_free),
-            disk_used: Some(ping.statistics.disk_used),
-            disk_free: Some(ping.statistics.disk_free),
-            io_read: Some(ping.statistics.io_read),
-            io_written: Some(ping.statistics.io_written),
-            net_send: Some(ping.statistics.net_send),
-            net_received: Some(ping.statistics.net_received),
-            rt: Some(ping.statistics.rt),
-            error: Some(ping.statistics.error),
-            gmt_create: Some(now.clone()),
-            gmt_modified: Some(now.clone()),
+            mem_used: Some(ping.statistics.mem_used as i64),
+            mem_free: Some(ping.statistics.mem_free as i64),
+            swap_used: Some(ping.statistics.swap_used as i64),
+            swap_free: Some(ping.statistics.swap_free as i64),
+            disk_used: Some(ping.statistics.disk_used as i64),
+            disk_free: Some(ping.statistics.disk_free as i64),
+            io_read: Some(ping.statistics.io_read as i64),
+            io_written: Some(ping.statistics.io_written as i64),
+            net_send: Some(ping.statistics.net_send as i64),
+            net_received: Some(ping.statistics.net_received as i64),
+            rt: Some(ping.statistics.rt as i64),
+            error: Some(ping.statistics.error as i64),
+            gmt_create: Some(now),
+            gmt_modified: Some(now),
         },
     )
     .await?;
@@ -94,12 +94,12 @@ pub async fn save_ping(
             id: None,
             cluster_name: Some(cluster_name),
             ip: Some(ip),
-            tls: Some(ping.statistics.tls),
-            pv: Some(ping.statistics.pv),
+            tls: Some(ping.statistics.tls as i64),
+            pv: Some(ping.statistics.pv as i64),
             http_country,
             http_code,
             http_source,
-            gmt_create: Some(now.clone()),
+            gmt_create: Some(now),
             gmt_modified: Some(now),
         },
     )
@@ -133,7 +133,7 @@ pub async fn start_analytics_hour(databse_client: Arc<DatabaseClient>) {
     }
 }
 
-async fn do_start_analytics_minute(rb: &RBatis) -> anyhow::Result<()> {
+async fn do_start_analytics_minute(rb: &MySqlPool) -> anyhow::Result<()> {
     let clusters = TbCluster::select_all(rb).await?;
 
     for cluster in clusters {
@@ -156,15 +156,15 @@ async fn do_start_analytics_minute(rb: &RBatis) -> anyhow::Result<()> {
         let mut end_time = task.end_time;
         let mut new_end_time = task.end_time + Duration::from_secs(60);
 
-        while new_end_time.unix_timestamp() < DateTime::utc().unix_timestamp() {
+        while new_end_time.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() {
             let (monitor_item, monitor_size) =
                 analytics_monitor_minute(rb, &cluster_name, &task).await?;
             let traffic_item = analytics_traffic_minute(rb, &cluster_name, &task).await?;
 
             task.end_time = new_end_time;
-            let tx = rb.acquire_begin().await?;
+            let mut tx = rb.begin().await?;
             match do_save_cluster_minute(
-                &tx,
+                &mut tx,
                 monitor_item,
                 monitor_size,
                 traffic_item,
@@ -191,14 +191,14 @@ async fn do_start_analytics_minute(rb: &RBatis) -> anyhow::Result<()> {
         se_lock::release_lock(rb, &lock_key).await;
     }
 
-    let one_mounth_ago = DateTime::utc().add_sub_sec(-2592000);
+    let one_mounth_ago = OffsetDateTime::now_utc() - time::Duration::seconds(2592000);
     // Clean up records older than one month.
-    let _ = TbAnalyticsMonitor::delete_by_gmt_create(rb, one_mounth_ago.clone()).await;
+    let _ = TbAnalyticsMonitor::delete_by_gmt_create(rb, one_mounth_ago).await;
     let _ = TbAnalyticsTraffic::delete_by_gmt_create(rb, one_mounth_ago).await;
     Ok(())
 }
 
-async fn do_start_analytics_hour(rb: &RBatis) -> anyhow::Result<()> {
+async fn do_start_analytics_hour(rb: &MySqlPool) -> anyhow::Result<()> {
     let clusters = TbCluster::select_all(rb).await?;
 
     for cluster in clusters {
@@ -221,15 +221,15 @@ async fn do_start_analytics_hour(rb: &RBatis) -> anyhow::Result<()> {
         let mut end_time = task.end_time;
         let mut new_end_time = task.end_time + Duration::from_secs(3600);
 
-        while new_end_time.unix_timestamp() < DateTime::utc().unix_timestamp() {
+        while new_end_time.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() {
             let (monitor_item, monitor_size) =
                 analytics_monitor_hour(rb, &cluster_name, &task).await?;
             let traffic_item = analytics_traffic_hour(rb, &cluster_name, &task).await?;
 
             task.end_time = new_end_time;
-            let tx = rb.acquire_begin().await?;
+            let mut tx = rb.begin().await?;
             match do_save_cluster_hour(
-                &tx,
+                &mut tx,
                 monitor_item,
                 monitor_size,
                 traffic_item,
@@ -259,7 +259,7 @@ async fn do_start_analytics_hour(rb: &RBatis) -> anyhow::Result<()> {
 }
 
 async fn do_save_cluster_minute(
-    tx: &RBatisTxExecutor,
+    tx: &mut Transaction<'_, MySql>,
     monitor_item: Option<MonitorItem>,
     monitor_size: usize,
     traffic_item: Option<TrafficItem>,
@@ -271,7 +271,7 @@ async fn do_save_cluster_minute(
         && monitor_size > 0
     {
         TbAnalyticsMonitorCluster::insert(
-            tx,
+            &mut **tx,
             &TbAnalyticsMonitorCluster {
                 id: None,
                 cluster_name: Some(cluster_name.clone()),
@@ -283,14 +283,20 @@ async fn do_save_cluster_minute(
                 mem: Some(item.mem / monitor_size as f64),
                 swap: Some(item.swap / monitor_size as f64),
                 disk: Some(item.disk / monitor_size as f64),
-                io_read: Some(item.io_read / monitor_size as u64),
-                io_written: Some(item.io_written / monitor_size as u64),
-                net_send: Some(item.net_send / monitor_size as u64),
-                net_received: Some(item.net_received / monitor_size as u64),
-                rt: Some(item.rt / monitor_size as u64),
-                error: Some(item.error),
-                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                io_read: Some((item.io_read / monitor_size as u64) as i64),
+                io_written: Some((item.io_written / monitor_size as u64) as i64),
+                net_send: Some((item.net_send / monitor_size as u64) as i64),
+                net_received: Some((item.net_received / monitor_size as u64) as i64),
+                rt: Some((item.rt / monitor_size as u64) as i64),
+                error: Some(item.error as i64),
+                gmt_create: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
+                gmt_modified: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
             },
         )
         .await?;
@@ -298,28 +304,34 @@ async fn do_save_cluster_minute(
 
     if let Some(item) = traffic_item {
         TbAnalyticsTrafficCluster::insert(
-            tx,
+            &mut **tx,
             &TbAnalyticsTrafficCluster {
                 id: None,
                 cluster_name: Some(cluster_name),
-                tls: Some(item.tls),
-                pv: Some(item.pv),
+                tls: Some(item.tls as i64),
+                pv: Some(item.pv as i64),
                 http_country: serde_json::to_string(&item.ext_info.http_country).ok(),
                 http_code: serde_json::to_string(&item.ext_info.http_code).ok(),
                 http_source: serde_json::to_string(&item.ext_info.http_source).ok(),
-                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                gmt_create: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
+                gmt_modified: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
             },
         )
         .await?;
     }
 
-    se_task::update_task(tx, task).await?;
+    se_task::update_task(&mut **tx, task).await?;
     Ok(())
 }
 
 async fn do_save_cluster_hour(
-    tx: &RBatisTxExecutor,
+    tx: &mut Transaction<'_, MySql>,
     monitor_item: Option<MonitorItem>,
     monitor_size: usize,
     traffic_item: Option<TrafficItem>,
@@ -334,7 +346,7 @@ async fn do_save_cluster_hour(
         && monitor_size > 0
     {
         TbAnalyticsMonitorClusterHour::insert(
-            tx,
+            &mut **tx,
             &TbAnalyticsMonitorClusterHour {
                 id: None,
                 cluster_name: Some(cluster_name.clone()),
@@ -346,14 +358,20 @@ async fn do_save_cluster_hour(
                 mem: Some(item.mem / monitor_size as f64),
                 swap: Some(item.swap / monitor_size as f64),
                 disk: Some(item.disk / monitor_size as f64),
-                io_read: Some(item.io_read / monitor_size as u64),
-                io_written: Some(item.io_written / monitor_size as u64),
-                net_send: Some(item.net_send / monitor_size as u64),
-                net_received: Some(item.net_received / monitor_size as u64),
-                rt: Some(item.rt / monitor_size as u64),
-                error: Some(item.error),
-                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                io_read: Some((item.io_read / monitor_size as u64) as i64),
+                io_written: Some((item.io_written / monitor_size as u64) as i64),
+                net_send: Some((item.net_send / monitor_size as u64) as i64),
+                net_received: Some((item.net_received / monitor_size as u64) as i64),
+                rt: Some((item.rt / monitor_size as u64) as i64),
+                error: Some(item.error as i64),
+                gmt_create: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
+                gmt_modified: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
             },
         )
         .await?;
@@ -361,21 +379,27 @@ async fn do_save_cluster_hour(
 
     if let Some(item) = traffic_item {
         TbAnalyticsTrafficClusterHour::insert(
-            tx,
+            &mut **tx,
             &TbAnalyticsTrafficClusterHour {
                 id: None,
                 cluster_name: Some(cluster_name),
-                tls: Some(item.tls),
-                pv: Some(item.pv),
+                tls: Some(item.tls as i64),
+                pv: Some(item.pv as i64),
                 http_country: serde_json::to_string(&item.ext_info.http_country).ok(),
                 http_code: serde_json::to_string(&item.ext_info.http_code).ok(),
                 http_source: serde_json::to_string(&item.ext_info.http_source).ok(),
-                gmt_create: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
-                gmt_modified: Some(DateTime::from_timestamp(end_time.unix_timestamp())),
+                gmt_create: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
+                gmt_modified: Some(
+                    OffsetDateTime::from_unix_timestamp(end_time.unix_timestamp())
+                        .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                ),
             },
         )
         .await?;
     }
-    se_task::update_task(tx, task).await?;
+    se_task::update_task(&mut **tx, task).await?;
     Ok(())
 }

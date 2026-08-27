@@ -3,7 +3,6 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use rbatis::PageRequest;
 
 use crate::{
     server::http::{ApiContext, ApiData, ApiError, ApiResponseResult, Pagination},
@@ -11,6 +10,7 @@ use crate::{
         Page, add_cluster, delete_cluster, find_all, find_cluster, find_cluster_by_page,
         modify_cluster,
     },
+    storage::PageRequest,
 };
 
 pub(crate) struct HttpApiCluster {}
@@ -60,8 +60,7 @@ impl HttpApiCluster {
         Query(page): Query<Pagination>,
         State(context): State<ApiContext>,
     ) -> ApiResponseResult<Page<Cluster>> {
-        let mut page_request = PageRequest::new(page.page, page.page_size);
-        page_request = page_request.set_do_count(true);
+        let page_request = PageRequest::new(page.page, page.page_size);
         let r = find_cluster_by_page(&context.database_client.rb, &page_request)
             .await
             .map_err(ApiError::from)?;
